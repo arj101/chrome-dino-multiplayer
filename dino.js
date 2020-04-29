@@ -1,0 +1,46 @@
+class Dino {
+  constructor(x, y, s) {
+    this.basey = y;
+
+    this.pos = createVector(x, y);
+    this.vel = createVector(0, 0);
+    this.h = s;
+    this.w = s * 1.2;
+  }
+
+  update() {
+    this.pos.add(this.vel);
+    if (this.pos.y > this.basey) {
+      this.pos.y = this.basey;
+      this.vel.y = 0;
+    }
+    if (this.pos.y < 0) this.pos.y = 0;
+  }
+  show() {
+    push();
+    // fill(10, 20, 200, 200);
+    // noStroke();
+    stroke(255);
+    noFill();
+    image(uImg, this.pos.x, this.pos.y, this.w, this.h);
+    rect(this.pos.x, this.pos.y, this.w, this.h);
+    pop();
+  }
+
+  gravity() {
+    if (this.pos.y < this.basey) this.vel.y += 1;
+  }
+  jump() {
+    if (this.vel.y == 0) {
+      this.vel.y -= 19;
+    }
+  }
+  collided(other) {
+    return (
+      this.pos.x + this.w > other.pos.x &&
+      this.pos.x < other.pos.x + other.w &&
+      this.pos.y + this.h > other.pos.y &&
+      this.pos.y < other.pos.y + other.w
+    );
+  }
+}
