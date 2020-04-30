@@ -70,8 +70,8 @@ function keyPressed(event) {
   if (event.key == "ArrowUp" || event.key == " ") dino.jump();
 }
 
-function mousePressed(event) {
-  if (event.key == "ArrowUp" || event.key == " ") dino.jump();
+function mousePressed() {
+  dino.jump();
 }
 
 function gameOver() {
