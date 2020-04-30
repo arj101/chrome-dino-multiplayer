@@ -59,6 +59,10 @@ function keyPressed(event) {
   if (event.key == "ArrowUp" || event.key == " ") dino.jump();
 }
 
+function mousePressed(event) {
+  dino.jump();
+}
+
 function gameOver() {
   push();
   noStroke();
