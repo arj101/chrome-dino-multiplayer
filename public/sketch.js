@@ -10,8 +10,10 @@ const socket = io();
 
 function setup() {
   createCanvas(displayWidth, window.innerHeight);
-  dino = new Dino(100, height - 200, 100);
-  obstacles.push(new Obstacle(width + 500, height - 175, 75));
+  dino = new Dino(100, height - 100, window.innerHeight * 0.17);
+  obstacles.push(
+    new Obstacle(width + 500, height - 100, window.innerHeight * 0.15)
+  );
 }
 
 function draw() {
@@ -25,7 +27,9 @@ function draw() {
     random(1) < 0.05 &&
     width + 100 - obstacles[obstacles.length - 1].pos.x > min_spacing
   ) {
-    obstacles.push(new Obstacle(width + 100, height - 175, 75));
+    obstacles.push(
+      new Obstacle(width + 100, height - 100, window.innerHeight * 0.15)
+    );
   }
 
   dino_speed += 0.01;
@@ -53,6 +57,13 @@ function draw() {
       console.log("Game Over");
     }
   }
+
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    if (obstacles[i].pos.x < 0 - obstacles[i].w && obstacles.length > 1) {
+      obstacles.splice(i, 1);
+      console.log("removing");
+    }
+  }
 }
 
 function keyPressed(event) {
@@ -60,7 +71,7 @@ function keyPressed(event) {
 }
 
 function mousePressed(event) {
-  dino.jump();
+  if (event.key == "ArrowUp" || event.key == " ") dino.jump();
 }
 
 function gameOver() {

@@ -1,7 +1,7 @@
 class Obstacle {
   constructor(x, y, s) {
-    this.pos = createVector(x, y);
     this.h = s;
+    this.pos = createVector(x, y - this.h);
     this.w = (this.h * 3) / 4;
   }
 

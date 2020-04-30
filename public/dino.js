@@ -1,11 +1,10 @@
 class Dino {
   constructor(x, y, s) {
-    this.basey = y;
-
     this.pos = createVector(x, y);
     this.vel = createVector(0, 0);
     this.h = s;
     this.w = s * (3 / 4);
+    this.basey = y - this.h;
   }
 
   update() {
