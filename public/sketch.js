@@ -6,14 +6,10 @@ let dino_speed = 8;
 
 let min_spacing = 400;
 
-// let uImg;
-
-// function preload() {
-//   uImg = loadImage("./assets/unicorn.png");
-// }
+const socket = io();
 
 function setup() {
-  createCanvas(800, 500);
+  createCanvas(displayWidth, window.innerHeight);
   dino = new Dino(100, height - 200, 100);
   obstacles.push(new Obstacle(width + 500, height - 175, 75));
 }
