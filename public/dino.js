@@ -31,7 +31,7 @@ class Dino {
   }
   jump() {
     if (this.vel.y == 0) {
-      const vel_y = window.innerWidth * 0.015;
+      const vel_y = 19;
       this.vel.y -= vel_y;
     }
   }

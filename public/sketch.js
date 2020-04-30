@@ -10,9 +10,17 @@ const socket = io();
 
 function setup() {
   createCanvas(displayWidth, window.innerHeight);
-  dino = new Dino(100, height - 100, window.innerHeight * 0.17);
+  dino = new Dino(
+    100,
+    (window.innerHeight * 13.5) / 16,
+    window.innerHeight * 0.17
+  );
   obstacles.push(
-    new Obstacle(width + 500, height - 100, window.innerHeight * 0.15)
+    new Obstacle(
+      width + 500,
+      (window.innerHeight * 13.5) / 16,
+      window.innerHeight * 0.15
+    )
   );
 }
 
@@ -28,7 +36,11 @@ function draw() {
     width + 100 - obstacles[obstacles.length - 1].pos.x > min_spacing
   ) {
     obstacles.push(
-      new Obstacle(width + 100, height - 100, window.innerHeight * 0.15)
+      new Obstacle(
+        width + 100,
+        (window.innerHeight * 13.5) / 16,
+        window.innerHeight * 0.15
+      )
     );
   }
 
@@ -47,7 +59,7 @@ function draw() {
   push();
   noStroke();
   fill(20, 240, 25, 200);
-  rect(0, height - 100, width, height);
+  rect(0, (window.innerHeight * 13.5) / 16, width, height);
   pop();
 
   for (let obstacle of obstacles) {
