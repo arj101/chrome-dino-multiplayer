@@ -31,7 +31,8 @@ class Dino {
   }
   jump() {
     if (this.vel.y == 0) {
-      this.vel.y -= 19;
+      const vel_y = window.innerHeight * 0.0305;
+      this.vel.y -= vel_y;
     }
   }
   collided(other) {
