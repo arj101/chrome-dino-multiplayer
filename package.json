@@ -1,0 +1,24 @@
+{
+  "name": "chrome_dino_multiplayer",
+  "version": "1.0.0",
+  "description": "multiplayer version of chrome dino �� ;)",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arj101/chrome_dino_game_multiplayer.git"
+  },
+  "author": "Arduino_Explorer",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/arj101/chrome_dino_game_multiplayer/issues"
+  },
+  "homepage": "https://github.com/arj101/chrome_dino_game_multiplayer#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^2.3.0"
+  }
+}

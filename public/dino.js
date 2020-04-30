@@ -5,7 +5,7 @@ class Dino {
     this.pos = createVector(x, y);
     this.vel = createVector(0, 0);
     this.h = s;
-    this.w = s * 1.2;
+    this.w = s * (3 / 4);
   }
 
   update() {
@@ -18,11 +18,11 @@ class Dino {
   }
   show() {
     push();
-    // fill(10, 20, 200, 200);
-    // noStroke();
-    stroke(255);
-    noFill();
-    image(uImg, this.pos.x, this.pos.y, this.w, this.h);
+    fill(10, 20, 200, 200);
+    noStroke();
+    // stroke(255);
+    // noFill();
+    // image(uImg, this.pos.x, this.pos.y, this.w, this.h);
     rect(this.pos.x, this.pos.y, this.w, this.h);
     pop();
   }

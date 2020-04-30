@@ -6,11 +6,11 @@ let dino_speed = 8;
 
 let min_spacing = 400;
 
-let uImg;
+// let uImg;
 
-function preload() {
-  uImg = loadImage("./assets/unicorn.png");
-}
+// function preload() {
+//   uImg = loadImage("./assets/unicorn.png");
+// }
 
 function setup() {
   createCanvas(800, 500);
