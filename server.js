@@ -63,6 +63,18 @@ io.sockets.on("connection", (socket) => {
     });
   });
 
+  socket.on("login", (login_username, reply) => {
+    let available = true;
+
+    users.forEach((user) => {
+      if (user.username === login_username) available = false;
+    });
+
+    if (available) users.push({ username: login_username, id: socket.id });
+
+    reply({ username_available: available, id: socket.id });
+  });
+
   socket.on("disconnect", () => {
     console.log(`Client disconnected `);
   });

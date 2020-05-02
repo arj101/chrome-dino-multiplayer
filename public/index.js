@@ -41,8 +41,31 @@ $("#play").click(() => {
   $("#name_submit").click(() => {
     const name = document.querySelector("#name_input");
     if (name.value.length >= 4) {
-      localStorage.setItem("dino_multiplayer_userName", name.value);
-      window.location.href = window.location.href + "game/"; //change this to not redirect instantly
+      login(name.value)
+        .then((reply) => {
+          console.log("from then");
+          console.log(reply);
+          localStorage.setItem("username", name.value);
+          localStorage.setItem("user_id", reply.id);
+          localStorage.setItem("username_cache", name.value);
+          window.location.href += "game/";
+        })
+        .catch((reply) => {
+          alert(
+            `Somebody has already taken the username you want, ${name.value}.\nTry something else ; ).`
+          );
+          console.log("from catch");
+          console.log(reply);
+        });
     } else alert("Name must be atleast 4 characters long :)");
   });
 });
+
+function login(login_username) {
+  return new Promise((resolve, reject) => {
+    socket.emit("login", login_username, (reply) => {
+      if (reply.username_available) resolve(reply);
+      else reject(reply);
+    });
+  });
+}

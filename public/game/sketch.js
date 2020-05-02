@@ -12,7 +12,7 @@ let unidentifiedUser = true;
 
 let score = 0;
 
-const userName = localStorage.getItem("dino_multiplayer_userName");
+const userName = localStorage.getItem("username");
 if (!userName) {
   localStorage.setItem("redirected", true);
   window.location.href = window.location.href + "../";
@@ -24,28 +24,29 @@ if (!userName) {
   });
 }
 
-socket.on("username_availability", (data) => {
-  if (data == false) {
-    alert(
-      "Somebody has already taken your username.\nYou will be redirected to our homepage"
-    );
-    window.location.href = window.location.href + "../";
-  } else unidentifiedUser = false;
-});
+// socket.on("username_availability", (data) => {
+//   if (data == false) {
+//     alert(
+//       "Somebody has already taken your username.\nYou will be redirected to our homepage"
+//     );
+//     window.location.href = window.location.href + "../";
+//   } else unidentifiedUser = false;
+// });
 
 window.addEventListener("beforeunload", (event) => {
-  if (!unidentifiedUser) {
-    localStorage.removeItem("dino_multiplayer_userName");
-    socket.emit("leaving", { username: userName, leaving: true });
-    localStorage.setItem("username_cache", userName);
+  // f (!unidentifiedUser) {
+  localStorage.removeItem("username");
+  localStorage.removeItem("user_id");
+  socket.emit("leaving", { username: userName, leaving: true });
+  // localStorage.setItem("username_cache", userName); already done in in home page :)
 
-    event.preventDefault(); // having some trouble with these two lines
-    event.returnValue = "";
+  event.preventDefault(); // having some trouble with these two lines
+  event.returnValue = "";
 
-    // username will be deleted in the server is this lines exists and the user clicked cancel on confirmation 😬
+  // username will be deleted in the server is this lines exists and the user clicked cancel on confirmation 😬
 
-    // console.log(event);
-  }
+  // console.log(event);
+  // }
 });
 
 function preload() {
