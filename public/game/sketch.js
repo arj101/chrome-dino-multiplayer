@@ -48,6 +48,10 @@ window.addEventListener("beforeunload", (event) => {
   }
 });
 
+function preload() {
+  loadFont("assets/PressStart2P-Regular.ttf");
+}
+
 function setup() {
   createCanvas(displayWidth, window.innerHeight);
   dino = new Dino(
@@ -74,12 +78,12 @@ function draw() {
   text(`Hi, ${userName}!`, 10, 30);
   pop();
 
-  constrain(min_spacing, 400, 600);
+  constrain(min_spacing, 400, 500);
 
   min_spacing = dino_speed * 50;
 
   if (
-    random(1) < 0.05 &&
+    random(1) < 0.04 &&
     width + 100 - obstacles[obstacles.length - 1].pos.x > min_spacing
   ) {
     obstacles.push(
@@ -129,8 +133,9 @@ function draw() {
   textSize(32);
   noStroke();
   fill(100);
+  textFont("PressStart2P-Regular");
   textAlign(RIGHT, TOP);
-  text(`Score: ${score.toFixed(0)}`, width - 30, 20);
+  text(`score: ${score.toFixed(0)}`, width - 30, 20);
   pop();
 }
 
@@ -147,12 +152,13 @@ function gameOver() {
   noStroke();
   fill(255, 200);
   rectMode(CENTER);
-  rect(width / 2, height / 2, 500, 100, 5);
-  fill(255, 0, 0);
+  rect(width / 2, height / 2, 500, 120, 5);
+  fill(255, 30, 30);
   textAlign(CENTER, CENTER);
-  textSize(25);
+  textSize(30);
   textStyle(BOLD);
-  text("GAME OVER!", width / 2, height / 2);
+  textFont("PressStart2P-Regular");
+  text("GAME OVER!", width / 2, height / 2 - 25);
   textStyle(NORMAL);
   fill(20, 200);
   textSize(23);
