@@ -9,23 +9,24 @@ if (redirected) {
 
 let clickfirst = true;
 document.addEventListener("click", (event) => {
+  //how do i convert this to jQuery?
   if (!event.target.closest("#entry_popup") && clickfirst == false) {
-    document.querySelector("#entry_popup").style.opacity = 0;
-    document.querySelector("#entry_popup").style.display = "none";
-    document.querySelector("#play").style.opacity = 1;
-    document.querySelector("#play").style.pointerEvents = "all";
+    $("#entry_popup").css("opacity", 0);
+    $("#entry_popup").css("display", "none");
+    $("#play").css("opacity", 1);
+    $("#play").css("pointer-events", "all");
   }
   clickfirst = false;
 });
 
-document.querySelector("#play").addEventListener("click", (event) => {
+$("#play").click(() => {
   //   window.location.href = window.location.href + "game/";
   //   prompt("Enter your name (doesn't have to be your real name) ;)");]
 
-  document.querySelector("#entry_popup").style.opacity = 1;
-  document.querySelector("#entry_popup").style.display = "flex";
-  document.querySelector("#play").style.opacity = 0.5;
-  document.querySelector("#play").style.pointerEvents = "none";
+  $("#entry_popup").css("opacity", 1); //style.opacity = 1;
+  $("#entry_popup").css("display", "flex"); //style.display = "flex";
+  $("#play").css("opacity", 0.5);
+  $("#play").css("pointer-events", "none");
 
   clickfirst = true;
 
@@ -35,11 +36,13 @@ document.querySelector("#play").addEventListener("click", (event) => {
     document.querySelector("#name_input").value = username_cache;
   }
 
-  document.querySelector("#name_submit").addEventListener("click", () => {
+  //change this to check username availability and game waiting to happen in here
+
+  $("#name_submit").click(() => {
     const name = document.querySelector("#name_input");
     if (name.value.length >= 4) {
       localStorage.setItem("dino_multiplayer_userName", name.value);
-      window.location.href = window.location.href + "game/";
+      window.location.href = window.location.href + "game/"; //change this to not redirect instantly
     } else alert("Name must be atleast 4 characters long :)");
   });
 });
