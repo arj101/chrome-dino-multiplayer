@@ -1,0 +1,57 @@
+body {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background-color: white;
+  font-family: sans-serif;
+  padding-left: 1rem;
+}
+
+.heading_text {
+  font-weight: 400;
+  font-size: 2rem;
+  color: #333333;
+  margin: 0;
+}
+h1.heading_text {
+  padding-top: 1rem;
+  font-weight: 700;
+  font-size: 2rem;
+  color: #333333;
+}
+
+#play {
+  width: 5rem;
+  height: 2rem;
+}
+
+#entry_popup {
+  position: relative;
+  left: 25vw;
+  border-radius: 1rem;
+  width: 50vw;
+  height: 40vh;
+  opacity: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #ffffff;
+  box-shadow: 5px 5px 20px rgba(63, 63, 63, 0.281);
+  opacity: 0;
+  display: none;
+}
+
+#entry_popup p {
+  color: grey;
+  margin: 0;
+  position: relative;
+  top: 4rem;
+  font-size: 0.8rem;
+}
+
+#name_input {
+  width: 30vw;
+}
+#entry_popup h2 {
+  font-weight: 400;
+}

@@ -3,21 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>chrome://dino/multiplayer</title>
+    <link rel="stylesheet" href="./style.css" />
+    <title>Chrome dino multiplayer</title>
   </head>
   <body>
+    <h1 class="heading_text">Multiplayer</h1>
+    <h2 class="heading_text">chrome dino</h2>
+    <br />
+    <br />
+    <button id="play">Play!</button>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="./libraries//p5.min.js"></script>
-    <script src="./dino.js"></script>
-    <script src="./obst.js"></script>
-    <script src="./sketch.js"></script>
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        border: 0;
-        overflow: hidden;
-      }
-    </style>
+    <script src="./index.js"></script>
+
+    <div id="entry_popup">
+      <h2>Enter your name</h2>
+      <input type="text" id="name_input" />
+      <br />
+      <button id="name_submit">Submit</button>
+      <p><i>This name will be visible to all other players</i></p>
+      <p>Doesn't have to be your real name btw</p>
+    </div>
   </body>
 </html>
