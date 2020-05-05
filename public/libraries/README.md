@@ -1,7 +1,7 @@
 ## Add the following javascript libraries to this folder
 
-- p5.min.js
-- jquery-X.X.X.min.js
+- p5.min.js / p5.js
+- jquery-X.X.X.min.js / jquery-X.X.X.js
 
 ## Libraries currently used in this project
 
