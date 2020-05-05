@@ -11,7 +11,15 @@
     <h2 class="heading_text">chrome dino</h2>
     <br />
     <br />
+
     <button id="play">Play!</button>
+
+    <div id="game_info">
+      <h3 id="game_status"></h3>
+      <p id="game_timer"></p>
+      <div id="game_players"></div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="./libraries/jquery-3.5.0.min.js"></script>
     <script src="./index.js"></script>
@@ -22,7 +30,6 @@
       <br />
       <button id="name_submit">Submit</button>
       <p><i>This name will be visible to all other players</i></p>
-      <p>Doesn't have to be your real name btw</p>
     </div>
   </body>
 </html>

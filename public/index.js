@@ -2,10 +2,23 @@ const socket = io();
 
 const redirected = localStorage.getItem("redirected");
 
-if (redirected) {
-  socket.emit("game", { redirect: true, status: "failed", username: null });
-  localStorage.removeItem("redirected");
-}
+let game;
+
+socket.emit("query", { type: "game" }, (reply) => {
+  game = reply;
+  if (game.status == "no_games") {
+    $("#game_status").html(
+      "No games are curretly playing.<br/>You can create a new game anytime you want!"
+    );
+    $("#game_status").css("color", "#333333");
+    $("#play").text("Create new game!");
+  }
+});
+
+// if (redirected) {
+//   socket.emit("game", { redirect: true, status: "failed", username: null });
+//   localStorage.removeItem("redirected");
+// }
 
 let clickfirst = true;
 document.addEventListener("click", (event) => {
@@ -25,6 +38,7 @@ $("#play").click(() => {
 
   $("#entry_popup").css("opacity", 1); //style.opacity = 1;
   $("#entry_popup").css("display", "flex"); //style.display = "flex";
+
   $("#play").css("opacity", 0.5);
   $("#play").css("pointer-events", "none");
 

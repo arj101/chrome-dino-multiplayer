@@ -16,12 +16,6 @@ const userName = localStorage.getItem("username");
 if (!userName) {
   localStorage.setItem("redirected", true);
   window.location.href = window.location.href + "../";
-} else {
-  socket.emit("game", {
-    redirect: false,
-    status: "success",
-    username: userName,
-  });
 }
 
 // socket.on("username_availability", (data) => {
@@ -50,7 +44,7 @@ window.addEventListener("beforeunload", (event) => {
 });
 
 function preload() {
-  loadFont("assets/PressStart2P-Regular.ttf");
+  loadFont("assets/PressStart2P-Regular.ttf"); // loading the font
 }
 
 function setup() {
@@ -79,12 +73,12 @@ function draw() {
   text(`Hi, ${userName}!`, 10, 30);
   pop();
 
-  constrain(min_spacing, 400, 500);
+  constrain(min_spacing, 300, 450);
 
   min_spacing = dino_speed * 50;
 
   if (
-    random(1) < 0.04 &&
+    random(1) < 0.1 &&
     width + 100 - obstacles[obstacles.length - 1].pos.x > min_spacing
   ) {
     obstacles.push(
@@ -114,6 +108,8 @@ function draw() {
   rect(0, (window.innerHeight * 13.5) / 16, width, height);
   pop();
 
+  score += dino_speed / 128;
+
   for (let obstacle of obstacles) {
     if (dino.collided(obstacle)) {
       noLoop();
@@ -127,8 +123,6 @@ function draw() {
       obstacles.splice(i, 1);
     }
   }
-
-  score += dino_speed / 128;
 
   push();
   textSize(32);

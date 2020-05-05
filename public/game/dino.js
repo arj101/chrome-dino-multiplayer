@@ -27,11 +27,11 @@ class Dino {
   }
 
   gravity() {
-    if (this.pos.y < this.basey) this.vel.y += 1;
+    if (this.pos.y < this.basey) this.vel.y += 1.5;
   }
   jump() {
     if (this.vel.y == 0) {
-      const vel_y = 19;
+      const vel_y = 25;
       this.vel.y -= vel_y;
     }
   }

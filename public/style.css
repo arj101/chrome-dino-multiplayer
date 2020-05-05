@@ -21,8 +21,46 @@ h1.heading_text {
 }
 
 #play {
-  width: 5rem;
-  height: 2rem;
+  position: relative;
+  top: 0;
+  left: 0;
+  padding: 0.7rem;
+  min-width: max-content;
+  font-size: 1.3rem;
+  color: white;
+  background-color: #ffae00;
+  border-radius: 0.4rem;
+  box-shadow: 2px 2px 5px #ffc23e;
+  margin-bottom: 0.1rem;
+  transition: all 200ms ease;
+  border-width: 0.1rem;
+  border-color: transparent;
+  border-style: solid;
+  outline: none;
+}
+
+#play:hover {
+  background-color: #ffbe31;
+}
+
+#play:active {
+  background-color: transparent;
+  color: #ffae00;
+  border-color: #ffae00;
+}
+
+#game_info {
+  box-shadow: 3px 3px 15px rgba(255, 206, 115, 0.644);
+  border-radius: 0.4rem;
+  position: absolute;
+  left: 2vw;
+  top: 30vh;
+  width: 60vw;
+  height: 50vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
 }
 
 #entry_popup {
