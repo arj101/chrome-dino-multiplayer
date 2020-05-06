@@ -4,6 +4,4 @@
 
 ###### v 1.0.0
 
-_Just started the project , so expect a lot of bugs_ 😛
-
-###### **still not complete**
+##### **still not complete**
