@@ -6,6 +6,8 @@
 
 ##### **still not complete**
 
-### [view working prototype here](https://chrome-dino-multiplayer001.glitch.me/)
+### [view working(not yet complete) prototype here](https://chrome-dino-multiplayer001.glitch.me/)
+
+#### playing this game right now is not recommended 😁.
 
 #### note: this project is not optimized for mobile devices yet
