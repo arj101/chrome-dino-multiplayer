@@ -4,6 +4,8 @@ const redirected = localStorage.getItem("redirected");
 
 let game;
 
+let userName;
+
 socket.emit("query", { type: "game" }, (reply) => {
   game = reply;
   if (game.status == "no_games") {
@@ -62,7 +64,13 @@ $("#play").click(() => {
           localStorage.setItem("username", name.value);
           localStorage.setItem("user_id", reply.id);
           localStorage.setItem("username_cache", name.value);
-          window.location.href += "game/";
+          if (game.status == "no_games") {
+            game.created_by = name.value;
+            game.timer = 30;
+            game.status = "game_timing";
+            socket.emit("game", game);
+          }
+          // window.location.href += "game/";
         })
         .catch((reply) => {
           alert(
@@ -73,6 +81,13 @@ $("#play").click(() => {
         });
     } else alert("Name must be atleast 4 characters long :)");
   });
+});
+
+socket.on("game", (data) => {
+  console.log(data)
+  if (data.status == "game_started") {
+    $("#game_status").text("A game has started!");
+  }
 });
 
 function login(login_username) {

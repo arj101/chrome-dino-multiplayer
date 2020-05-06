@@ -31,10 +31,16 @@ io.sockets.on("connection", (socket) => {
     if (data.status == "game_timing") {
       game.status = "game_timing";
       game.timer = data.timer;
+      game.created_by = data.created_by;
+      console.log(
+        `A new game has beem created by ${game.created_by} on ${Date.now()}`
+      );
+
+      socket.emit("game", game);
+
       game.timer_timing = setInterval(() => {
         if (game.timer > 0) {
           game.timer--;
-          console.log(`timer reached ${game.timer}`);
         } else {
           clearInterval(game.timer_timing);
           game.status = "game_started";
