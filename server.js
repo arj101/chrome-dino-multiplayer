@@ -14,12 +14,11 @@ app.use(express.static("public"));
 
 const io = socket(server);
 
-let users = [];
+let game_timer;
 
 let game = {
   status: "no_games",
   timer: null,
-  timer_timing: null,
   players: [],
   created_by: null,
 };
@@ -36,19 +35,22 @@ io.sockets.on("connection", (socket) => {
         `A new game has beem created by ${game.created_by} on ${Date.now()}`
       );
 
-      socket.emit("game", game);
-
-      game.timer_timing = setInterval(() => {
+      game_timer = setInterval(() => {
         if (game.timer > 0) {
           game.timer--;
         } else {
-          clearInterval(game.timer_timing);
+          clearInterval(game_timer);
           game.status = "game_started";
-          socket.emit("game", game);
+          io.sockets.emit("game", game);
+          sendGameInvitation();
           console.log("game started!");
         }
       }, 1000);
     }
+
+    io.sockets.emit("game", game);
+    console.log(socket.id);
+    console.log("sent game");
   });
 
   socket.on("query", (query, reply) => {
@@ -61,7 +63,7 @@ io.sockets.on("connection", (socket) => {
 
     let leaver_index = undefined;
 
-    users.forEach((user, i) => {
+    game.players.forEach((user, i) => {
       if (user.username == leaving_user) {
         leaver_index = i;
         console.log("found " + user.username);
@@ -69,27 +71,27 @@ io.sockets.on("connection", (socket) => {
     });
 
     if (leave_game) {
-      users.splice(leaver_index, 1);
-      console.log(users[leaver_index]);
-      console.log(users);
+      game.players.splice(leaver_index, 1);
+      console.log(game.players[leaver_index]);
+      console.log(game.players);
     }
 
     console.log(`user leaving ${data.username}`);
-    console.table(users);
+    console.table(game.players);
   });
 
   //* new function for loging in and username availability checking :)   (below)
   socket.on("login", (login_username, reply) => {
     let available = true;
 
-    users.forEach((user) => {
+    game.players.forEach((user) => {
       if (user.username === login_username) available = false;
     });
 
     if (available) {
-      users.push({ username: login_username, id: socket.id });
+      game.players.push({ username: login_username, id: socket.id });
       console.log(`new user ${login_username} id: ${socket.id}`);
-      console.table(users);
+      console.table(game.players);
     }
 
     reply({ username_available: available, id: socket.id });
@@ -99,3 +101,16 @@ io.sockets.on("connection", (socket) => {
     console.log(`Client disconnected `);
   });
 });
+
+//** game invitation
+
+function sendGameInvitation() {
+  game.players.forEach((player) => {
+    io.to(player.id).emit("game_invitation", {
+      invited: true,
+      username: player.username,
+    });
+    console.log(player);
+    console.log(`sent invitation to ${player.username}`);
+  });
+}

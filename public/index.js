@@ -1,8 +1,8 @@
 const socket = io();
 
-const redirected = localStorage.getItem("redirected");
+//? const redirected = sessionStorage.getItem("redirected");
 
-let game;
+let game; // will be an object
 
 let userName;
 
@@ -15,11 +15,12 @@ socket.emit("query", { type: "game" }, (reply) => {
     $("#game_status").css("color", "#333333");
     $("#play").text("Create new game!");
   }
+  console.log(reply);
 });
 
 // if (redirected) {
 //   socket.emit("game", { redirect: true, status: "failed", username: null });
-//   localStorage.removeItem("redirected");
+//   sessionStorage.removeItem("redirected");
 // }
 
 let clickfirst = true;
@@ -46,7 +47,7 @@ $("#play").click(() => {
 
   clickfirst = true;
 
-  const username_cache = localStorage.getItem("username_cache");
+  const username_cache = sessionStorage.getItem("username_cache");
 
   if (username_cache) {
     document.querySelector("#name_input").value = username_cache;
@@ -61,15 +62,18 @@ $("#play").click(() => {
         .then((reply) => {
           console.log("from then");
           console.log(reply);
-          localStorage.setItem("username", name.value);
-          localStorage.setItem("user_id", reply.id);
-          localStorage.setItem("username_cache", name.value);
+          sessionStorage.setItem("username", name.value);
+          sessionStorage.setItem("user_id", reply.id);
+          sessionStorage.setItem("username_cache", name.value);
           if (game.status == "no_games") {
             game.created_by = name.value;
-            game.timer = 30;
+            game.timer = 10;
             game.status = "game_timing";
             socket.emit("game", game);
-          }
+          } else
+            socket.emit("query", { type: "game" }, (reply) =>
+              console.log(reply)
+            );
           // window.location.href += "game/";
         })
         .catch((reply) => {
@@ -84,9 +88,23 @@ $("#play").click(() => {
 });
 
 socket.on("game", (data) => {
-  console.log(data)
+  game = data;
+
   if (data.status == "game_started") {
     $("#game_status").text("A game has started!");
+  }
+
+  if (data.status == "game_timing") {
+    $("#game_status").html(`A new has been set by ${game.created_by}`);
+    $("#play").text("Join");
+  }
+
+  console.log(game);
+});
+
+socket.on("game_invitation", (data) => {
+  if (data.invited && data.username == sessionStorage.getItem("username")) {
+    window.location.href += "game/";
   }
 });
 

@@ -12,9 +12,9 @@ let unidentifiedUser = true;
 
 let score = 0;
 
-const userName = localStorage.getItem("username");
+const userName = sessionStorage.getItem("username");
 if (!userName) {
-  localStorage.setItem("redirected", true);
+  sessionStorage.setItem("redirected", true);
   window.location.href = window.location.href + "../";
 }
 
@@ -29,10 +29,10 @@ if (!userName) {
 
 window.addEventListener("beforeunload", (event) => {
   // f (!unidentifiedUser) {
-  localStorage.removeItem("username");
-  localStorage.removeItem("user_id");
+  sessionStorage.removeItem("username");
+  sessionStorage.removeItem("user_id");
   socket.emit("leaving", { username: userName, leaving: true });
-  // localStorage.setItem("username_cache", userName); already done in in home page :)
+  // sessionStorage.setItem("username_cache", userName); already done in in home page :)
 
   event.preventDefault(); // having some trouble with these two lines
   event.returnValue = "";
