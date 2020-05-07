@@ -9,11 +9,10 @@ let userName;
 socket.emit("query", { type: "game" }, (reply) => {
   game = reply;
   if (game.status == "no_games") {
-    $("#game_status").html(
-      "No games are curretly playing.<br/>You can create a new game anytime you want!"
-    );
-    $("#game_status").css("color", "#333333");
-    $("#play").text("Create new game!");
+    document.querySelector("#game_status").innerHTML =
+      "No games are curretly playing.<br/>You can create a new game anytime you want!";
+    document.querySelector("#game_status").style.color = "#333333";
+    document.querySelector("#play").textContent = "Create new game!";
   }
   console.log(reply);
 });
@@ -27,23 +26,23 @@ let clickfirst = true;
 document.addEventListener("click", (event) => {
   //how do i convert this to jQuery?
   if (!event.target.closest("#entry_popup") && clickfirst == false) {
-    $("#entry_popup").css("opacity", 0);
-    $("#entry_popup").css("display", "none");
-    $("#play").css("opacity", 1);
-    $("#play").css("pointer-events", "all");
+    document.querySelector("#entry_popup").style.opacity = 0;
+    document.querySelector("#entry_popup").style.display = "none";
+    document.querySelector("#play").style.opacity = 1;
+    document.querySelector("#play").style.pointerEvents = "all";
   }
   clickfirst = false;
 });
 
-$("#play").click(() => {
+document.querySelector("#play").addEventListener("click", () => {
   //   window.location.href = window.location.href + "game/";
   //   prompt("Enter your name (doesn't have to be your real name) ;)");]
 
-  $("#entry_popup").css("opacity", 1); //style.opacity = 1;
-  $("#entry_popup").css("display", "flex"); //style.display = "flex";
+  document.querySelector("#entry_popup").style.opacity = 1;
+  document.querySelector("#entry_popup").style.display = "flex";
 
-  $("#play").css("opacity", 0.5);
-  $("#play").css("pointer-events", "none");
+  document.querySelector("#play").style.opacity = 0.5;
+  document.querySelector("#play").style.pointerEvents = "none";
 
   clickfirst = true;
 
@@ -55,7 +54,7 @@ $("#play").click(() => {
 
   //change this to check username availability and game waiting to happen in here
 
-  $("#name_submit").click(() => {
+  document.querySelector("#name_submit").addEventListener("click", () => {
     const name = document.querySelector("#name_input");
     if (name.value.length >= 4) {
       login(name.value)
@@ -78,7 +77,7 @@ $("#play").click(() => {
         })
         .catch((reply) => {
           alert(
-            `Somebody has already taken the username you want, ${name.value}.\nTry something else ; ).`
+            `Somebody has already taken the username that you want, ${name.value}.\nTry something else ; ).`
           );
           console.log("from catch");
           console.log(reply);
@@ -91,12 +90,14 @@ socket.on("game", (data) => {
   game = data;
 
   if (data.status == "game_started") {
-    $("#game_status").text("A game has started!");
+    document.querySelector("#game_status").textContent = "A game has started";
   }
 
   if (data.status == "game_timing") {
-    $("#game_status").html(`A new has been set by ${game.created_by}`);
-    $("#play").text("Join");
+    document.querySelector(
+      "#game_status"
+    ).innerHTML = `A new has been set by ${game.created_by}`;
+    document.querySelector("#play").textContent = "Join";
   }
 
   console.log(game);
