@@ -81,6 +81,7 @@ body {
   flex-direction: column;
   align-items: center;
   background-color: #ffffff;
+  background-image: linear-gradient(to right, #ffd5ca 0%, #fff7cc 130%);
   box-shadow: 5px 5px 20px rgba(63, 63, 63, 0.281);
   opacity: 0;
   display: none;
@@ -99,7 +100,9 @@ body {
   width: 30vw;
 }
 #entry_popup h2 {
-  font-weight: 400;
+  font-family: sans-serif;
+  font-weight: 100;
+  color: black;
 }
 
 #game_players {
@@ -132,7 +135,7 @@ body {
 
 .player_div:hover .player_name {
   top: -1rem;
-  text-shadow: 0.75rem 1rem 0.4rem #b96f00;
+  text-shadow: 0.75rem 1rem 0.3rem #b96f00;
 }
 
 .player_name {
@@ -146,7 +149,7 @@ body {
   word-break: break-all;
   text-align: center;
   cursor: pointer;
-  text-shadow: 0 0 0 #c57600;
+  text-shadow: 0 0 0.05rem #c5760000;
   transition: all 400ms ease;
 }
 
@@ -174,4 +177,21 @@ body {
   background-color: white;
   color: #ffae00;
   border-color: #ffae00;
+}
+
+#name_input {
+  outline: none;
+  border: solid white;
+  border-radius: 0.2rem;
+  transition: all 300ms ease;
+  width: 40vw;
+  height: 1.4rem;
+  font-size: 1.2rem;
+  font-family: sans-serif;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  background-color: transparent;
+}
+#name_input:focus {
+  border-color: #f83600;
 }
