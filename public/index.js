@@ -71,10 +71,17 @@ document.querySelector("#play").addEventListener("click", (play_click) => {
             game.timer = 36000; //! game timer <<<<< <<<<<< <<<<<<<<< <<<<<<<<< <<<<<<< <<<<<<<< <<<<<<<< <<<<<<
             game.status = "game_timing";
             socket.emit("game", game);
-          } else
+          } else {
             socket.emit("query", { type: "game" }, (reply) =>
               console.log(reply)
             );
+          }
+          //todo: document.querySelector("#entry_popup").style.opacity = 0;
+          //todo: document.querySelector("#entry_popup").style.display = "none";
+          //todo: document.querySelector("#play").style.opacity = 1;
+          //todo: document.querySelector("#play").style.pointerEvents = "all";
+          //! uncomment after debuging ^^^^^^^^
+
           // window.location.href += "game/";
         })
         .catch((error) => {
