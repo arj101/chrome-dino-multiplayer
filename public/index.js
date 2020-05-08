@@ -14,6 +14,30 @@ socket.emit("query", { type: "game" }, (reply) => {
     document.querySelector("#game_status").style.color = "#333333";
     document.querySelector("#play").textContent = "Create new game!";
   }
+
+  if (reply.status == "game_started") {
+    document.querySelector("#game_status").textContent = "A game has started";
+  }
+
+  if (reply.status == "game_timing") {
+    document.querySelector(
+      "#game_status"
+    ).innerHTML = `A new game has been set by ${game.created_by}`;
+    document.querySelector("#play").textContent = "Join";
+  }
+
+  document.querySelector("#game_players").innerHTML = "";
+
+  game.players.forEach((player) => {
+    const player_div = document.createElement("div");
+    player_div.className = "player_div";
+    const player_name = document.createElement("p");
+    player_name.className = "player_name";
+    player_name.textContent = player.username;
+    player_div.append(player_name);
+    document.querySelector("#game_players").append(player_div);
+  });
+
   console.log(reply);
 });
 

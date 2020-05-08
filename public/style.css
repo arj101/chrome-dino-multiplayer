@@ -108,9 +108,9 @@ body {
   flex-wrap: wrap;
   transition: all 300ms ease;
   background-color: #ffffff;
-  border-style: solid;
+  /* border-style: solid;
   border-width: 0.15rem;
-  border-color: rgba(100, 100, 100, 0.089);
+  border-color: rgba(100, 100, 100, 0.089); */
 }
 
 .player_div {
@@ -122,26 +122,37 @@ body {
   background-color: #ffb922;
   margin: 0.4rem;
   border-radius: 0.1rem;
-  transition: all 200ms ease;
+  transition: all 300ms ease;
   cursor: pointer;
 }
+
 .player_div:hover {
-  background-color: #ffc548;
+  background-color: #ffa216;
+}
+
+.player_div:hover .player_name {
+  top: -1.2rem;
+  text-shadow: 0.75rem 1.2rem 0.3rem #c57600;
 }
 
 .player_name {
+  position: relative;
+  top: 0;
+  left: 0;
   color: white;
   font-family: sans-serif;
   font-size: 1.5rem;
   word-wrap: break-word;
+  word-break: break-all;
   text-align: center;
   cursor: pointer;
+  text-shadow: 0 0 0 #c57600;
+  transition: all 400ms ease;
 }
 
 #name_submit {
   background-color: #ffae00;
   color: white;
-
   border-style: solid;
   border-width: 0.1rem;
   border-radius: 0.15rem;
