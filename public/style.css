@@ -131,8 +131,8 @@ body {
 }
 
 .player_div:hover .player_name {
-  top: -1.2rem;
-  text-shadow: 0.75rem 1.2rem 0.3rem #c57600;
+  top: -1rem;
+  text-shadow: 0.75rem 1rem 0.4rem #b96f00;
 }
 
 .player_name {
