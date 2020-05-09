@@ -92,7 +92,7 @@ io.sockets.on("connection", (socket) => {
       game.players.push({ username: login_username, id: socket.id });
       console.log(`new user ${login_username} id: ${socket.id}`);
       console.table(game.players);
-      socket.emit("game", game);
+      io.sockets.emit("game", game);
     }
 
     reply({ username_available: available, id: socket.id });
