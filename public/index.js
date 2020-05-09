@@ -92,7 +92,7 @@ document.querySelector("#play").addEventListener("click", (play_click) => {
           sessionStorage.setItem("username_cache", name.value);
           if (game.status == "no_games") {
             game.created_by = name.value;
-            game.timer = 3600; //! game timer <<<<< <<<<<< <<<<<<<<< <<<<<<<<< <<<<<<< <<<<<<<< <<<<<<<< <<<<<<
+            game.timer = 2; //! game timer <<<<< <<<<<< <<<<<<<<< <<<<<<<<< <<<<<<< <<<<<<<< <<<<<<<< <<<<<<
             game.status = "game_timing";
             socket.emit("game", game);
           } else {
