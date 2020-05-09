@@ -73,6 +73,7 @@ body {
 #entry_popup {
   position: relative;
   left: 25vw;
+  top: 0;
   border-radius: 1rem;
   width: 50vw; /*! to 50vw */
   height: 40vh; /*! to 40vh */
@@ -85,7 +86,13 @@ body {
   box-shadow: 5px 5px 20px rgba(63, 63, 63, 0.281);
   opacity: 0;
   display: none;
-  transition: all 300ms ease;
+  transition: all 200ms ease;
+}
+
+#entry_popup:active {
+  left: calc(25vw + 5px);
+  top: 5px;
+  box-shadow: 0 0 3px rgba(63, 63, 63, 0.281);
 }
 
 #entry_popup p {
