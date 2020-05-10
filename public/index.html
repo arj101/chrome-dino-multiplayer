@@ -30,8 +30,12 @@
 
     <div id="entry_popup">
       <h2>Enter your name</h2>
-      <input type="text" id="name_input" />
-      <br />
+      <input type="text" id="name_input" maxlength="20" />
+      <input
+        type="text"
+        id="timing_input"
+        placeholder="Time until game begins in seconds"
+      />
       <button id="name_submit">Submit</button>
       <p><i>This name will be visible to all other players</i></p>
     </div>

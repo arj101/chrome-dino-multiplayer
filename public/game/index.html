@@ -3,23 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./style.css" />
     <title>chrome://dino/multiplayer</title>
   </head>
   <body>
+    <div id="game_over">
+      <h1>Game Over!</h1>
+      <h3>Your score: <span id="score"></span></h3>
+      <button id="homepage_redirect">Go to homepage</button>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="../libraries/p5.min.js"></script>
     <!-- <script src="../libraries/jquery-3.5.0.min.js"></script> -->
     <script src="./dino.js"></script>
     <script src="./obst.js"></script>
     <script src="./sketch.js"></script>
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        border: 0;
-        overflow: hidden;
-        font-family: "Press Start 2P", cursive;
-      }
-    </style>
   </body>
 </html>

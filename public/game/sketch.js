@@ -12,8 +12,11 @@ let unidentifiedUser = true;
 
 let score = 0;
 
-const userName = sessionStorage.getItem("username");
-if (!userName) {
+let canvas;
+
+let userName = sessionStorage.getItem("username");
+let userId = sessionStorage.getItem("user_id");
+if (!userName || !userId || userName.length < 4) {
   sessionStorage.setItem("redirected", true);
   window.location.href = window.location.href + "../";
 }
@@ -48,7 +51,8 @@ function preload() {
 }
 
 function setup() {
-  createCanvas(displayWidth, window.innerHeight);
+  canvas = createCanvas(displayWidth, window.innerHeight);
+  canvas.id("canvas");
   dino = new Dino(
     100,
     (window.innerHeight * 13.5) / 16,
@@ -64,6 +68,17 @@ function setup() {
 }
 
 function draw() {
+  if (frameCount % 2 == 0) {
+    userName = sessionStorage.getItem("username");
+    userId = sessionStorage.getItem("user_id");
+    if (!userName || !userId || userName.length < 4) {
+      noLoop();
+      alert(
+        "We could not figure out who you are!\nPlease reload the page/go back."
+      );
+    }
+  }
+
   background(230);
   push();
   textSize(20);
@@ -143,20 +158,28 @@ function mousePressed() {
 }
 
 function gameOver() {
-  push();
-  noStroke();
-  fill(255, 200);
-  rectMode(CENTER);
-  rect(width / 2, height / 2, 500, 120, 5);
-  fill(255, 30, 30);
-  textAlign(CENTER, CENTER);
-  textSize(30);
-  textStyle(BOLD);
-  textFont("PressStart2P-Regular");
-  text("GAME OVER!", width / 2, height / 2 - 25);
-  textStyle(NORMAL);
-  fill(20, 200);
-  textSize(23);
-  text(`Your score: ${score.toFixed(0)}`, width / 2, height / 2 + 37);
-  pop();
+  // push();
+  // noStroke();
+  // fill(255, 200);
+  // rectMode(CENTER);
+  // rect(width / 2, height / 2, 500, 120, 5);
+  // fill(255, 30, 30);
+  // textAlign(CENTER, CENTER);
+  // textSize(30);
+  // textStyle(BOLD);
+  // textFont("PressStart2P-Regular");
+  // text("GAME OVER!", width / 2, height / 2 - 25);
+  // textStyle(NORMAL);
+  // fill(20, 200);
+  // textSize(23);
+  // text(`Your score: ${score.toFixed(0)}`, width / 2, height / 2 + 37);
+  //pop
+  document.querySelector("#game_over").style.pointerEvents = "all";
+  document.querySelector("#game_over").style.opacity = 1;
+  document.querySelector("#score").textContent = score.toFixed(0);
+  document.querySelector("#homepage_redirect").addEventListener("click", () => {
+    setTimeout(() => {
+      window.location.href += "../";
+    }, 200);
+  });
 }

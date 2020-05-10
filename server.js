@@ -78,6 +78,15 @@ io.sockets.on("connection", (socket) => {
 
     console.log(`user leaving ${data.username}`);
     console.table(game.players);
+
+    if (game.players.length < 1) {
+      console.log("Game finsihed/everybody left");
+      game.status = "no_games";
+      game.created_by = null;
+      game.timer = null;
+      game_timer = undefined;
+      io.sockets.emit("game", game);
+    }
   });
 
   //* new function for loging in and username availability checking :)   (below)
@@ -98,12 +107,14 @@ io.sockets.on("connection", (socket) => {
     reply({ username_available: available, id: socket.id });
   });
 
+  //todo: socket.on("gameplay", (data) => {} )
+
   socket.on("disconnect", () => {
     console.log(`Client disconnected `);
   });
 });
 
-//** game invitation
+//~ game invitation
 
 function sendGameInvitation() {
   game.players.forEach((player) => {

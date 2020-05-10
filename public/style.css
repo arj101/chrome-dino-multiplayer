@@ -81,6 +81,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: space-around;
   background-color: #ffffff;
   background-image: linear-gradient(to right, #ffd5ca 0%, #fff7cc 130%);
   box-shadow: 5px 5px 20px rgba(63, 63, 63, 0.281);
@@ -98,18 +99,14 @@ body {
 #entry_popup p {
   color: grey;
   margin: 0;
-  position: relative;
-  top: 4rem;
   font-size: 0.8rem;
 }
 
-#name_input {
-  width: 30vw;
-}
 #entry_popup h2 {
   font-family: sans-serif;
   font-weight: 100;
   color: black;
+  margin-bottom: 0.3rem;
 }
 
 #game_players {
@@ -199,6 +196,30 @@ body {
   padding-right: 0.5rem;
   background-color: transparent;
 }
+
 #name_input:focus {
   border-color: #f83600;
+}
+
+#timing_input {
+  border: none;
+  background-color: #ffffff9f;
+  width: 40vw;
+  height: 1.4rem;
+  font-size: 1.1rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  font-family: sans-serif;
+  border-radius: 0.2rem;
+  outline: none;
+  transition: all 300ms ease;
+  color: black;
+  border: solid transparent;
+  display: none;
+  pointer-events: none;
+}
+
+#timing_input:focus {
+  border-color: #683eff;
+  background-color: transparent;
 }

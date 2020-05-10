@@ -6,6 +6,8 @@ let game; // will be an object
 
 let userName;
 
+let game_timer;
+
 socket.emit("query", { type: "game" }, (reply) => {
   game = reply;
   if (game.status == "no_games") {
@@ -68,6 +70,14 @@ document.querySelector("#play").addEventListener("click", (play_click) => {
   document.querySelector("#play").style.opacity = 0.5;
   document.querySelector("#play").style.pointerEvents = "none";
 
+  if (game.status == "no_games") {
+    document.querySelector("#timing_input").style.display = "block";
+    document.querySelector("#timing_input").style.pointerEvents = "all";
+  } else {
+    document.querySelector("#timing_input").style.display = "none";
+    document.querySelector("#timing_input").style.pointerEvents = "none";
+  }
+
   clickfirst = true;
 
   const username_cache = sessionStorage.getItem("username_cache");
@@ -92,7 +102,20 @@ document.querySelector("#play").addEventListener("click", (play_click) => {
           sessionStorage.setItem("username_cache", name.value);
           if (game.status == "no_games") {
             game.created_by = name.value;
-            game.timer = 2; //! game timer <<<<< <<<<<< <<<<<<<<< <<<<<<<<< <<<<<<< <<<<<<<< <<<<<<<< <<<<<<
+            let timerValue = document.querySelector("#timing_input").value;
+            if (!timerValue) timerValue = 30;
+            if (timerValue > 120) {
+              alert(
+                "Game can't be delayed more than 2 minutes(setting timer to 2 minutes)"
+              );
+              timerValue = 120;
+            } else if (timerValue < 15) {
+              alert(
+                "Game can't be delayed less than 15 seconds(setting timer to 15 seconds)"
+              );
+              timerValue = 15;
+            }
+            game.timer = timerValue; //! game timer <<<<< <<<<<< <<<<<<<<< <<<<<<<<< <<<<<<< <<<<<<<< <<<<<<<< <<<<<<
             game.status = "game_timing";
             socket.emit("game", game);
           } else {
@@ -100,11 +123,10 @@ document.querySelector("#play").addEventListener("click", (play_click) => {
               console.log(reply)
             );
           }
-          //todo: document.querySelector("#entry_popup").style.opacity = 0;
-          //todo: document.querySelector("#entry_popup").style.display = "none";
-          //todo: document.querySelector("#play").style.opacity = 1;
-          //todo: document.querySelector("#play").style.pointerEvents = "all";
-          //! uncomment after debuging ^^^^^^^^
+          document.querySelector("#entry_popup").style.opacity = 0;
+          document.querySelector("#entry_popup").style.display = "none";
+          document.querySelector("#play").style.opacity = 1;
+          document.querySelector("#play").style.pointerEvents = "all";
 
           // window.location.href += "game/";
         })
@@ -132,6 +154,22 @@ socket.on("game", (data) => {
       "#game_status"
     ).innerHTML = `A new game has been set by ${game.created_by}`;
     document.querySelector("#play").textContent = "Join";
+
+    document.querySelector("#game_timer").textContent = `${(
+      game.timer / 60
+    ).toFixed(0)}:${game.timer % 60}`;
+
+    game_timer = setInterval(() => {
+      game.timer--;
+      if (game.timer < 0) {
+        clearInterval(game_timer);
+        console.log("timing finshed");
+      } else {
+        document.querySelector("#game_timer").textContent = `${Math.floor(
+          game.timer / 60
+        )}:${game.timer % 60}`;
+      }
+    }, 1000);
   }
 
   document.querySelector("#game_players").innerHTML = "";
