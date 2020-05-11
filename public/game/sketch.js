@@ -15,6 +15,8 @@ let score = 0;
 let canvas;
 
 let started = false;
+let game_start_timer;
+let start_time = 60;
 
 let userName = sessionStorage.getItem("username");
 let userId = sessionStorage.getItem("user_id");
@@ -82,7 +84,27 @@ function setup() {
 }
 
 function draw() {
-  if (!started) noLoop();
+  if (!started) {
+    document.querySelector("#start_timer").textContent = start_time;
+    game_start_timer = setInterval(() => {
+      if (start_time <= 0) {
+        clearInterval(game_start_timer);
+        socket.emit("gameplay", {
+          type: "ready",
+          id: sessionStorage.getItem("user_id"),
+        });
+        started = true;
+      } else {
+        start_time--;
+        document.querySelector("#start_timer").textContent = start_time;
+      }
+    }, 1000);
+
+    noLoop();
+  } else {
+    document.querySelector("#game_start").style.opacity = 0;
+    document.querySelector("#game_start").style.pointerEvents = "none";
+  }
 
   if (frameCount % 2 == 0) {
     userName = sessionStorage.getItem("username");
@@ -172,7 +194,6 @@ function keyPressed(event) {
       type: "ready",
       id: sessionStorage.getItem("user_id"),
     });
-    console.log("Presed");
   }
 }
 
