@@ -14,6 +14,8 @@ let score = 0;
 
 let canvas;
 
+let started = false;
+
 let userName = sessionStorage.getItem("username");
 let userId = sessionStorage.getItem("user_id");
 if (!userName || !userId || userName.length < 4) {
@@ -46,6 +48,18 @@ window.addEventListener("beforeunload", (event) => {
   // }
 });
 
+socket.on("gameplay", (data) => {
+  if (data.type == "start") {
+    started = true;
+
+    try {
+      loop();
+    } catch {
+      console.warn("function loop not found!");
+    }
+  }
+});
+
 function preload() {
   loadFont("assets/PressStart2P-Regular.ttf"); // loading the font
 }
@@ -68,6 +82,8 @@ function setup() {
 }
 
 function draw() {
+  if (!started) noLoop();
+
   if (frameCount % 2 == 0) {
     userName = sessionStorage.getItem("username");
     userId = sessionStorage.getItem("user_id");
@@ -145,12 +161,19 @@ function draw() {
   fill(100);
   textFont("PressStart2P-Regular");
   textAlign(RIGHT, TOP);
-  text(`score: ${score.toFixed(0)}`, width - 30, 20);
+  text(score.toFixed(0), width - 30, 20);
   pop();
 }
 
 function keyPressed(event) {
   if (event.key == "ArrowUp" || event.key == " ") dino.jump();
+  if (event.key == "w" || event.key == "W") {
+    socket.emit("gameplay", {
+      type: "ready",
+      id: sessionStorage.getItem("user_id"),
+    });
+    console.log("Presed");
+  }
 }
 
 function mousePressed() {
@@ -158,22 +181,6 @@ function mousePressed() {
 }
 
 function gameOver() {
-  // push();
-  // noStroke();
-  // fill(255, 200);
-  // rectMode(CENTER);
-  // rect(width / 2, height / 2, 500, 120, 5);
-  // fill(255, 30, 30);
-  // textAlign(CENTER, CENTER);
-  // textSize(30);
-  // textStyle(BOLD);
-  // textFont("PressStart2P-Regular");
-  // text("GAME OVER!", width / 2, height / 2 - 25);
-  // textStyle(NORMAL);
-  // fill(20, 200);
-  // textSize(23);
-  // text(`Your score: ${score.toFixed(0)}`, width / 2, height / 2 + 37);
-  //pop
   document.querySelector("#game_over").style.pointerEvents = "all";
   document.querySelector("#game_over").style.opacity = 1;
   document.querySelector("#score").textContent = score.toFixed(0);

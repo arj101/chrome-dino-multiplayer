@@ -107,7 +107,25 @@ io.sockets.on("connection", (socket) => {
     reply({ username_available: available, id: socket.id });
   });
 
-  //todo: socket.on("gameplay", (data) => {} )
+  socket.on("gameplay", (data) => {
+    console.log("game");
+    if (data.type == "ready") {
+      let allReady = true;
+
+      game.players.forEach((player, i) => {
+        if (player.id == data.id) {
+          player.status = "ready";
+        }
+        if (player.status != "ready") allReady = false;
+      });
+
+      if (allReady) {
+        io.sockets.emit("gameplay", { type: "start" });
+        console.log("all ready !!!!!!!!!!!");
+      }
+    }
+    //todo: if(data.type == "live")
+  });
 
   socket.on("disconnect", () => {
     console.log(`Client disconnected `);

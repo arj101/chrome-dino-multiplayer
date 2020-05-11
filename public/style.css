@@ -56,7 +56,8 @@ body {
 }
 
 #game_info {
-  box-shadow: 3px 3px 15px rgba(255, 206, 115, 0.644);
+  box-shadow: 3px 3px 0px rgb(255, 176, 29);
+  background-color: rgb(250, 250, 250);
   border-radius: 0.4rem;
   position: absolute;
   left: 2vw;

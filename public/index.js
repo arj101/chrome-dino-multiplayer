@@ -109,11 +109,11 @@ document.querySelector("#play").addEventListener("click", (play_click) => {
                 "Game can't be delayed more than 2 minutes(setting timer to 2 minutes)"
               );
               timerValue = 120;
-            } else if (timerValue < 15) {
+            } else if (timerValue < 0) {
               alert(
-                "Game can't be delayed less than 15 seconds(setting timer to 15 seconds)"
+                "Game can't be delayed less than 0 seconds(setting timer to 0 seconds)"
               );
-              timerValue = 15;
+              timerValue = 0;
             }
             game.timer = timerValue; //! game timer <<<<< <<<<<< <<<<<<<<< <<<<<<<<< <<<<<<< <<<<<<<< <<<<<<<< <<<<<<
             game.status = "game_timing";
