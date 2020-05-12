@@ -190,10 +190,12 @@ function draw() {
 function keyPressed(event) {
   if (event.key == "ArrowUp" || event.key == " ") dino.jump();
   if (event.key == "w" || event.key == "W") {
-    socket.emit("gameplay", {
-      type: "ready",
-      id: sessionStorage.getItem("user_id"),
-    });
+    if (!started) {
+      socket.emit("gameplay", {
+        type: "ready",
+        id: sessionStorage.getItem("user_id"),
+      });
+    }
   }
 }
 
