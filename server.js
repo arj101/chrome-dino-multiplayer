@@ -144,3 +144,5 @@ function sendGameInvitation() {
     console.log(`sent invitation to ${player.username}`);
   });
 }
+
+// testing glitch sync!!!!!!!!!!!!!!!!!
