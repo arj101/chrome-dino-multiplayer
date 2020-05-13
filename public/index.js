@@ -8,6 +8,8 @@ let userName;
 
 let game_timer;
 
+mdc.ripple.MDCRipple.attachTo(document.querySelector(".foo-button"));
+
 socket.emit("query", { type: "game" }, (reply) => {
   game = reply;
   if (game.status == "no_games") {
