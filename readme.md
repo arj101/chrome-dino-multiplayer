@@ -2,12 +2,12 @@
 
 ### Multiplayer version of chrome dinosaur game using socket.io
 
-###### v 1.0.0
+ **not complete** <br /> <br />
 
-##### **still not complete** <br /> <br />
+[view working(not yet complete) prototype here](https://chrome-dino-multiplayer001.glitch.me/)
+playing this game right now is not recommended 😁.<br /> <br /> 
 
-### [view working(not yet complete) prototype here](https://chrome-dino-multiplayer001.glitch.me/)
+*note: this project is not optimized for mobile devices yet**
 
-#### playing this game right now is not recommended 😁.<br /> <br /> 
 
-#### note: this project is not optimized for mobile devices yet
+Feel free to create a new issue with label the ```enhancement``` for suggesting any new issuesA
