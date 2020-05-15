@@ -1,2 +1,2 @@
 ### Assets for the game!
-- font
+- PresStart2P-Regular.ttf
