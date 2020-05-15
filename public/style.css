@@ -7,6 +7,10 @@ body {
   padding-left: 1rem;
 }
 
+button {
+  cursor: pointer;
+}
+
 .heading_text {
   font-size: 2.75rem;
   font-family: "Permanent Marker", cursive;
@@ -36,28 +40,30 @@ body {
   color: white;
   background-color: #ffae00;
   border-radius: 0.4rem;
-  box-shadow: 2px 2px 5px #ffc23e;
+  box-shadow: 2px 3px 5px #5c5c5c7e;
   margin-bottom: 0.1rem;
-  transition: all 200ms ease;
+  transition: all 300ms ease;
   border-width: 0.1rem;
   border-color: transparent;
   border-style: solid;
   outline: none;
+  cursor: pointer;
 }
 
-#play:hover {
-  background-color: #ffbe31;
+#play:hover:enabled {
+  background-color: #ffc547;
+  box-shadow: 2px 3.5px 5px #5c5c5c7e;
 }
 
-#play:active {
-  background-color: transparent;
-  color: #ffae00;
-  border-color: #ffae00;
+#play:active:enabled {
+  top: -3px;
+  background-color: #ffda89;
+  box-shadow: 2px 5px 7px #5c5c5c7e;
 }
 
 #game_info {
-  box-shadow: 3px 3px 0px rgb(255, 176, 29);
-  background-color: rgb(250, 250, 250);
+  box-shadow: 2px 4px 10px #5c5c5c57;
+  background-color: rgb(255, 255, 255);
   border-radius: 0.4rem;
   position: absolute;
   left: 2vw;
@@ -92,8 +98,8 @@ body {
 }
 
 #entry_popup:active {
-  left: calc(25vw + 5px);
-  top: 5px;
+  left: calc(25vw + 4px);
+  top: 4px;
   box-shadow: 0 0 3px rgba(63, 63, 63, 0.281);
 }
 
@@ -159,6 +165,9 @@ body {
 }
 
 #name_submit {
+  position: relative;
+  top: 0;
+  left: 0;
   background-color: #ffae00;
   color: white;
   border-style: solid;
@@ -172,16 +181,19 @@ body {
   padding-left: 1rem;
   padding-right: 1rem;
   outline: none;
+  box-shadow: 2px 3px 5px #5c5c5c50;
 }
 
 #name_submit:hover {
   background-color: #ffb922;
+  top: -0.5px;
+  box-shadow: 2px 3.5px 5px #5c5c5c50;
 }
 
 #name_submit:active {
-  background-color: white;
-  color: #ffae00;
-  border-color: #ffae00;
+  top: -2px;
+  box-shadow: 2px 5px 7px #5c5c5c50;
+  background-color: #ffda89;
 }
 
 #name_input {

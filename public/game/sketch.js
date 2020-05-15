@@ -62,6 +62,17 @@ socket.on("gameplay", (data) => {
   }
 });
 
+document.querySelector("#game_start_ack").addEventListener("click", () => {
+  if (!started) {
+    setTimeout(() => {
+      socket.emit("gameplay", {
+        type: "ready",
+        id: sessionStorage.getItem("user_id"),
+      });
+    }, 300);
+  }
+});
+
 function preload() {
   loadFont("assets/PressStart2P-Regular.ttf"); // loading the font
 }

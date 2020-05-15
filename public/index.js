@@ -15,10 +15,17 @@ socket.emit("query", { type: "game" }, (reply) => {
       "No games are curretly playing.<br/>You can create a new game anytime you want!";
     document.querySelector("#game_status").style.color = "#333333";
     document.querySelector("#play").textContent = "Create new game!";
+    document.querySelector("#play").style.opacity = 1;
+    document.querySelector("#play").style.pointerEvents = "all";
+    document.querySelector("#play").disabled = false;
   }
 
   if (reply.status == "game_started") {
     document.querySelector("#game_status").textContent = "A game has started";
+    document.querySelector("#play").textContent = "Join";
+    document.querySelector("#play").disabled = true;
+    document.querySelector("#play").style.pointerEvents = "none";
+    document.querySelector("#play").style.opacity = 0.5;
   }
 
   if (reply.status == "game_timing") {
@@ -26,6 +33,25 @@ socket.emit("query", { type: "game" }, (reply) => {
       "#game_status"
     ).innerHTML = `A new game has been set by ${game.created_by}`;
     document.querySelector("#play").textContent = "Join";
+    document.querySelector("#play").style.opacity = 1;
+    document.querySelector("#play").style.pointerEvents = "all";
+    document.querySelector("#play").disabled = false;
+
+    document.querySelector("#game_timer").textContent = `${(
+      game.timer / 60
+    ).toFixed(0)}:${game.timer % 60}`;
+
+    game_timer = setInterval(() => {
+      game.timer--;
+      if (game.timer < 0) {
+        clearInterval(game_timer);
+        console.log("timing finshed");
+      } else {
+        document.querySelector("#game_timer").textContent = `${Math.floor(
+          game.timer / 60
+        )}:${game.timer % 60}`;
+      }
+    }, 1000);
   }
 
   document.querySelector("#game_players").innerHTML = "";
@@ -54,16 +80,15 @@ document.addEventListener("click", (event) => {
   if (!event.target.closest("#entry_popup") && clickfirst == false) {
     document.querySelector("#entry_popup").style.opacity = 0;
     document.querySelector("#entry_popup").style.display = "none";
-    document.querySelector("#play").style.opacity = 1;
-    document.querySelector("#play").style.pointerEvents = "all";
+    if (!document.querySelector("#play").disabled) {
+      document.querySelector("#play").style.opacity = 1;
+      document.querySelector("#play").style.pointerEvents = "all";
+    }
   }
   clickfirst = false;
 });
 
 document.querySelector("#play").addEventListener("click", (play_click) => {
-  //   window.location.href = window.location.href + "game/";
-  //   prompt("Enter your name (doesn't have to be your real name) ;)");]
-
   document.querySelector("#entry_popup").style.opacity = 1;
   document.querySelector("#entry_popup").style.display = "flex";
 
@@ -125,8 +150,10 @@ document.querySelector("#play").addEventListener("click", (play_click) => {
           }
           document.querySelector("#entry_popup").style.opacity = 0;
           document.querySelector("#entry_popup").style.display = "none";
-          document.querySelector("#play").style.opacity = 1;
-          document.querySelector("#play").style.pointerEvents = "all";
+          if (!document.querySelector("#play").disabled) {
+            document.querySelector("#play").style.opacity = 1;
+            document.querySelector("#play").style.pointerEvents = "all";
+          }
 
           // window.location.href += "game/";
         })
@@ -147,6 +174,18 @@ socket.on("game", (data) => {
 
   if (data.status == "game_started") {
     document.querySelector("#game_status").textContent = "A game has started";
+    document.querySelector("#play").disabled = true;
+    document.querySelector("#play").style.pointerEvents = "none";
+    document.querySelector("#play").style.opacity = 0.5;
+  }
+
+  if (data.status == "no_games") {
+    document.querySelector("#game_status").innerHTML =
+      "No games are curretly playing.<br/>You can create a new game anytime you want!";
+    document.querySelector("#play").textContent = "Create new game!";
+    document.querySelector("#play").style.pointerEvents = "all";
+    document.querySelector("#play").style.opacity = 1;
+    document.querySelector("#play").disabled = false;
   }
 
   if (data.status == "game_timing") {
@@ -154,6 +193,9 @@ socket.on("game", (data) => {
       "#game_status"
     ).innerHTML = `A new game has been set by ${game.created_by}`;
     document.querySelector("#play").textContent = "Join";
+    document.querySelector("#play").style.opacity = 1;
+    document.querySelector("#play").style.pointerEvents = "all";
+    document.querySelector("#play").disabled = false;
 
     document.querySelector("#game_timer").textContent = `${(
       game.timer / 60

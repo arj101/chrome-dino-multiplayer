@@ -29,6 +29,7 @@ io.sockets.on("connection", (socket) => {
   socket.on("game", (data) => {
     if (data.status == "game_timing") {
       game.status = "game_timing";
+      console.log("timer setting");
       game.timer = data.timer;
       game.created_by = data.created_by;
       console.log(

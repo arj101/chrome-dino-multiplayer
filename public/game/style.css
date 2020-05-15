@@ -39,10 +39,6 @@
   color: red;
 }
 
-#game_over:hover {
-  border-bottom-color: rgba(4, 255, 4, 0.808);
-}
-
 #homepage_redirect {
   position: relative;
   top: 0;
@@ -52,8 +48,8 @@
   padding: 0.5rem;
   background-color: #ffae00;
   color: white;
-  box-shadow: 1px 3px 8px #ffc23ed5;
-  transition: all 200ms ease;
+  box-shadow: 2px 3px 5px #5c5c5c50;
+  transition: all 300ms ease;
   font-size: 1.2rem;
   border-radius: 0.4rem;
   font-family: sans-serif;
@@ -61,13 +57,15 @@
 }
 
 #homepage_redirect:hover {
-  background-color: #ffb922;
+  box-shadow: 2px 3.5px 5px #5c5c5c50;
+  background-color: #ffc23d;
 }
 
 #homepage_redirect:active {
-  top: 3px;
+  top: -3px;
   left: 1px;
-  box-shadow: 0px 0px 2px #ffc23ed5;
+  box-shadow: 3px 6px 7px #5c5c5c50;
+  background-color: #ffda89;
 }
 
 #game_start {
@@ -76,7 +74,6 @@
   position: absolute;
   top: 40vh;
   left: 35vw;
-  background-color: #ffb922;
   z-index: 2;
   background-color: rgba(255, 255, 255, 0.884);
   box-shadow: 5px 5px 15px rgba(58, 58, 58, 0.329);
@@ -93,10 +90,37 @@
 #game_start h2 {
   padding: 2rem;
   font-weight: 200;
+  padding-bottom: 1rem;
 }
 
 #game_start h4 {
   padding: 1rem;
   font-weight: 700;
   color: #ffae00;
+}
+
+#game_start_ack {
+  outline: none;
+  position: relative;
+  top: 0;
+  left: 0;
+  padding: 0.8rem;
+  font-size: 1.2rem;
+  font-family: sans-serif;
+  background-color: #6f00ff;
+  color: white;
+  border-radius: 0.3rem;
+  box-shadow: 2px 2px 4px rgba(54, 54, 54, 0.493);
+  transition: all 300ms ease;
+  cursor: pointer;
+}
+
+#game_start_ack:hover {
+  background-color: #9341ff;
+}
+
+#game_start_ack:active {
+  top: -3px;
+  box-shadow: 2px 5px 6px rgba(75, 75, 75, 0.493);
+  background-color: #bb87ff;
 }
