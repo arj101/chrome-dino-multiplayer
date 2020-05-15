@@ -133,27 +133,27 @@ button {
   justify-content: center;
   width: 150px;
   height: 150px;
-  background-color: #ffb922;
+  background-color: transparent;
   margin: 0.4rem;
-  border-radius: 0.1rem;
+  border-radius: 0.3rem;
   transition: all 300ms ease;
   cursor: pointer;
+  border: 0.1rem solid #ffae00;
 }
 
 .player_div:hover {
-  background-color: #ffa216;
+  border-color: #a200ff;
 }
 
 .player_div:hover .player_name {
-  top: -1rem;
-  text-shadow: 0.75rem 1rem 0.3rem #b96f00;
+  color: #a200ff;
 }
 
 .player_name {
   position: relative;
   top: 0;
   left: 0;
-  color: white;
+  color: #ffae00;
   font-family: sans-serif;
   font-size: 1.5rem;
   word-wrap: break-word;
@@ -186,7 +186,6 @@ button {
 
 #name_submit:hover {
   background-color: #ffb922;
-  top: -0.5px;
   box-shadow: 2px 3.5px 5px #5c5c5c50;
 }
 
