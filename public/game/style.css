@@ -66,6 +66,7 @@ button {
   padding: 2rem;
   font-weight: 200;
   padding-bottom: 1rem;
+  transition: all 300ms ease;
 }
 
 #game_start h4 {
