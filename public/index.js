@@ -9,6 +9,7 @@ let userName;
 let game_timer;
 
 mdc.ripple.MDCRipple.attachTo(document.querySelector("#name_submit"));
+mdc.ripple.MDCRipple.attachTo(document.querySelector("#play"));
 
 socket.emit("query", { type: "game" }, (reply) => {
   game = reply;
@@ -16,28 +17,25 @@ socket.emit("query", { type: "game" }, (reply) => {
     document.querySelector("#game_status").innerHTML =
       "No games are curretly playing.<br/>You can create a new game anytime you want!";
     document.querySelector("#game_status").style.color = "#333333";
-    document.querySelector("#play").textContent = "Create new game!";
-    document.querySelector("#play").style.opacity = 1;
-    document.querySelector("#play").style.pointerEvents = "all";
+    document.querySelector("#play span").textContent = "Create new game!";
     document.querySelector("#play").disabled = false;
+    setPadding(document.querySelector("#play"), "1.7rem");
   }
 
   if (reply.status == "game_started") {
     document.querySelector("#game_status").textContent = "A game has started";
-    document.querySelector("#play").textContent = "Join";
+    document.querySelector("#play span").textContent = "Join";
     document.querySelector("#play").disabled = true;
-    document.querySelector("#play").style.pointerEvents = "none";
-    document.querySelector("#play").style.opacity = 0.5;
+    setPadding(document.querySelector("#play"), "1.7rem");
   }
 
   if (reply.status == "game_timing") {
     document.querySelector(
       "#game_status"
     ).innerHTML = `A new game has been set by ${game.created_by}`;
-    document.querySelector("#play").textContent = "Join";
-    document.querySelector("#play").style.opacity = 1;
-    document.querySelector("#play").style.pointerEvents = "all";
+    document.querySelector("#play span").textContent = "Join";
     document.querySelector("#play").disabled = false;
+    setPadding(document.querySelector("#play"), "1.7rem");
 
     document.querySelector("#game_timer").textContent = `${(
       game.timer / 60
@@ -78,14 +76,18 @@ socket.emit("query", { type: "game" }, (reply) => {
 
 let clickfirst = true;
 document.addEventListener("click", (event) => {
-  //how do i convert this to jQuery?
   if (!event.target.closest("#entry_popup") && clickfirst == false) {
     document.querySelector("#entry_popup").style.opacity = 0;
     document.querySelector("#entry_popup").style.display = "none";
-    if (!document.querySelector("#play").disabled) {
-      document.querySelector("#play").style.opacity = 1;
-      document.querySelector("#play").style.pointerEvents = "all";
-    }
+  }
+  if (clickfirst) {
+    setTimeout(function () {
+      document.querySelector("#play").disabled = true;
+    }, 75);
+  } else {
+    setTimeout(function () {
+      document.querySelector("#play").disabled = false;
+    }, 75);
   }
   clickfirst = false;
 });
@@ -93,9 +95,6 @@ document.addEventListener("click", (event) => {
 document.querySelector("#play").addEventListener("click", (play_click) => {
   document.querySelector("#entry_popup").style.opacity = 1;
   document.querySelector("#entry_popup").style.display = "flex";
-
-  document.querySelector("#play").style.opacity = 0.5;
-  document.querySelector("#play").style.pointerEvents = "none";
 
   if (game.status == "no_games") {
     document.querySelector("#timing_input").style.display = "block";
@@ -153,8 +152,6 @@ document.querySelector("#play").addEventListener("click", (play_click) => {
           document.querySelector("#entry_popup").style.opacity = 0;
           document.querySelector("#entry_popup").style.display = "none";
           if (!document.querySelector("#play").disabled) {
-            document.querySelector("#play").style.opacity = 1;
-            document.querySelector("#play").style.pointerEvents = "all";
           }
 
           // window.location.href += "game/";
@@ -177,27 +174,24 @@ socket.on("game", (data) => {
   if (data.status == "game_started") {
     document.querySelector("#game_status").textContent = "A game has started";
     document.querySelector("#play").disabled = true;
-    document.querySelector("#play").style.pointerEvents = "none";
-    document.querySelector("#play").style.opacity = 0.5;
+    setPadding(document.querySelector("#play"), "1.7rem");
   }
 
   if (data.status == "no_games") {
     document.querySelector("#game_status").innerHTML =
       "No games are curretly playing.<br/>You can create a new game anytime you want!";
-    document.querySelector("#play").textContent = "Create new game!";
-    document.querySelector("#play").style.pointerEvents = "all";
-    document.querySelector("#play").style.opacity = 1;
+    document.querySelector("#play span").textContent = "Create new game!";
     document.querySelector("#play").disabled = false;
+    setPadding(document.querySelector("#play"), "1.7rem");
   }
 
   if (data.status == "game_timing") {
     document.querySelector(
       "#game_status"
     ).innerHTML = `A new game has been set by ${game.created_by}`;
-    document.querySelector("#play").textContent = "Join";
-    document.querySelector("#play").style.opacity = 1;
-    document.querySelector("#play").style.pointerEvents = "all";
+    document.querySelector("#play span").textContent = "Join";
     document.querySelector("#play").disabled = false;
+    setPadding(document.querySelector("#play"), "1.7rem");
 
     document.querySelector("#game_timer").textContent = `${(
       game.timer / 60
@@ -255,4 +249,14 @@ function login(login_username) {
       }
     });
   });
+}
+
+//! only use for mdc-button
+function setPadding(item, padding) {
+  item.style.width = "fit-content";
+  item.style.height = "fit-content";
+
+  item.style.width = `calc(${item.offsetWidth + "px"} + ${padding})`;
+
+  item.style.height = `calc(${item.offsetHeight + "px"} + ${padding})`;
 }

@@ -30,35 +30,9 @@ button {
 }
 
 #play {
-  position: relative;
-  top: 0;
-  left: 0;
-  padding: 0.7rem;
-  min-width: max-content;
-  min-height: max-content;
-  font-size: 1.3rem;
-  color: white;
-  background-color: #ffae00;
-  border-radius: 0.4rem;
-  box-shadow: 2px 3px 5px #5c5c5c7e;
-  margin-bottom: 0.1rem;
-  transition: all 300ms ease;
-  border-width: 0.1rem;
-  border-color: transparent;
-  border-style: solid;
-  outline: none;
-  cursor: pointer;
-}
-
-#play:hover:enabled {
-  background-color: #ffc547;
-  box-shadow: 2px 3.5px 5px #5c5c5c7e;
-}
-
-#play:active:enabled {
-  top: -3px;
-  background-color: #ffda89;
-  box-shadow: 2px 5px 8px #5c5c5c7e;
+  --mdc-theme-primary: #ffae00;
+  --mdc-theme-on-primary: #ffffff;
+  font-size: 1.1rem;
 }
 
 #game_info {
