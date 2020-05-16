@@ -58,7 +58,7 @@ button {
 #play:active:enabled {
   top: -3px;
   background-color: #ffda89;
-  box-shadow: 2px 5px 7px #5c5c5c7e;
+  box-shadow: 2px 5px 8px #5c5c5c7e;
 }
 
 #game_info {
