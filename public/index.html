@@ -9,7 +9,6 @@
     />
 
     <link rel="stylesheet" href="./libraries/material-components-web.min.css" />
-    <script src="./libraries/material-components-web.min.js"></script>
 
     <link rel="stylesheet" href="./style.css" />
     <title>Chrome dino multiplayer</title>
@@ -30,9 +29,6 @@
       <div id="game_players"></div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="./index.js"></script>
-
     <div id="entry_popup">
       <h2>Enter your name</h2>
       <input type="text" id="name_input" maxlength="20" />
@@ -41,8 +37,15 @@
         id="timing_input"
         placeholder="Time until game begins in seconds"
       />
-      <button id="name_submit">Submit</button>
+      <button id="name_submit" class="mdc-button mdc-button--outlined">
+        <div class="mdc-button__ripple"></div>
+        <span class="mdc-button__label">Submit</span>
+      </button>
       <p><i>This name will be visible to all other players</i></p>
     </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="./libraries/material-components-web.min.js"></script>
+    <script src="./index.js"></script>
   </body>
 </html>
