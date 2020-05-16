@@ -4,18 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="./style.css" />
+    <link
+      rel="stylesheet"
+      href="../libraries/material-components-web.min.css"
+    />
     <title>chrome://dino/multiplayer</title>
   </head>
   <body>
     <div id="game_over">
       <h1>Game Over!</h1>
       <h3>Your score: <span id="score"></span></h3>
-      <button id="homepage_redirect">Go to homepage</button>
+      <button id="homepage_redirect" class="mdc-button mdc-button--outlined">
+        <div class="mdc-button__ripple"></div>
+        <span class="mdc-button__label">Go to homepage</span>
+      </button>
     </div>
 
     <div id="game_start">
       <h2>Press the button to acknowledge game start.</h2>
-      <button id="game_start_ack">Acknowledge</button>
+      <button id="game_start_ack" class="mdc-button mdc-button--outlined">
+        <div class="mdc-button__ripple"></div>
+        <span class="mdc-button__label"> Acknowledge</span>
+      </button>
       <h4>
         Game will start automatically in
         <span id="start_timer"> </span> seconds.
@@ -24,7 +34,7 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="../libraries/p5.min.js"></script>
-    <!-- <script src="../libraries/jquery-3.5.0.min.js"></script> -->
+    <script src="../libraries/material-components-web.min.js"></script>
     <script src="./dino.js"></script>
     <script src="./obst.js"></script>
     <script src="./sketch.js"></script>

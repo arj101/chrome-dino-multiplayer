@@ -14,6 +14,10 @@
   src: url("./assets/PressStart2P-Regular.ttf") format("ttf");
 }
 
+button {
+  cursor: pointer;
+}
+
 #game_over {
   z-index: 2;
   position: absolute;
@@ -37,35 +41,6 @@
 
 #game_over h1 {
   color: red;
-}
-
-#homepage_redirect {
-  position: relative;
-  top: 0;
-  left: 0;
-  width: fit-content;
-  height: fit-content;
-  padding: 0.5rem;
-  background-color: #ffae00;
-  color: white;
-  box-shadow: 2px 3px 5px #5c5c5c50;
-  transition: all 300ms ease;
-  font-size: 1.2rem;
-  border-radius: 0.4rem;
-  font-family: sans-serif;
-  outline: none;
-}
-
-#homepage_redirect:hover {
-  box-shadow: 2px 3.5px 5px #5c5c5c50;
-  background-color: #ffc23d;
-}
-
-#homepage_redirect:active {
-  top: -3px;
-  left: 1px;
-  box-shadow: 3px 6px 7px #5c5c5c50;
-  background-color: #ffda89;
 }
 
 #game_start {
@@ -97,30 +72,4 @@
   padding: 1rem;
   font-weight: 700;
   color: #ffae00;
-}
-
-#game_start_ack {
-  outline: none;
-  position: relative;
-  top: 0;
-  left: 0;
-  padding: 0.8rem;
-  font-size: 1.2rem;
-  font-family: sans-serif;
-  background-color: #6f00ff;
-  color: white;
-  border-radius: 0.3rem;
-  box-shadow: 2px 2px 4px rgba(54, 54, 54, 0.493);
-  transition: all 300ms ease;
-  cursor: pointer;
-}
-
-#game_start_ack:hover {
-  background-color: #9341ff;
-}
-
-#game_start_ack:active {
-  top: -3px;
-  box-shadow: 2px 5px 6px rgba(75, 75, 75, 0.493);
-  background-color: #bb87ff;
 }

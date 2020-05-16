@@ -18,6 +18,9 @@ let started = false;
 let game_start_timer;
 let start_time = 60;
 
+mdc.ripple.MDCRipple.attachTo(document.querySelector("#homepage_redirect"));
+mdc.ripple.MDCRipple.attachTo(document.querySelector("#game_start_ack"));
+
 let userName = sessionStorage.getItem("username");
 let userId = sessionStorage.getItem("user_id");
 if (!userName || !userId || userName.length < 4) {

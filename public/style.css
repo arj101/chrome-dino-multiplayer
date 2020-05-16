@@ -181,17 +181,14 @@ button {
   padding-left: 1rem;
   padding-right: 1rem;
   outline: none;
-  box-shadow: 2px 3px 5px #5c5c5c50;
 }
 
 #name_submit:hover {
   background-color: #ffb922;
-  box-shadow: 2px 3.5px 5px #5c5c5c50;
 }
 
 #name_submit:active {
-  top: -2px;
-  box-shadow: 2px 5px 7px #5c5c5c50;
+  top: -1px;
   background-color: #ffda89;
 }
 
