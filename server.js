@@ -36,9 +36,10 @@ io.sockets.on("connection", (socket) => {
         `A new game has beem created by ${game.created_by} on ${Date.now()}`
       );
 
-      game_timer = setInterval(() => {
+      game_timer = setInterval(function () {
         if (game.timer > 0) {
           game.timer--;
+          console.log(`Game timer at ${game.timer}`);
         } else {
           clearInterval(game_timer);
           game.status = "game_started";

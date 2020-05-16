@@ -43,7 +43,7 @@ socket.emit("query", { type: "game" }, (reply) => {
       game.timer / 60
     ).toFixed(0)}:${game.timer % 60}`;
 
-    game_timer = setInterval(() => {
+    game_timer = setInterval(function () {
       game.timer--;
       if (game.timer < 0) {
         clearInterval(game_timer);
@@ -203,7 +203,7 @@ socket.on("game", (data) => {
       game.timer / 60
     ).toFixed(0)}:${game.timer % 60}`;
 
-    game_timer = setInterval(() => {
+    game_timer = setInterval(function () {
       game.timer--;
       if (game.timer < 0) {
         clearInterval(game_timer);

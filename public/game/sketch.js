@@ -1,22 +1,17 @@
 let dino;
-
 let obstacles = [];
-
 let dino_speed = 8;
-
 let min_spacing = 400;
 
 const socket = io();
-
 let unidentifiedUser = true;
-
 let score = 0;
-
 let canvas;
-
 let started = false;
 let game_start_timer;
 let start_time = 60;
+
+let ack_pressed = false;
 
 mdc.ripple.MDCRipple.attachTo(document.querySelector("#homepage_redirect"));
 mdc.ripple.MDCRipple.attachTo(document.querySelector("#game_start_ack"));
@@ -27,15 +22,6 @@ if (!userName || !userId || userName.length < 4) {
   sessionStorage.setItem("redirected", true);
   window.location.href = window.location.href + "../";
 }
-
-// socket.on("username_availability", (data) => {
-//   if (data == false) {
-//     alert(
-//       "Somebody has already taken your username.\nYou will be redirected to our homepage"
-//     );
-//     window.location.href = window.location.href + "../";
-//   } else unidentifiedUser = false;
-// });
 
 window.addEventListener("beforeunload", (event) => {
   // f (!unidentifiedUser) {
@@ -67,6 +53,18 @@ socket.on("gameplay", (data) => {
 
 document.querySelector("#game_start_ack").addEventListener("click", () => {
   if (!started) {
+    if (!ack_pressed) {
+      ack_pressed = true;
+    }
+
+    if (ack_pressed) {
+      document.querySelector("#game_start_ack").setAttribute("disabled", true);
+      document.querySelector("#game_start").style.width =
+        document.querySelector("#game_start").offsetWidth + "px";
+      document.querySelector("#game_start h2").textContent =
+        "Waiting for other players..";
+    }
+
     setTimeout(() => {
       socket.emit("gameplay", {
         type: "ready",
@@ -203,14 +201,6 @@ function draw() {
 
 function keyPressed(event) {
   if (event.key == "ArrowUp" || event.key == " ") dino.jump();
-  if (event.key == "w" || event.key == "W") {
-    if (!started) {
-      socket.emit("gameplay", {
-        type: "ready",
-        id: sessionStorage.getItem("user_id"),
-      });
-    }
-  }
 }
 
 function mousePressed() {
