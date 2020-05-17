@@ -216,7 +216,7 @@ function draw() {
   pop();
 
   score += dino_speed / 128;
-
+  // glitch reupload
   socket.emit("gameplay", {
     type: "live",
     position: dino.pos.y / height,
