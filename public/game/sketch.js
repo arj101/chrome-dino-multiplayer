@@ -72,6 +72,22 @@ socket.on("gameplay", (data) => {
       otherPlayers.push(data);
     }
   }
+
+  if (data.type == "gameover") {
+    let playerFound = false;
+
+    otherPlayers.forEach((player, index) => {
+      if (data.name == player.name) {
+        player.position = data.position;
+        playerFound = true;
+        player.over = true;
+      }
+    });
+
+    if (!playerFound) {
+      console.warn("No user named " + data.name);
+    }
+  }
 });
 
 document.querySelector("#game_start_ack").addEventListener("click", () => {
@@ -207,7 +223,11 @@ function draw() {
   otherPlayers.forEach((player) => {
     push();
     fill(0);
+    if (player.over) {
+      fill(255, 0, 0);
+    }
     noStroke();
+    textSize(18);
     text(player.name, 100, player.position - 20);
     pop();
     push();
@@ -263,5 +283,10 @@ function gameOver() {
     setTimeout(() => {
       window.location.href += "../";
     }, 200);
+  });
+
+  socket.emit("gameplay", {
+    type: "gameover",
+    name: sessionStorage.getItem("username"),
   });
 }
