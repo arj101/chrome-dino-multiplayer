@@ -132,13 +132,30 @@ function setup() {
     (window.innerHeight * 13.5) / 16,
     window.innerHeight * 0.17
   );
-  obstacles.push(
-    new Obstacle(
-      width + 500,
-      (window.innerHeight * 13.5) / 16,
-      window.innerHeight * 0.15
-    )
-  );
+  let r = floor(random(1, 6));
+  switch r{
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+      obstacles.push(
+        new Obstacle(
+          width + 500,
+          ((window.innerHeight * 13.5) / 16)-window.innerHeight * 0.15+((r-1)*dino.normalH/3),
+          window.innerHeight * 0.15,
+          dino.normalH/3
+        )
+        break;
+      );
+    default:
+      obstacles.push(
+        new Obstacle(
+          width + 500,
+          (window.innerHeight * 13.5) / 16,
+          window.innerHeight * 0.15
+        )
+      );
+  }
 }
 
 function draw() {
@@ -192,13 +209,30 @@ function draw() {
     random(1) < 0.1 &&
     width + 100 - obstacles[obstacles.length - 1].pos.x > min_spacing
   ) {
-    obstacles.push(
-      new Obstacle(
-        width + 100,
-        (window.innerHeight * 13.5) / 16,
-        window.innerHeight * 0.15
-      )
-    );
+    let r = floor(random(1, 6));
+    switch r{
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+        obstacles.push(
+          new Obstacle(
+            width + 500,
+            ((window.innerHeight * 13.5) / 16)-window.innerHeight * 0.15+((r-1)*dino.normalH/3),
+            window.innerHeight * 0.15,
+            dino.normalH/3
+          )
+          break;
+        );
+      default:
+        obstacles.push(
+          new Obstacle(
+            width + 500,
+            (window.innerHeight * 13.5) / 16,
+            window.innerHeight * 0.15
+          )
+        );
+    }
   }
 
   dino_speed += 0.01;
