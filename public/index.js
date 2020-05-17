@@ -8,6 +8,8 @@ let userName;
 
 let game_timer;
 
+let loggedIn = false;
+
 mdc.ripple.MDCRipple.attachTo(document.querySelector("#name_submit"));
 mdc.ripple.MDCRipple.attachTo(document.querySelector("#play"));
 
@@ -75,7 +77,9 @@ document.addEventListener("click", (event) => {
     document.querySelector("#entry_popup").style.opacity = 0;
     document.querySelector("#entry_popup").style.display = "none";
     setTimeout(function () {
-      document.querySelector("#play").disabled = false;
+      if (!loggedIn) {
+        document.querySelector("#play").disabled = false;
+      }
     }, 75);
   }
   if (clickfirst) {
@@ -83,6 +87,7 @@ document.addEventListener("click", (event) => {
       document.querySelector("#play").disabled = true;
     }, 75);
   }
+
   clickfirst = false;
 });
 
@@ -100,6 +105,8 @@ document.querySelector("#play").addEventListener("click", (play_click) => {
 
   clickfirst = true;
 
+  document.querySelector("#play").disabled = true;
+
   const username_cache = sessionStorage.getItem("username_cache");
 
   if (username_cache) {
@@ -109,7 +116,6 @@ document.querySelector("#play").addEventListener("click", (play_click) => {
   //change this to check username availability and game waiting to happen in here
 
   document.querySelector("#name_submit").addEventListener("click", (event) => {
-    console.log("clicked name_submit");
     const name = document.querySelector("#name_input");
 
     if (name.value.length >= 4) {
@@ -145,10 +151,9 @@ document.querySelector("#play").addEventListener("click", (play_click) => {
           }
           document.querySelector("#entry_popup").style.opacity = 0;
           document.querySelector("#entry_popup").style.display = "none";
-          if (!document.querySelector("#play").disabled) {
-          }
 
-          // window.location.href += "game/";
+          loggedIn = true;
+          document.querySelector("#play").disabled = true;
         })
         .catch((error) => {
           console.log("from catch");
@@ -175,7 +180,9 @@ socket.on("game", (data) => {
     document.querySelector("#game_status").innerHTML =
       "No games are curretly playing.<br/>You can create a new game anytime you want!";
     document.querySelector("#play span").textContent = "Create new game!";
-    document.querySelector("#play").disabled = false;
+    if (!loggedIn) {
+      document.querySelector("#play").disabled = false;
+    }
     setPadding(document.querySelector("#play"), "1.7rem");
   }
 
@@ -184,7 +191,9 @@ socket.on("game", (data) => {
       "#game_status"
     ).innerHTML = `A new game has been set by ${game.created_by}`;
     document.querySelector("#play span").textContent = "Join";
-    document.querySelector("#play").disabled = false;
+    if (!loggedIn) {
+      document.querySelector("#play").disabled = false;
+    }
     setPadding(document.querySelector("#play"), "1.7rem");
 
     document.querySelector("#game_timer").textContent = `${(
