@@ -126,7 +126,7 @@ io.sockets.on("connection", (socket) => {
       }
     }
 
-    if (data.type == "live") {
+    if (data.type == "live" || data.type == "gameover") {
       socket.broadcast.emit("gameplay", data);
     }
   });
