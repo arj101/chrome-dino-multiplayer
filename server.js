@@ -128,7 +128,6 @@ io.sockets.on("connection", (socket) => {
 
     if (data.type == "live") {
       socket.broadcast.emit("gameplay", data);
-      console.log("broadcast " + data.position);
     }
   });
 

@@ -13,7 +13,7 @@ let start_time = 60;
 
 let ack_pressed = false;
 
-let otherPos;
+let otherPlayers = [];
 
 mdc.ripple.MDCRipple.attachTo(document.querySelector("#homepage_redirect"));
 mdc.ripple.MDCRipple.attachTo(document.querySelector("#game_start_ack"));
@@ -48,7 +48,7 @@ socket.on("gameplay", (data) => {
     try {
       loop();
     } catch {
-      console.warn("function loop not found!");
+      console.warn("function draw not found!");
     }
   }
   if (data.type == "live") {
@@ -58,7 +58,19 @@ socket.on("gameplay", (data) => {
     // rect(100, data.position, 100, 150);
     // console.log("draw");
     // pop();
-    otherPos = data.position;
+
+    let playerFound = false;
+
+    otherPlayers.forEach((player, index) => {
+      if (data.name == player.name) {
+        player.position = data.position;
+        playerFound = true;
+      }
+    });
+
+    if (!playerFound) {
+      otherPlayers.push(data);
+    }
   }
 });
 
@@ -186,15 +198,20 @@ function draw() {
 
   score += dino_speed / 128;
 
-  socket.emit("gameplay", { type: "live", position: dino.pos.y });
+  socket.emit("gameplay", {
+    type: "live",
+    position: dino.pos.y,
+    name: sessionStorage.getItem("username"),
+  });
 
-  if (otherPos) {
+  otherPlayers.forEach((player) => {
     push();
     noStroke();
     fill(50, 50);
-    rect(100, otherPos, 50, 75);
+    text(player.name, 100, player.position - 20);
+    rect(100, player.position, 50, 75);
     pop();
-  }
+  });
 
   for (let obstacle of obstacles) {
     if (dino.collided(obstacle)) {
