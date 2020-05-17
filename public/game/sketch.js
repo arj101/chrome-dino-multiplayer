@@ -67,7 +67,7 @@ socket.on("gameplay", (data) => {
         playerFound = true;
 
         setTimeout(function () {
-          otherPlayers.splice(1, index);
+          otherPlayers = otherPlayers.splice(1, index);
         }, 3000);
       }
     });
