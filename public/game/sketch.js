@@ -219,7 +219,7 @@ function draw() {
 
   socket.emit("gameplay", {
     type: "live",
-    position: dino.pos.y,
+    position: dino.pos.y / width,
     name: sessionStorage.getItem("username"),
   });
 
@@ -231,14 +231,14 @@ function draw() {
     }
     noStroke();
     textSize(18);
-    text(player.name, 100, player.position - 20);
+    text(player.name, 100, player.position * width - 20);
     fill(50, 100);
     if (player.over == true) {
       fill(255, 0, 0, 50);
     }
     rect(
       100,
-      player.position,
+      player.position * width,
       (window.innerHeight * 0.17 * 3) / 4,
       window.innerHeight * 0.17
     );
