@@ -2,6 +2,7 @@ class Dino {
   constructor(x, y, s) {
     this.pos = createVector(x, y);
     this.vel = createVector(0, 0);
+    this.normalY = y;
     this.normalH = s;
     this.h = s;
     this.w = s * (3 / 4);
@@ -38,9 +39,11 @@ class Dino {
   }
   duck(){
     this.h = this.normalH/3;
+    this.pos.y = this.normalY - 2*this.normalH/3;
   }
   unDuck(){
     this.h = this.normalH;
+    this.pos.y = this.normalY;
   }
   collided(other) {
     return (
