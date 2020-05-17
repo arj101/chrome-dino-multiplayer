@@ -79,14 +79,13 @@ document.addEventListener("click", (event) => {
   if (!event.target.closest("#entry_popup") && clickfirst == false) {
     document.querySelector("#entry_popup").style.opacity = 0;
     document.querySelector("#entry_popup").style.display = "none";
+    setTimeout(function () {
+      document.querySelector("#play").disabled = false;
+    }, 75);
   }
   if (clickfirst) {
     setTimeout(function () {
       document.querySelector("#play").disabled = true;
-    }, 75);
-  } else {
-    setTimeout(function () {
-      document.querySelector("#play").disabled = false;
     }, 75);
   }
   clickfirst = false;

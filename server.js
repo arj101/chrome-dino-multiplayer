@@ -110,7 +110,6 @@ io.sockets.on("connection", (socket) => {
   });
 
   socket.on("gameplay", (data) => {
-    console.log("game");
     if (data.type == "ready") {
       let allReady = true;
 
@@ -126,7 +125,11 @@ io.sockets.on("connection", (socket) => {
         console.log("all ready !!!!!!!!!!!");
       }
     }
-    //todo: if(data.type == "live")
+
+    if (data.type == "live") {
+      socket.broadcast.emit("gameplay", data);
+      console.log("broadcast " + data.position);
+    }
   });
 
   socket.on("disconnect", () => {

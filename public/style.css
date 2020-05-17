@@ -30,7 +30,7 @@ button {
 }
 
 #play {
-  --mdc-theme-primary: #ffae00;
+  --mdc-theme-primary: #ff7b00;
   --mdc-theme-on-primary: #ffffff;
   font-size: 1.1rem;
 }
@@ -40,7 +40,6 @@ button {
   background-color: rgb(255, 255, 255);
   border-radius: 0.4rem;
   position: absolute;
-  left: 2vw;
   top: 30vh;
   width: 60vw;
   min-height: 50vh;

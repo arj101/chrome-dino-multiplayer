@@ -13,6 +13,8 @@ let start_time = 60;
 
 let ack_pressed = false;
 
+let otherPos;
+
 mdc.ripple.MDCRipple.attachTo(document.querySelector("#homepage_redirect"));
 mdc.ripple.MDCRipple.attachTo(document.querySelector("#game_start_ack"));
 
@@ -48,6 +50,15 @@ socket.on("gameplay", (data) => {
     } catch {
       console.warn("function loop not found!");
     }
+  }
+  if (data.type == "live") {
+    // push();
+    // noStroke();
+    // fill(50);
+    // rect(100, data.position, 100, 150);
+    // console.log("draw");
+    // pop();
+    otherPos = data.position;
   }
 });
 
@@ -174,6 +185,16 @@ function draw() {
   pop();
 
   score += dino_speed / 128;
+
+  socket.emit("gameplay", { type: "live", position: dino.pos.y });
+
+  if (otherPos) {
+    push();
+    noStroke();
+    fill(50, 50);
+    rect(100, otherPos, 50, 75);
+    pop();
+  }
 
   for (let obstacle of obstacles) {
     if (dino.collided(obstacle)) {
