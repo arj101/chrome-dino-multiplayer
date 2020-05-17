@@ -74,8 +74,6 @@ socket.on("gameplay", (data) => {
   }
 
   if (data.type == "gameover") {
-    alert("game over: " + data.name);
-
     let playerFound = false;
 
     otherPlayers.forEach((player, index) => {
