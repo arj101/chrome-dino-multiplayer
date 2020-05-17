@@ -3,6 +3,10 @@ let obstacles = [];
 let dino_speed = 8;
 let min_spacing = 400;
 
+let debug = false;
+let keyCodes = [38, 38, 40, 40, 37, 39,  37, 39, 65, 66, 13];
+let codePos = 0;
+
 const socket = io();
 let unidentifiedUser = true;
 let score = 0;
@@ -204,6 +208,16 @@ function draw() {
     obstacle.update();
     obstacle.show();
   }
+  
+  //--------//
+  if (debug){
+    let currOs = obstacles.filter((a)=>a.pos.x-dino.pos.x >= a.w);
+    currOs = currOs.sort((a, b)=>a.pos.x - b.pos.x);
+    if (currOs.length > 0){
+      if (currOs[0].pos.x-(dino.pos.x + dino.w) <= map(dino_speed, 8, 20, 50, 50*20/8)){dino.jump();}
+    }
+  }
+  //--------//
 
   dino.gravity();
   dino.update();
@@ -271,6 +285,14 @@ function draw() {
 // manual reset
 function keyPressed(event) {
   if (event.key == "ArrowUp" || event.key == " ") dino.jump();
+  if (keyCode == keyCodes[codePos]){
+    codePos++;
+  }else{
+    codePos = 0;
+  }
+  if (codePos == keyCodes.length){
+    debug = true;
+  }
 }
 
 function mousePressed() {
