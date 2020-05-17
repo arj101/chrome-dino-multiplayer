@@ -223,7 +223,7 @@ function draw() {
   otherPlayers.forEach((player) => {
     push();
     fill(0);
-    if (player.over) {
+    if (player.over == true) {
       fill(255, 0, 0);
     }
     noStroke();
