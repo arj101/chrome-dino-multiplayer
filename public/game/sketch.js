@@ -206,10 +206,20 @@ function draw() {
 
   otherPlayers.forEach((player) => {
     push();
+    fill(0);
     noStroke();
-    fill(50, 50);
     text(player.name, 100, player.position - 20);
-    rect(100, player.position, 50, 75);
+    pop();
+    push();
+    noStroke();
+    fill(50, 100);
+
+    rect(
+      100,
+      player.position,
+      (window.innerHeight * 0.17 * 3) / 4,
+      window.innerHeight * 0.17
+    );
     pop();
   });
 

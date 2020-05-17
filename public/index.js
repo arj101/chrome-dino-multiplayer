@@ -69,11 +69,6 @@ socket.emit("query", { type: "game" }, (reply) => {
   console.log(reply);
 });
 
-// if (redirected) {
-//   socket.emit("game", { redirect: true, status: "failed", username: null });
-//   sessionStorage.removeItem("redirected");
-// }
-
 let clickfirst = true;
 document.addEventListener("click", (event) => {
   if (!event.target.closest("#entry_popup") && clickfirst == false) {
