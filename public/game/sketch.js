@@ -78,7 +78,6 @@ socket.on("gameplay", (data) => {
 
     otherPlayers.forEach((player, index) => {
       if (data.name == player.name) {
-        player.position = data.position;
         playerFound = true;
         player.over = true;
       }
