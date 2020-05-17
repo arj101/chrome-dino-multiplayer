@@ -65,6 +65,10 @@ socket.on("gameplay", (data) => {
       if (data.name == player.name) {
         player.position = data.position;
         playerFound = true;
+
+        setTimeout(function () {
+          otherPlayers.splice(1, index);
+        }, 3000);
       }
     });
 
