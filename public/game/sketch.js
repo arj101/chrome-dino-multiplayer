@@ -228,11 +228,10 @@ function draw() {
     noStroke();
     textSize(18);
     text(player.name, 100, player.position - 20);
-    pop();
-    push();
-    noStroke();
     fill(50, 100);
-
+    if (player.over == true) {
+      fill(255, 0, 0, 50);
+    }
     rect(
       100,
       player.position,
