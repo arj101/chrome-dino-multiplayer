@@ -291,4 +291,5 @@ function gameOver() {
     type: "gameover",
     name: sessionStorage.getItem("username"),
   });
+  socket.emit("leaving", { username: userName, leaving: true });
 }
