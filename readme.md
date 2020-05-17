@@ -12,7 +12,6 @@
 
 *note: this project is not optimized for mobile devices yet.* <br />
 Feel free to create a new issue with the label ```enhancement``` for suggesting any new improvements.
-Issues for bug fixes are also welcome.
-
+Issues for bug fixes are also welcome!
 
 
