@@ -6,11 +6,23 @@ const port = process.env.PORT || 3000;
 
 console.log(`Starting server at port ${port}...`);
 
+//checking if the protocol is http or http
+// if it is https redirect to https
+function checkHttps(req, res, next) {
+  if (req.get("X-Forwarded-Proto").indexOf("https") != -1) return next();
+  else {
+    console.log("redirecting to http");
+    res.redirect("https://" + req.hostname + req.url);
+  }
+}
+
 const server = app.listen(port, () => {
   console.log(`Listening at port ${port}!`);
 });
 
 app.use(express.static("public"));
+
+app.all("*", checkHttps);
 
 const io = socket(server);
 
