@@ -29,6 +29,16 @@ if (!userName || !userId || userName.length < 4) {
   window.location.href = window.location.href + "../";
 }
 
+window.addEventListener("load", () => {
+  console.log("loading");
+  const w = document.querySelector("#game_start").offsetWidth;
+  const h = document.querySelector("#game_start").offsetHeight;
+  const l = (window.innerWidth - w) / 2;
+  const t = (window.innerHeight - h) / 2;
+  document.querySelector("#game_start").style.left = l + "px";
+  document.querySelector("#game_start").style.top = t + "px";
+});
+
 window.addEventListener("beforeunload", (event) => {
   // f (!unidentifiedUser) {
   sessionStorage.removeItem("username");
