@@ -19,6 +19,20 @@ let ack_pressed = false;
 
 let otherPlayers = [];
 
+// dino assets--------------------------
+let jumpSound;
+//--------------------------------------
+
+//game over sound-----------------------
+let gameOverSound;
+//--------------------------------------
+
+//score reached sound-------------------
+let scoreReached;
+//--------------------------------------
+
+let last_scoreReached = 0;
+
 mdc.ripple.MDCRipple.attachTo(document.querySelector("#homepage_redirect"));
 mdc.ripple.MDCRipple.attachTo(document.querySelector("#game_start_ack"));
 
@@ -130,8 +144,13 @@ document.querySelector("#game_start_ack").addEventListener("click", () => {
   }
 });
 
+//preload() - loading assets before game starts -----------------
+
 function preload() {
   loadFont("assets/PressStart2P-Regular.ttf"); // loading the font
+  jumpSound = loadSound("assets/button-press.mp3");
+  gameOverSound = loadSound("assets/hit.mp3");
+  scoreReached = loadSound("assets/score-reached.mp3");
 }
 
 function setup() {
@@ -150,6 +169,8 @@ function setup() {
     )
   );
 }
+
+//draw() main game loop --------------------------
 
 function draw() {
   if (!started) {
@@ -245,7 +266,12 @@ function draw() {
   pop();
 
   score += dino_speed / 128;
-  // glitch reupload
+
+  if (score >= last_scoreReached + 100) {
+    last_scoreReached = score;
+    scoreReached.play();
+  }
+
   socket.emit("gameplay", {
     type: "live",
     position: dino.pos.y / height,
@@ -329,4 +355,6 @@ function gameOver() {
     name: sessionStorage.getItem("username"),
   });
   socket.emit("leaving", { username: userName, leaving: true });
+
+  gameOverSound.play();
 }

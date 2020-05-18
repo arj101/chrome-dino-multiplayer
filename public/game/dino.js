@@ -33,6 +33,7 @@ class Dino {
     if (this.vel.y == 0) {
       const vel_y = 25;
       this.vel.y -= vel_y;
+      jumpSound.play();
     }
   }
   collided(other) {
