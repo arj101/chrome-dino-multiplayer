@@ -16,13 +16,13 @@ function checkHttps(req, res, next) {
   }
 }
 
+if (port == process.env.PORT) app.all("*", checkHttps);
+
 const server = app.listen(port, () => {
   console.log(`Listening at port ${port}!`);
 });
 
 app.use(express.static("public"));
-
-app.all("*", checkHttps);
 
 const io = socket(server);
 
