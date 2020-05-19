@@ -138,6 +138,10 @@ io.sockets.on("connection", (socket) => {
         setTimeout(function () {
           //ending game after 20 minutes
           io.socket.emit("gameplay", { type: "end" });
+          game.status = "no_games"; //reset game
+          game.timer = null;
+          game.created_by = null;
+          game.players = [];
         }, 60000 * 20);
       } else {
         setTimeout(function () {
