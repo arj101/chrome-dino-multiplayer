@@ -21,6 +21,8 @@ let otherPlayers = [];
 
 // dino assets--------------------------
 let jumpSound;
+let dinoRunTexture1;
+let dinoRunTexture2;
 //--------------------------------------
 
 //game over sound-----------------------
@@ -147,10 +149,10 @@ document.querySelector("#game_start_ack").addEventListener("click", () => {
 //preload() - loading assets before game starts -----------------
 
 function preload() {
-  loadFont("assets/PressStart2P-Regular.ttf"); // loading the font
-  jumpSound = loadSound("assets/button-press.mp3");
-  gameOverSound = loadSound("assets/hit.mp3");
-  scoreReached = loadSound("assets/score-reached.mp3");
+  loadFont("assets/font/PressStart2P-Regular.ttf"); // loading the font
+  jumpSound = loadSound("assets/audio/button-press.mp3");
+  gameOverSound = loadSound("assets/audio/hit.mp3");
+  scoreReached = loadSound("assets/audio/score-reached.mp3");
 }
 
 function setup() {
