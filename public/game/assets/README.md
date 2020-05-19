@@ -7,4 +7,4 @@
 
 - Sound and textures credit - Google Chrome
 
--icon from the spritesheet
+- icon from the spritesheet
