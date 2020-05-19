@@ -135,6 +135,15 @@ io.sockets.on("connection", (socket) => {
       if (allReady) {
         io.sockets.emit("gameplay", { type: "start" });
         console.log("all ready !!!!!!!!!!!");
+        setTimeout(function () {
+          //ending game after 20 minutes
+          io.socket.emit("gameplay", { type: "end" });
+        }, 60000 * 20);
+      } else {
+        setTimeout(function () {
+          //starting game after 60 seconds automatically
+          io.sockets.emit("gameplay", { type: "start" });
+        }, 60000);
       }
     }
 

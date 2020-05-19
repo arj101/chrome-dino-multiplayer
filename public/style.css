@@ -92,9 +92,6 @@ button {
   flex-wrap: wrap;
   transition: all 300ms ease;
   background-color: #ffffff;
-  /* border-style: solid;
-  border-width: 0.15rem;
-  border-color: rgba(100, 100, 100, 0.089); */
 }
 
 .player_div {

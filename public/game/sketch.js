@@ -53,6 +53,8 @@ window.addEventListener("load", () => {
   const t = (window.innerHeight - h) / 2;
   document.querySelector("#game_start").style.left = l + "px";
   document.querySelector("#game_start").style.top = t + "px";
+  document.querySelector("#game_start").style.opacity = 1;
+  document.querySelector("#game_start").style.pointerEvents = "all";
 });
 
 window.addEventListener("beforeunload", (event) => {
@@ -80,15 +82,7 @@ socket.on("gameplay", (data) => {
     } catch {
       console.warn("function draw not found!");
     }
-  }
-  if (data.type == "live") {
-    // push();
-    // noStroke();
-    // fill(50);
-    // rect(100, data.position, 100, 150);
-    // console.log("draw");
-    // pop();
-
+  } else if (data.type == "live") {
     let playerFound = false;
 
     otherPlayers.forEach((player, index) => {
@@ -105,9 +99,7 @@ socket.on("gameplay", (data) => {
     if (!playerFound) {
       otherPlayers.push(data);
     }
-  }
-
-  if (data.type == "gameover") {
+  } else if (data.type == "gameover") {
     let playerFound = false;
 
     otherPlayers.forEach((player, index) => {
@@ -120,6 +112,12 @@ socket.on("gameplay", (data) => {
     if (!playerFound) {
       console.warn("No user named " + data.name);
     }
+  } else if (data.type == "end") {
+    noLoop();
+    alert("Game has ended (max. time: 20 minutes)");
+    sessionStorage.removeItem("user_id");
+    sessionStorage.removeItem("username");
+    window.location.href += "../";
   }
 });
 
