@@ -2,17 +2,17 @@ class Dino {
   constructor(x, y, s) {
     this.pos = createVector(x, y);
     this.vel = createVector(0, 0);
-    this.normalY = y;
     this.normalH = s;
     this.h = s;
     this.w = s * (3 / 4);
-    this.basey = y - this.h;
+    this.baseY = y - this.h;
+    this.normalY = this.baseY;
   }
 
   update() {
     this.pos.add(this.vel);
-    if (this.pos.y > this.basey) {
-      this.pos.y = this.basey;
+    if (this.pos.y > this.baseY) {
+      this.pos.y = this.baseY;
       this.vel.y = 0;
     }
     if (this.pos.y < 0) this.pos.y = 0;
@@ -29,21 +29,23 @@ class Dino {
   }
 
   gravity() {
-    if (this.pos.y < this.basey) this.vel.y += 1.5;
+    if (this.pos.y < this.baseY) this.vel.y += 1.5;
   }
   jump() {
     if (this.vel.y == 0) {
       const vel_y = 25;
       this.vel.y -= vel_y;
     }
-  }
-  duck(){
+  } 
+  duck(){/// also makes you snap downwards
     this.h = this.normalH/3;
-    this.pos.y = this.normalY - 2*this.normalH/3;
+    this.pos.y = this.normalY + (2*this.h);
+    this.baseY = this.normalY + (2*this.h);
   }
   unDuck(){
     this.h = this.normalH;
     this.pos.y = this.normalY;
+    this.baseY = this.normalY;
   }
   collided(other) {
     return (
