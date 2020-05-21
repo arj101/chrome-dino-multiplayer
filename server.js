@@ -28,6 +28,8 @@ const io = socket(server);
 
 let game_timer;
 
+let gameEndTimer;
+
 let game = {
   status: "no_games",
   timer: null,
@@ -135,9 +137,9 @@ io.sockets.on("connection", (socket) => {
       if (allReady) {
         io.sockets.emit("gameplay", { type: "start" });
         console.log("all ready !!!!!!!!!!!");
-        setTimeout(function () {
+        gameEndTimer = setTimeout(function () {
           //ending game after 20 minutes
-          io.socket.emit("gameplay", { type: "end" });
+          io.sockets.emit("gameplay", { type: "end" });
           game.status = "no_games"; //reset game
           game.timer = null;
           game.created_by = null;

@@ -23,6 +23,7 @@ let otherPlayers = [];
 let jumpSound;
 let dinoRunTexture1;
 let dinoRunTexture2;
+let dinoJumpTexture;
 //--------------------------------------
 
 //game over sound-----------------------
@@ -151,6 +152,9 @@ function preload() {
   jumpSound = loadSound("assets/audio/button-press.mp3");
   gameOverSound = loadSound("assets/audio/hit.mp3");
   scoreReached = loadSound("assets/audio/score-reached.mp3");
+  dinoRunTexture1 = loadImage("assets/sprites/dino-run-1.png");
+  dinoRunTexture2 = loadImage("assets/sprites/dino-run-2.png");
+  dinoJumpTexture = loadImage("assets/sprites/dino-jump.png")
 }
 
 function setup() {
@@ -158,9 +162,18 @@ function setup() {
   canvas.id("canvas");
   dino = new Dino(
     100,
-    (window.innerHeight * 13.5) / 16,
-    window.innerHeight * 0.17
+    (window.innerHeight * 13.8) / 16,
+    window.innerHeight * 0.17,
+    [dinoRunTexture1,dinoRunTexture2,dinoJumpTexture]
   );
+
+  //setInterval(function () {
+  //  if (dino.currTexIndex) dino.currTexIndex = 0;
+  //  else dino.currTexIndex = 1;
+  //}, 200);
+
+  // dino.loadTexture(dinoRunTexture1);
+  // dino.loadTexture(dinoRunTexture2);
   obstacles.push(
     new Obstacle(
       width + 500,
@@ -206,7 +219,7 @@ function draw() {
     }
   }
 
-  background(230);
+  background(255);
   push();
   textSize(20);
   fill(10, 200);
@@ -215,7 +228,16 @@ function draw() {
   text(`Hi, ${userName}!`, 10, 30);
   pop();
 
-  constrain(min_spacing, 300, 450);
+  push();
+  noStroke();
+  // fill(20, 240, 25, 200);
+  noFill();
+  stroke(100);
+  strokeWeight(2);
+  rect(width * -0.1, (window.innerHeight * 13.5) / 16, width * 1.1, height);
+  pop();
+
+  min_spacing = constrain(min_spacing, 300, 450);
 
   min_spacing = dino_speed * 50;
 
@@ -233,7 +255,7 @@ function draw() {
   }
 
   dino_speed += 0.01;
-  constrain(dino_speed, 8, 20);
+  dino_speed = constrain(dino_speed, 8, 50);
 
   for (let obstacle of obstacles) {
     obstacle.update();
@@ -259,11 +281,7 @@ function draw() {
   dino.update();
   dino.show();
 
-  push();
-  noStroke();
-  fill(20, 240, 25, 200);
-  rect(0, (window.innerHeight * 13.5) / 16, width, height);
-  pop();
+
 
   score += dino_speed / 128;
 
