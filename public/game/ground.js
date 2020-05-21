@@ -11,6 +11,16 @@ class Ground {
   }
 
   update() {
+    if (this.pos1.x + this.textures[0].width <= 0)
+      this.pos1.x = this.pos2.x + this.textures[1].width;
+    if (this.pos2.x + this.textures[1].width <= 0)
+      this.pos2.x = this.pos1.x + this.textures[0].width;
+
+    this.pos1.x -= dino_speed;
+    this.pos2.x -= dino_speed;
+  }
+
+  show() {
     image(
       this.textures[0],
       this.pos1.x,
@@ -21,13 +31,5 @@ class Ground {
       this.pos2.x,
       this.pos2.y - this.textures[1].height / 2
     );
-
-    if (this.pos1.x + this.textures[0].width <= 0)
-      this.pos1.x = this.pos2.x + this.textures[1].width;
-    if (this.pos2.x + this.textures[1].width <= 0)
-      this.pos2.x = this.pos1.x + this.textures[0].width;
-
-    this.pos1.x -= dino_speed;
-    this.pos2.x -= dino_speed;
   }
 }

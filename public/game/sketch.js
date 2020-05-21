@@ -16,6 +16,7 @@ let canvas;
 let started = false;
 let game_start_timer;
 let start_time = 60;
+let collided = false;
 
 let ack_pressed = false;
 
@@ -26,6 +27,7 @@ let jumpSound;
 let dinoRunTexture1;
 let dinoRunTexture2;
 let dinoJumpTexture;
+let dinoGameOverTexture;
 //*--------------------------------------
 
 //*ground texture------------------------
@@ -162,6 +164,7 @@ function preload() {
   dinoRunTexture2 = loadImage("assets/sprites/dino-run-2.png");
   dinoJumpTexture = loadImage("assets/sprites/dino-jump.png");
   groundTexture = loadImage("assets/sprites/ground.png");
+  dinoGameOverTexture = loadImage("assets/sprites/dino-game-over-2.png");
 }
 
 function setup() {
@@ -171,7 +174,7 @@ function setup() {
     100,
     (window.innerHeight * 13.8) / 16,
     window.innerHeight * 0.17,
-    [dinoRunTexture1, dinoRunTexture2, dinoJumpTexture]
+    [dinoRunTexture1, dinoRunTexture2, dinoJumpTexture, dinoGameOverTexture]
   );
 
   ground = new Ground(0, (window.innerHeight * 13.5) / 16, groundTexture);
@@ -232,14 +235,10 @@ function draw() {
 
   push();
   noStroke();
-  // fill(20, 240, 25, 200);
-  // noFill();
-  // stroke(100);
-  // strokeWeight(2);
-  // rect(width * -0.1, (window.innerHeight * 13.5) / 16, width * 1.1, height);
-  // pop();
 
-  ground.update();
+  if (!collided) ground.update();
+
+  ground.show();
 
   min_spacing = constrain(min_spacing, 300, 450);
 
@@ -262,7 +261,7 @@ function draw() {
   dino_speed = constrain(dino_speed, 8, 50);
 
   for (let obstacle of obstacles) {
-    obstacle.update();
+    if (!collided) obstacle.update();
     obstacle.show();
   }
 
@@ -280,12 +279,13 @@ function draw() {
     }
   }
   //--------//
-
-  dino.gravity();
-  dino.update();
+  if (!collided) {
+    dino.gravity();
+    dino.update();
+  }
   dino.show();
 
-  score += dino_speed / 128;
+  if (!collided) score += dino_speed / 128;
 
   if (score >= last_scoreReached + 100) {
     last_scoreReached = score;
@@ -320,10 +320,15 @@ function draw() {
     pop();
   });
 
+  if (collided) {
+    noLoop();
+    gameOver();
+  }
+
   for (let obstacle of obstacles) {
     if (dino.collided(obstacle)) {
-      noLoop();
-      gameOver();
+      collided = true;
+      dino.gameOver = true; //changing texture
       console.log("Game Over");
     }
   }
@@ -375,6 +380,5 @@ function gameOver() {
     name: sessionStorage.getItem("username"),
   });
   socket.emit("leaving", { username: userName, leaving: true });
-
   gameOverSound.play();
 }
