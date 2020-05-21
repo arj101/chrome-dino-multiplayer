@@ -1,5 +1,7 @@
 let dino;
 let obstacles = [];
+let ground;
+
 let dino_speed = 8;
 let min_spacing = 400;
 
@@ -19,20 +21,24 @@ let ack_pressed = false;
 
 let otherPlayers = [];
 
-// dino assets--------------------------
+//*dino assets--------------------------
 let jumpSound;
 let dinoRunTexture1;
 let dinoRunTexture2;
 let dinoJumpTexture;
-//--------------------------------------
+//*--------------------------------------
 
-//game over sound-----------------------
+//*ground texture------------------------
+let groundTexture;
+//*--------------------------------------
+
+//*game over sound-----------------------
 let gameOverSound;
-//--------------------------------------
+//*--------------------------------------
 
-//score reached sound-------------------
+//*score reached sound-------------------
 let scoreReached;
-//--------------------------------------
+//*--------------------------------------
 
 let last_scoreReached = 0;
 
@@ -154,7 +160,8 @@ function preload() {
   scoreReached = loadSound("assets/audio/score-reached.mp3");
   dinoRunTexture1 = loadImage("assets/sprites/dino-run-1.png");
   dinoRunTexture2 = loadImage("assets/sprites/dino-run-2.png");
-  dinoJumpTexture = loadImage("assets/sprites/dino-jump.png")
+  dinoJumpTexture = loadImage("assets/sprites/dino-jump.png");
+  groundTexture = loadImage("assets/sprites/ground.png");
 }
 
 function setup() {
@@ -164,16 +171,11 @@ function setup() {
     100,
     (window.innerHeight * 13.8) / 16,
     window.innerHeight * 0.17,
-    [dinoRunTexture1,dinoRunTexture2,dinoJumpTexture]
+    [dinoRunTexture1, dinoRunTexture2, dinoJumpTexture]
   );
 
-  //setInterval(function () {
-  //  if (dino.currTexIndex) dino.currTexIndex = 0;
-  //  else dino.currTexIndex = 1;
-  //}, 200);
+  ground = new Ground(0, (window.innerHeight * 13.5) / 16, groundTexture);
 
-  // dino.loadTexture(dinoRunTexture1);
-  // dino.loadTexture(dinoRunTexture2);
   obstacles.push(
     new Obstacle(
       width + 500,
@@ -231,11 +233,13 @@ function draw() {
   push();
   noStroke();
   // fill(20, 240, 25, 200);
-  noFill();
-  stroke(100);
-  strokeWeight(2);
-  rect(width * -0.1, (window.innerHeight * 13.5) / 16, width * 1.1, height);
-  pop();
+  // noFill();
+  // stroke(100);
+  // strokeWeight(2);
+  // rect(width * -0.1, (window.innerHeight * 13.5) / 16, width * 1.1, height);
+  // pop();
+
+  ground.update();
 
   min_spacing = constrain(min_spacing, 300, 450);
 
@@ -280,8 +284,6 @@ function draw() {
   dino.gravity();
   dino.update();
   dino.show();
-
-
 
   score += dino_speed / 128;
 
