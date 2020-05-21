@@ -1,5 +1,6 @@
 let dino;
 let obstacles = [];
+let clouds = [];
 let ground;
 
 let dino_speed = 8;
@@ -32,6 +33,10 @@ let dinoGameOverTexture;
 
 //*ground texture------------------------
 let groundTexture;
+//*--------------------------------------
+
+//*cloud texture-------------------------
+let cloudTexture;
 //*--------------------------------------
 
 //*game over sound-----------------------
@@ -165,11 +170,14 @@ function preload() {
   dinoJumpTexture = loadImage("assets/sprites/dino-jump.png");
   groundTexture = loadImage("assets/sprites/ground.png");
   dinoGameOverTexture = loadImage("assets/sprites/dino-game-over-2.png");
+  cloudTexture = loadImage("assets/sprites/cloud.png");
 }
 
 function setup() {
   canvas = createCanvas(displayWidth, window.innerHeight);
   canvas.id("canvas");
+  canvas.drawingContext.imageSmoothingEnabled = false;
+
   dino = new Dino(
     100,
     (window.innerHeight * 13.8) / 16,
@@ -184,6 +192,16 @@ function setup() {
       width + 500,
       (window.innerHeight * 13.5) / 16,
       window.innerHeight * 0.15
+    )
+  );
+
+  clouds.push(
+    new Cloud(
+      width + width * 0.1,
+      height * random(0.1, 0.3),
+      height * 0.075,
+      cloudTexture,
+      -(dino_speed / 3)
     )
   );
 }
@@ -263,6 +281,29 @@ function draw() {
   for (let obstacle of obstacles) {
     if (!collided) obstacle.update();
     obstacle.show();
+  }
+
+  clouds.forEach((cloud) => {
+    cloud.update();
+    cloud.show();
+  });
+
+  for (let i = clouds.length - 1; i >= 0; i--) {
+    if (clouds[i].pos.x + clouds[i].w < 0) {
+      clouds.splice(1, i);
+    }
+  }
+
+  if (clouds.length < 2) {
+    clouds.push(
+      new Cloud(
+        width + width * random(0.1, 0.5),
+        height * random(0.1, 0.3),
+        height * 0.075,
+        cloudTexture,
+        -(dino_speed / random(2, 4))
+      )
+    );
   }
 
   //--------//
