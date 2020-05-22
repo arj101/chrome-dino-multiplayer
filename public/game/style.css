@@ -19,12 +19,12 @@ button {
 }
 
 #game_over {
-  z-index: 2;
   position: absolute;
-  top: 30vh;
-  left: 30vw;
   width: 40vw;
   height: 40vh;
+  left: 30vw;
+  top: 30vh;
+  z-index: 2;
   font-family: "PressStart2P-Regular";
   background-color: rgba(255, 255, 255, 0.884);
   display: flex;
@@ -44,11 +44,13 @@ button {
 }
 
 #game_start {
+  position: absolute;
   width: fit-content;
   height: fit-content;
-  position: absolute;
-  top: 40vh;
-  left: 35vw;
+
+  opacity: 0;
+  pointer-events: none;
+
   z-index: 2;
   background-color: rgba(255, 255, 255, 0.884);
   box-shadow: 5px 5px 15px rgba(58, 58, 58, 0.329);

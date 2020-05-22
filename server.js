@@ -6,6 +6,18 @@ const port = process.env.PORT || 3000;
 
 console.log(`Starting server at port ${port}...`);
 
+//checking if the protocol is http or http
+// if it is https redirect to https
+function checkHttps(req, res, next) {
+  if (req.get("X-Forwarded-Proto").indexOf("https") != -1) return next();
+  else {
+    console.log("redirecting to http");
+    res.redirect("https://" + req.hostname + req.url);
+  }
+}
+
+if (port == process.env.PORT) app.all("*", checkHttps);
+
 const server = app.listen(port, () => {
   console.log(`Listening at port ${port}!`);
 });
@@ -15,6 +27,8 @@ app.use(express.static("public"));
 const io = socket(server);
 
 let game_timer;
+
+let gameEndTimer;
 
 let game = {
   status: "no_games",
@@ -123,6 +137,19 @@ io.sockets.on("connection", (socket) => {
       if (allReady) {
         io.sockets.emit("gameplay", { type: "start" });
         console.log("all ready !!!!!!!!!!!");
+        gameEndTimer = setTimeout(function () {
+          //ending game after 20 minutes
+          io.sockets.emit("gameplay", { type: "end" });
+          game.status = "no_games"; //reset game
+          game.timer = null;
+          game.created_by = null;
+          game.players = [];
+        }, 60000 * 20);
+      } else {
+        setTimeout(function () {
+          //starting game after 60 seconds automatically
+          io.sockets.emit("gameplay", { type: "start" });
+        }, 60000);
       }
     }
 
