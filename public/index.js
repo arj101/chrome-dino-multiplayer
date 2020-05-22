@@ -41,7 +41,9 @@ socket.emit("query", { type: "game" }, (reply) => {
     document.querySelector("#play").disabled = false;
     setPadding(document.querySelector("#play"), "1.7rem");
 
-    document.querySelector("#game_timer").textContent = `${formatTime(game.timer)}`;
+    document.querySelector("#game_timer").textContent = `${(
+      game.timer / 60
+    ).toFixed(0)}:${game.timer % 60}`;
 
     game_timer = setInterval(function () {
       game.timer--;
@@ -49,7 +51,9 @@ socket.emit("query", { type: "game" }, (reply) => {
         clearInterval(game_timer);
         console.log("timing finshed");
       } else {
-        document.querySelector("#game_timer").textContent = `${formatTime(game.timer)}`;
+        document.querySelector("#game_timer").textContent = `${Math.floor(
+          game.timer / 60
+        )}:${game.timer % 60}`;
       }
     }, 1000);
   }
@@ -128,14 +132,14 @@ document.querySelector("#play").addEventListener("click", (play_click) => {
             game.created_by = name.value;
             let timerValue = document.querySelector("#timing_input").value;
             if (!timerValue) timerValue = 30;
-            if (timerValue > 86400) {
+            if (timerValue > 120) {
               alert(
-                "Game can't be delayed more than 24 hours (setting timer to 24 hours)"
+                "Game can't be delayed more than 2 minutes(setting timer to 2 minutes)"
               );
-              timerValue = 86400;
+              timerValue = 120;
             } else if (timerValue < 0) {
               alert(
-                "Game can't be delayed less than 0 seconds (setting timer to 0 seconds)"
+                "Game can't be delayed less than 0 seconds(setting timer to 0 seconds)"
               );
               timerValue = 0;
             }
@@ -194,7 +198,9 @@ socket.on("game", (data) => {
     }
     setPadding(document.querySelector("#play"), "1.7rem");
 
-    document.querySelector("#game_timer").textContent = `${formatTime(game.timer)}`;
+    document.querySelector("#game_timer").textContent = `${(
+      game.timer / 60
+    ).toFixed(0)}:${game.timer % 60}`;
 
     game_timer = setInterval(function () {
       game.timer--;
@@ -202,7 +208,9 @@ socket.on("game", (data) => {
         clearInterval(game_timer);
         console.log("timing finshed");
       } else {
-        document.querySelector("#game_timer").textContent = `${formatTime(game.timer)}`;
+        document.querySelector("#game_timer").textContent = `${Math.floor(
+          game.timer / 60
+        )}:${game.timer % 60}`;
       }
     }, 1000);
   }
@@ -256,20 +264,4 @@ function setPadding(item, padding) {
   item.style.width = `calc(${item.offsetWidth + "px"} + ${padding})`;
 
   item.style.height = `calc(${item.offsetHeight + "px"} + ${padding})`;
-}
-
-function formatTime(secs){
-  const max = 24*60*60;
-  if (secs>max){
-    return '24:00:00+'
-  }else{
-    let h = Math.floor(secs/(60*60));
-    let m = Math.floor(secs/60)-h*60;
-    let s = Math.floor(secs)-(h*60+m)*60;
-    let [hs, ms, ss] = [`${h}`, `${m}`, `${s}`];
-    while (hs.length < 2) hs=`0${hs}`;
-    while (ms.length < 2) ms=`0${ms}`;
-    while (ss.length < 2) s=`0${ss}`;
-    return ([hs, ms, ss].join(':')).slice((h != 0)?0:3, 8);
-  }
 }
