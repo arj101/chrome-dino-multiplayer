@@ -1,10 +1,11 @@
 class Obstacle {
-  constructor(x, y, s, h=undefined) {
-    if (h !== undefined){
+  constructor(x, y, s, h = undefined) {
+    if (h != undefined) {
       this.h = h;
-    }else{
+    } else {
       this.h = s;
     }
+    this.s = s;
     this.pos = createVector(x, y - this.h);
     this.w = (this.s * 3) / 4;
   }
