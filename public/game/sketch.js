@@ -186,7 +186,7 @@ function setup() {
   );
 
   let r = floor(random(1, 6));
-  switch (r){
+  switch (r) {
     case 2:
     case 3:
     case 4:
@@ -194,12 +194,14 @@ function setup() {
       obstacles.push(
         new Obstacle(
           width + 500,
-          ((window.innerHeight * 13.5) / 16)-window.innerHeight * 0.15+((r-1)*dino.normalH/3),
+          (window.innerHeight * 13.5) / 16 -
+            window.innerHeight * 0.15 +
+            ((r - 1) * dino.normalH) / 3,
           window.innerHeight * 0.15,
-          dino.normalH/3
+          dino.normalH / 3
         )
-        break;
       );
+      break;
     default:
       obstacles.push(
         new Obstacle(
@@ -212,13 +214,13 @@ function setup() {
 
   ground = new Ground(0, (window.innerHeight * 13.5) / 16, groundTexture);
 
-//  obstacles.push(
-//    new Obstacle(
-//      width + 500,
-//      (window.innerHeight * 13.5) / 16,
-//      window.innerHeight * 0.15
-//    )
-//  );
+  //  obstacles.push(
+  //    new Obstacle(
+  //      width + 500,
+  //      (window.innerHeight * 13.5) / 16,
+  //      window.innerHeight * 0.15
+  //    )
+  //  );
 
   clouds.push(
     new Cloud(
@@ -229,7 +231,6 @@ function setup() {
       -(dino_speed / 3)
     )
   );
-
 }
 
 //draw() main game loop --------------------------
@@ -293,7 +294,7 @@ function draw() {
     width + 100 - obstacles[obstacles.length - 1].pos.x > min_spacing
   ) {
     let r = floor(random(1, 6));
-    switch (r){
+    switch (r) {
       case 2:
       case 3:
       case 4:
@@ -301,12 +302,14 @@ function draw() {
         obstacles.push(
           new Obstacle(
             width + 500,
-            ((window.innerHeight * 13.5) / 16)-window.innerHeight * 0.15+((r-1)*dino.normalH/3),
+            (window.innerHeight * 13.5) / 16 -
+              window.innerHeight * 0.15 +
+              ((r - 1) * dino.normalH) / 3,
             window.innerHeight * 0.15,
-            dino.normalH/3
+            dino.normalH / 3
           )
-          break;
         );
+        break;
       default:
         obstacles.push(
           new Obstacle(
