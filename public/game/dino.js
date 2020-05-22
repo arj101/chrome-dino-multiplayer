@@ -25,7 +25,7 @@ class Dino {
 
   show() {
     if (frameCount - this.lastTextureChange > 1 / (dino_speed / 128)) {
-      if (this.pos.y >= this.basey - 0.01) {
+      if (this.pos.y >= this.baseY - 0.01) {
         this.lastTextureChange = frameCount;
         if (this.currTexIndex) this.currTexIndex = 0;
         else this.currTexIndex = 1;
