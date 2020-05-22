@@ -186,7 +186,7 @@ function setup() {
   );
 
   let r = floor(random(1, 6));
-  switch r{
+  switch (r){
     case 2:
     case 3:
     case 4:
@@ -293,7 +293,7 @@ function draw() {
     width + 100 - obstacles[obstacles.length - 1].pos.x > min_spacing
   ) {
     let r = floor(random(1, 6));
-    switch r{
+    switch (r){
       case 2:
       case 3:
       case 4:
