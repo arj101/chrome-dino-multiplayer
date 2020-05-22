@@ -1,10 +1,13 @@
 let dino;
 let obstacles = [];
+let clouds = [];
+let ground;
+
 let dino_speed = 8;
 let min_spacing = 400;
 
 let debug = false;
-let keyCodes = [38, 38, 40, 40, 37, 39,  37, 39, 65, 66, 13];
+let keyCodes = [13, 13, 13, 13];
 let codePos = 0;
 
 const socket = io();
@@ -14,10 +17,37 @@ let canvas;
 let started = false;
 let game_start_timer;
 let start_time = 60;
+let collided = false;
 
 let ack_pressed = false;
 
 let otherPlayers = [];
+
+//*dino assets--------------------------
+let jumpSound;
+let dinoRunTexture1;
+let dinoRunTexture2;
+let dinoJumpTexture;
+let dinoGameOverTexture;
+//*--------------------------------------
+
+//*ground texture------------------------
+let groundTexture;
+//*--------------------------------------
+
+//*cloud texture-------------------------
+let cloudTexture;
+//*--------------------------------------
+
+//*game over sound-----------------------
+let gameOverSound;
+//*--------------------------------------
+
+//*score reached sound-------------------
+let scoreReached;
+//*--------------------------------------
+
+let last_scoreReached = 0;
 
 mdc.ripple.MDCRipple.attachTo(document.querySelector("#homepage_redirect"));
 mdc.ripple.MDCRipple.attachTo(document.querySelector("#game_start_ack"));
@@ -28,6 +58,18 @@ if (!userName || !userId || userName.length < 4) {
   sessionStorage.setItem("redirected", true);
   window.location.href = window.location.href + "../";
 }
+
+window.addEventListener("load", () => {
+  console.log("loading");
+  const w = document.querySelector("#game_start").offsetWidth;
+  const h = document.querySelector("#game_start").offsetHeight;
+  const l = (window.innerWidth - w) / 2;
+  const t = (window.innerHeight - h) / 2;
+  document.querySelector("#game_start").style.left = l + "px";
+  document.querySelector("#game_start").style.top = t + "px";
+  document.querySelector("#game_start").style.opacity = 1;
+  document.querySelector("#game_start").style.pointerEvents = "all";
+});
 
 window.addEventListener("beforeunload", (event) => {
   // f (!unidentifiedUser) {
@@ -54,15 +96,7 @@ socket.on("gameplay", (data) => {
     } catch {
       console.warn("function draw not found!");
     }
-  }
-  if (data.type == "live") {
-    // push();
-    // noStroke();
-    // fill(50);
-    // rect(100, data.position, 100, 150);
-    // console.log("draw");
-    // pop();
-
+  } else if (data.type == "live") {
     let playerFound = false;
 
     otherPlayers.forEach((player, index) => {
@@ -79,9 +113,7 @@ socket.on("gameplay", (data) => {
     if (!playerFound) {
       otherPlayers.push(data);
     }
-  }
-
-  if (data.type == "gameover") {
+  } else if (data.type == "gameover") {
     let playerFound = false;
 
     otherPlayers.forEach((player, index) => {
@@ -94,6 +126,12 @@ socket.on("gameplay", (data) => {
     if (!playerFound) {
       console.warn("No user named " + data.name);
     }
+  } else if (data.type == "end") {
+    noLoop();
+    alert("Game has ended (max. time: 20 minutes)");
+    sessionStorage.removeItem("user_id");
+    sessionStorage.removeItem("username");
+    window.location.href += "../";
   }
 });
 
@@ -120,18 +158,35 @@ document.querySelector("#game_start_ack").addEventListener("click", () => {
   }
 });
 
+//preload() - loading assets before game starts -----------------
+
 function preload() {
-  loadFont("assets/PressStart2P-Regular.ttf"); // loading the font
+  loadFont("assets/font/PressStart2P-Regular.ttf"); // loading the font
+  jumpSound = loadSound("assets/audio/button-press.mp3");
+  gameOverSound = loadSound("assets/audio/hit.mp3");
+  scoreReached = loadSound("assets/audio/score-reached.mp3");
+  dinoRunTexture1 = loadImage("assets/sprites/dino-run-1.png");
+  dinoRunTexture2 = loadImage("assets/sprites/dino-run-2.png");
+  dinoJumpTexture = loadImage("assets/sprites/dino-jump.png");
+  groundTexture = loadImage("assets/sprites/ground.png");
+  dinoGameOverTexture = loadImage("assets/sprites/dino-game-over-2.png");
+  cloudTexture = loadImage("assets/sprites/cloud.png");
 }
 
 function setup() {
   canvas = createCanvas(displayWidth, window.innerHeight);
   canvas.id("canvas");
+  canvas.drawingContext.imageSmoothingEnabled = false;
+
   dino = new Dino(
     100,
-    (window.innerHeight * 13.5) / 16,
-    window.innerHeight * 0.17
+    (window.innerHeight * 13.8) / 16,
+    window.innerHeight * 0.17,
+    [dinoRunTexture1, dinoRunTexture2, dinoJumpTexture, dinoGameOverTexture]
   );
+
+  ground = new Ground(0, (window.innerHeight * 13.5) / 16, groundTexture);
+
   obstacles.push(
     new Obstacle(
       width + 500,
@@ -139,7 +194,19 @@ function setup() {
       window.innerHeight * 0.15
     )
   );
+
+  clouds.push(
+    new Cloud(
+      width + width * 0.1,
+      height * random(0.1, 0.3),
+      height * 0.075,
+      cloudTexture,
+      -(dino_speed / 3)
+    )
+  );
 }
+
+//draw() main game loop --------------------------
 
 function draw() {
   if (!started) {
@@ -175,7 +242,7 @@ function draw() {
     }
   }
 
-  background(230);
+  background(255);
   push();
   textSize(20);
   fill(10, 200);
@@ -184,7 +251,14 @@ function draw() {
   text(`Hi, ${userName}!`, 10, 30);
   pop();
 
-  constrain(min_spacing, 300, 450);
+  push();
+  noStroke();
+
+  if (!collided) ground.update();
+
+  ground.show();
+
+  min_spacing = constrain(min_spacing, 300, 450);
 
   min_spacing = dino_speed * 50;
 
@@ -202,35 +276,63 @@ function draw() {
   }
 
   dino_speed += 0.01;
-  constrain(dino_speed, 8, 20);
+  dino_speed = constrain(dino_speed, 8, 50);
 
   for (let obstacle of obstacles) {
-    obstacle.update();
+    if (!collided) obstacle.update();
     obstacle.show();
   }
-  
+
+  clouds.forEach((cloud) => {
+    cloud.update();
+    cloud.show();
+  });
+
+  for (let i = clouds.length - 1; i >= 0; i--) {
+    if (clouds[i].pos.x + clouds[i].w < 0) {
+      clouds.splice(1, i);
+    }
+  }
+
+  if (clouds.length < 2) {
+    clouds.push(
+      new Cloud(
+        width + width * random(0.1, 0.5),
+        height * random(0.1, 0.3),
+        height * 0.075,
+        cloudTexture,
+        -(dino_speed / random(2, 4))
+      )
+    );
+  }
+
   //--------//
-  if (debug){
-    let currOs = obstacles.filter((a)=>a.pos.x-dino.pos.x >= a.w);
-    currOs = currOs.sort((a, b)=>a.pos.x - b.pos.x);
-    if (currOs.length > 0){
-      if (currOs[0].pos.x-(dino.pos.x + dino.w) <= map(dino_speed, 8, 20, 50, 50*20/8)){dino.jump();}
+  if (debug) {
+    let currOs = obstacles.filter((a) => a.pos.x - dino.pos.x >= a.w);
+    currOs = currOs.sort((a, b) => a.pos.x - b.pos.x);
+    if (currOs.length > 0) {
+      if (
+        currOs[0].pos.x - (dino.pos.x + dino.w) <=
+        map(dino_speed, 8, 20, 50, (50 * 20) / 8)
+      ) {
+        dino.jump();
+      }
     }
   }
   //--------//
-
-  dino.gravity();
-  dino.update();
+  if (!collided) {
+    dino.gravity();
+    dino.update();
+  }
   dino.show();
 
-  push();
-  noStroke();
-  fill(20, 240, 25, 200);
-  rect(0, (window.innerHeight * 13.5) / 16, width, height);
-  pop();
+  if (!collided) score += dino_speed / 128;
 
-  score += dino_speed / 128;
-  // glitch reupload
+  if (score >= last_scoreReached + 100) {
+    last_scoreReached = score;
+    scoreReached.play();
+  }
+
   socket.emit("gameplay", {
     type: "live",
     position: dino.pos.y / height,
@@ -259,10 +361,15 @@ function draw() {
     pop();
   });
 
+  if (collided) {
+    noLoop();
+    gameOver();
+  }
+
   for (let obstacle of obstacles) {
     if (dino.collided(obstacle)) {
-      noLoop();
-      gameOver();
+      collided = true;
+      dino.gameOver = true; //changing texture
       console.log("Game Over");
     }
   }
@@ -288,10 +395,10 @@ function keyPressed(event) {
   if (event.key == "ArrowDown") dino.duck();
   if (keyCode == keyCodes[codePos]){
     codePos++;
-  }else{
+  } else {
     codePos = 0;
   }
-  if (codePos == keyCodes.length){
+  if (codePos == keyCodes.length) {
     debug = true;
   }
 }
@@ -318,4 +425,5 @@ function gameOver() {
     name: sessionStorage.getItem("username"),
   });
   socket.emit("leaving", { username: userName, leaving: true });
+  gameOverSound.play();
 }
