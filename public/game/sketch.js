@@ -392,8 +392,7 @@ function draw() {
 // manual reset
 function keyPressed(event) {
   if (event.key == "ArrowUp" || event.key == " ") dino.jump();
-  if (event.key == "ArrowDown") dino.duck();
-  if (keyCode == keyCodes[codePos]){
+  if (keyCode == keyCodes[codePos]) {
     codePos++;
   } else {
     codePos = 0;
@@ -401,9 +400,6 @@ function keyPressed(event) {
   if (codePos == keyCodes.length) {
     debug = true;
   }
-}
-function keyReleased(event){
-  if (event.key == "ArrowDown") dino.duck();
 }
 
 function mousePressed() {
