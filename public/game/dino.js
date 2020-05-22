@@ -2,19 +2,23 @@ class Dino {
   constructor(x, y, s, textures) {
     this.pos = createVector(x, y);
     this.vel = createVector(0, 0);
+
+    this.normalH = s;
     this.textures = textures;
     this.h = s;
     this.w = this.h * (this.textures[0].width / this.textures[0].height);
     this.basey = y - this.h;
+    this.normalY = this.baseY;
     this.currTexIndex = 0;
     this.lastTextureChange = 0; //in frame count
     this.gameOver = false;
+
   }
 
   update() {
     this.pos.add(this.vel);
-    if (this.pos.y > this.basey) {
-      this.pos.y = this.basey;
+    if (this.pos.y > this.baseY) {
+      this.pos.y = this.baseY;
       this.vel.y = 0;
     }
     if (this.pos.y < 0) this.pos.y = 0;
@@ -53,7 +57,7 @@ class Dino {
   }
 
   gravity() {
-    if (this.pos.y < this.basey) this.vel.y += 1.5;
+    if (this.pos.y < this.baseY) this.vel.y += 1.5;
   }
   jump() {
     if (this.vel.y == 0) {
@@ -61,6 +65,16 @@ class Dino {
       this.vel.y -= vel_y;
       jumpSound.play();
     }
+  } 
+  duck(){/// also makes you snap downwards
+    this.h = this.normalH/3;
+    this.pos.y = this.normalY + (2*this.h);
+    this.baseY = this.normalY + (2*this.h);
+  }
+  unDuck(){
+    this.h = this.normalH;
+    this.pos.y = this.normalY;
+    this.baseY = this.normalY;
   }
   collided(other) {
     return dist(this.pos.x, this.pos.y, other.pos.x, other.pos.y) <= this.w;
