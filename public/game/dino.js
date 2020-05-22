@@ -7,12 +7,11 @@ class Dino {
     this.textures = textures;
     this.h = s;
     this.w = this.h * (this.textures[0].width / this.textures[0].height);
-    this.basey = y - this.h;
+    this.baseY = y - this.h;
     this.normalY = this.baseY;
     this.currTexIndex = 0;
     this.lastTextureChange = 0; //in frame count
     this.gameOver = false;
-
   }
 
   update() {
@@ -65,13 +64,14 @@ class Dino {
       this.vel.y -= vel_y;
       jumpSound.play();
     }
-  } 
-  duck(){/// also makes you snap downwards
-    this.h = this.normalH/3;
-    this.pos.y = this.normalY + (2*this.h);
-    this.baseY = this.normalY + (2*this.h);
   }
-  unDuck(){
+  duck() {
+    /// also makes you snap downwards
+    this.h = this.normalH / 3;
+    this.pos.y = this.normalY + 2 * this.h;
+    this.baseY = this.normalY + 2 * this.h;
+  }
+  unDuck() {
     this.h = this.normalH;
     this.pos.y = this.normalY;
     this.baseY = this.normalY;
