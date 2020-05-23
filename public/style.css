@@ -49,6 +49,10 @@ button {
   justify-content: space-around;
   margin-bottom: 2rem;
 }
+#game_status {
+  /* color: black; */
+  font-weight: 100;
+}
 
 #entry_popup {
   margin-left: auto;

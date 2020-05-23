@@ -4,7 +4,21 @@ const socket = io();
 
 // document.documentElement.requestFullscreen();
 
-let game; // will be an object
+//HTML elements------------------------
+
+const playButton = document.querySelector("#play");
+const playButtonLabel = document.querySelector("#play span");
+const gameStatusH3 = document.querySelector("#game_status");
+const gameTimerP = document.querySelector("#game_timer");
+const nameSubmitButton = document.querySelector("#name_submit");
+const gamePlayersDiv = document.querySelector("#game_players");
+const entryPopupDiv = document.querySelector("#entry_popup");
+const timingInput = document.querySelector("#timing_input");
+const nameInput = document.querySelector("#name_input");
+
+//-------------------------------------
+
+let game = {}; // will be an object
 
 let userName;
 
@@ -12,38 +26,36 @@ let game_timer;
 
 let loggedIn = false;
 
-mdc.ripple.MDCRipple.attachTo(document.querySelector("#name_submit"));
-mdc.ripple.MDCRipple.attachTo(document.querySelector("#play"));
+mdc.ripple.MDCRipple.attachTo(nameSubmitButton);
+mdc.ripple.MDCRipple.attachTo(playButton);
 
 socket.emit("query", { type: "game" }, (reply) => {
   game = reply;
   if (game.status == "no_games") {
-    document.querySelector("#game_status").innerHTML =
+    gameStatusH3.innerHTML =
       "No games are curretly playing.<br/>You can create a new game anytime you want!";
-    document.querySelector("#game_status").style.color = "#333333";
-    document.querySelector("#play span").textContent = "Create new game!";
-    document.querySelector("#play").disabled = false;
-    setPadding(document.querySelector("#play"), "1.7rem");
+    gameStatusH3.style.color = "#333333";
+    playButtonLabel.textContent = "Create new game!";
+    playButton.disabled = false;
+    setPadding(playButton, "1.7rem");
   }
 
   if (reply.status == "game_started") {
-    document.querySelector("#game_status").textContent = "A game has started";
-    document.querySelector("#play span").textContent = "Join";
-    document.querySelector("#play").disabled = true;
-    setPadding(document.querySelector("#play"), "1.7rem");
+    gameStatusH3.textContent = "A game has started";
+    playButtonLabel.textContent = "Join";
+    playButton.disabled = true;
+    setPadding(playButton, "1.7rem");
   }
 
   if (reply.status == "game_timing") {
     document.querySelector(
       "#game_status"
     ).innerHTML = `A new game has been set by ${game.created_by}`;
-    document.querySelector("#play span").textContent = "Join";
-    document.querySelector("#play").disabled = false;
-    setPadding(document.querySelector("#play"), "1.7rem");
+    playButtonLabel.textContent = "Join";
+    playButton.disabled = false;
+    setPadding(playButton, "1.7rem");
 
-    document.querySelector("#game_timer").textContent = `${formatTime(
-      game.timer
-    )}`;
+    gameTimerP.textContent = `${formatTime(game.timer)}`;
 
     game_timer = setInterval(function () {
       game.timer--;
@@ -51,14 +63,12 @@ socket.emit("query", { type: "game" }, (reply) => {
         clearInterval(game_timer);
         console.log("timing finshed");
       } else {
-        document.querySelector("#game_timer").textContent = `${formatTime(
-          game.timer
-        )}`;
+        gameTimerP.textContent = `${formatTime(game.timer)}`;
       }
     }, 1000);
   }
 
-  document.querySelector("#game_players").innerHTML = "";
+  gamePlayersDiv.innerHTML = "";
 
   game.players.forEach((player) => {
     const player_div = document.createElement("div");
@@ -67,7 +77,7 @@ socket.emit("query", { type: "game" }, (reply) => {
     player_name.className = "player_name";
     player_name.textContent = player.username;
     player_div.append(player_name);
-    document.querySelector("#game_players").append(player_div);
+    gamePlayersDiv.append(player_div);
   });
 
   console.log(reply);
@@ -76,49 +86,49 @@ socket.emit("query", { type: "game" }, (reply) => {
 let clickfirst = true;
 document.addEventListener("click", (event) => {
   if (!event.target.closest("#entry_popup") && clickfirst == false) {
-    document.querySelector("#entry_popup").style.opacity = 0;
-    document.querySelector("#entry_popup").style.display = "none";
+    entryPopupDiv.style.opacity = 0;
+    entryPopupDiv.style.display = "none";
     setTimeout(function () {
       if (!loggedIn) {
-        document.querySelector("#play").disabled = false;
+        playButton.disabled = false;
       }
     }, 75);
   }
   if (clickfirst) {
     setTimeout(function () {
-      document.querySelector("#play").disabled = true;
+      playButton.disabled = true;
     }, 75);
   }
 
   clickfirst = false;
 });
 
-document.querySelector("#play").addEventListener("click", (play_click) => {
-  document.querySelector("#entry_popup").style.opacity = 1;
-  document.querySelector("#entry_popup").style.display = "flex";
+playButton.addEventListener("click", (play_click) => {
+  entryPopupDiv.style.opacity = 1;
+  entryPopupDiv.style.display = "flex";
 
   if (game.status == "no_games") {
-    document.querySelector("#timing_input").style.display = "block";
-    document.querySelector("#timing_input").style.pointerEvents = "all";
+    timingInput.style.display = "block";
+    timingInput.style.pointerEvents = "all";
   } else {
-    document.querySelector("#timing_input").style.display = "none";
-    document.querySelector("#timing_input").style.pointerEvents = "none";
+    timingInput.style.display = "none";
+    timingInput.style.pointerEvents = "none";
   }
 
   clickfirst = true;
 
-  document.querySelector("#play").disabled = true;
+  playButton.disabled = true;
 
   const username_cache = sessionStorage.getItem("username_cache");
 
   if (username_cache) {
-    document.querySelector("#name_input").value = username_cache;
+    nameInput.value = username_cache;
   }
 
   //change this to check username availability and game waiting to happen in here
 
-  document.querySelector("#name_submit").addEventListener("click", (event) => {
-    const name = document.querySelector("#name_input");
+  nameSubmitButton.addEventListener("click", (event) => {
+    const name = nameInput;
 
     if (name.value.length >= 4) {
       login(name.value)
@@ -130,7 +140,7 @@ document.querySelector("#play").addEventListener("click", (play_click) => {
           sessionStorage.setItem("username_cache", name.value);
           if (game.status == "no_games") {
             game.created_by = name.value;
-            let timerValue = document.querySelector("#timing_input").value;
+            let timerValue = timingInput.value;
             if (!timerValue) timerValue = 30;
             if (timerValue > 120) {
               alert(
@@ -151,11 +161,11 @@ document.querySelector("#play").addEventListener("click", (play_click) => {
               console.log(reply)
             );
           }
-          document.querySelector("#entry_popup").style.opacity = 0;
-          document.querySelector("#entry_popup").style.display = "none";
+          entryPopupDiv.style.opacity = 0;
+          entryPopupDiv.style.display = "none";
 
           loggedIn = true;
-          document.querySelector("#play").disabled = true;
+          playButton.disabled = true;
         })
         .catch((error) => {
           console.log("from catch");
@@ -173,34 +183,34 @@ socket.on("game", (data) => {
   game = data;
 
   if (data.status == "game_started") {
-    document.querySelector("#game_status").textContent = "A game has started";
-    document.querySelector("#play").disabled = true;
-    setPadding(document.querySelector("#play"), "1.7rem");
+    gameStatusH3.textContent = "A game has started";
+    playButton.disabled = true;
+    setPadding(playButton, "1.7rem");
   }
 
   if (data.status == "no_games") {
-    document.querySelector("#game_status").innerHTML =
+    gameStatusH3.innerHTML =
       "No games are curretly playing.<br/>You can create a new game anytime you want!";
-    document.querySelector("#play span").textContent = "Create new game!";
+    playButtonLabel.textContent = "Create new game!";
     if (!loggedIn) {
-      document.querySelector("#play").disabled = false;
+      playButton.disabled = false;
     }
-    setPadding(document.querySelector("#play"), "1.7rem");
+    setPadding(playButton, "1.7rem");
   }
 
   if (data.status == "game_timing") {
     document.querySelector(
       "#game_status"
     ).innerHTML = `A new game has been set by ${game.created_by}`;
-    document.querySelector("#play span").textContent = "Join";
+    playButtonLabel.textContent = "Join";
     if (!loggedIn) {
-      document.querySelector("#play").disabled = false;
+      playButton.disabled = false;
     }
-    setPadding(document.querySelector("#play"), "1.7rem");
+    setPadding(playButton, "1.7rem");
 
-    document.querySelector("#game_timer").textContent = `${(
-      game.timer / 60
-    ).toFixed(0)}:${game.timer % 60}`;
+    gameTimerP.textContent = `${(game.timer / 60).toFixed(0)}:${
+      game.timer % 60
+    }`;
 
     game_timer = setInterval(function () {
       game.timer--;
@@ -208,14 +218,14 @@ socket.on("game", (data) => {
         clearInterval(game_timer);
         console.log("timing finshed");
       } else {
-        document.querySelector("#game_timer").textContent = `${Math.floor(
-          game.timer / 60
-        )}:${game.timer % 60}`;
+        gameTimerP.textContent = `${Math.floor(game.timer / 60)}:${
+          game.timer % 60
+        }`;
       }
     }, 1000);
   }
 
-  document.querySelector("#game_players").innerHTML = "";
+  gamePlayersDiv.innerHTML = "";
 
   game.players.forEach((player) => {
     const player_div = document.createElement("div");
@@ -224,7 +234,7 @@ socket.on("game", (data) => {
     player_name.className = "player_name";
     player_name.textContent = player.username;
     player_div.append(player_name);
-    document.querySelector("#game_players").append(player_div);
+    gamePlayersDiv.append(player_div);
   });
 
   console.log(game);

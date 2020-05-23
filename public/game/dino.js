@@ -83,7 +83,8 @@ class Dino {
         this.pos.y + this.h / 2,
         other.pos.x + other.w / 2,
         other.pos.y + other.h / 2
-      ) <= this.w
+      ) <=
+      this.w / 1.5
     );
     //~changed collision detction method from rectangular to circular.
     // return (
