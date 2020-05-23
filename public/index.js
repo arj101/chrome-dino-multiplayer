@@ -2,7 +2,7 @@ const socket = io();
 
 //? const redirected = sessionStorage.getItem("redirected");
 
-document.documentElement.requestFullscreen();
+// document.documentElement.requestFullscreen();
 
 let game; // will be an object
 

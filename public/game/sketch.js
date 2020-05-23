@@ -228,7 +228,7 @@ function setup() {
       height * random(0.1, 0.3),
       height * 0.075,
       cloudTexture,
-      -(dino_speed / 3)
+      -(dino_speed / 8)
     )
   );
 }
@@ -341,15 +341,22 @@ function draw() {
   }
 
   if (clouds.length < 2) {
-    clouds.push(
-      new Cloud(
-        width + width * random(0.1, 0.5),
-        height * random(0.1, 0.3),
-        height * 0.075,
-        cloudTexture,
-        -(dino_speed / random(2, 4))
-      )
-    );
+    const lastCloud = clouds[clouds.length - 1];
+
+    if (
+      dist(lastCloud.pos.x, lastCloud.pos.y, width, height * 0.2) >=
+      width * random(0.4, 0.6)
+    ) {
+      clouds.push(
+        new Cloud(
+          width + width * random(0.1, 0.5),
+          height * random(0.1, 0.3),
+          height * 0.075,
+          cloudTexture,
+          -(dino_speed / random(7, 10))
+        )
+      );
+    }
   }
 
   //--------//

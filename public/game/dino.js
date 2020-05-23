@@ -77,7 +77,14 @@ class Dino {
     this.baseY = this.normalY;
   }
   collided(other) {
-    return dist(this.pos.x, this.pos.y, other.pos.x, other.pos.y) <= this.w;
+    return (
+      dist(
+        this.pos.x + this.w / 2,
+        this.pos.y + this.h / 2,
+        other.pos.x + other.w / 2,
+        other.pos.y + other.h / 2
+      ) <= this.w
+    );
     //~changed collision detction method from rectangular to circular.
     // return (
     //   this.pos.x + this.w > other.pos.x &&
