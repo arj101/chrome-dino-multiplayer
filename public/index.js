@@ -18,24 +18,6 @@ const nameInput = document.querySelector("#name_input");
 
 //-------------------------------------
 
-function clickRipple(x, y, durationTemp = 1) {
-  let clickRippleElem = document.createElement("div");
-  clickRippleElem.className = "click-ripple";
-  // rippleElement.id = "ripple-elem";
-  document.body.append(clickRippleElem);
-  clickRippleElem.style.left = `${x}px`;
-  clickRippleElem.style.top = `${y}px`;
-
-  let duration = durationTemp;
-
-  clickRippleElem.style.animation = `ripple ${duration}s cubic-bezier(0,0,.23,.95)`;
-
-  setTimeout(function () {
-    clickRippleElem.style.animation = "none";
-    clickRippleElem.remove();
-  }, duration * 1000);
-}
-
 let game = {}; // will be an object
 
 let userName;
@@ -46,6 +28,11 @@ let loggedIn = false;
 
 mdc.ripple.MDCRipple.attachTo(nameSubmitButton);
 mdc.ripple.MDCRipple.attachTo(playButton);
+
+document.onload = function () {
+  fixPosition(entryPopupDiv);
+  fixSize(entryPopupDiv);
+};
 
 socket.emit("query", { type: "game" }, (reply) => {
   game = reply;
@@ -310,4 +297,33 @@ function formatTime(secs) {
     while (ss.length < 2) s = `0${ss}`;
     return [hs, ms, ss].join(":").slice(h != 0 ? 0 : 3, 8);
   }
+}
+
+function fixSize(element) {
+  element.style.width = `${element.offsetWidth}px`;
+  element.style.height = `${element.offsetHeight}px`;
+}
+
+function fixPosition(element) {
+  element.style.position = "absolute";
+  element.style.left = `${element.offsetLeft}px`;
+  element.style.top = `${element.offsetTop}px`;
+}
+
+function clickRipple(x, y, durationTemp = 1) {
+  let clickRippleElem = document.createElement("div");
+  clickRippleElem.className = "click-ripple";
+  // rippleElement.id = "ripple-elem";
+  document.body.append(clickRippleElem);
+  clickRippleElem.style.left = `${x}px`;
+  clickRippleElem.style.top = `${y}px`;
+
+  let duration = durationTemp;
+
+  clickRippleElem.style.animation = `ripple ${duration}s cubic-bezier(0,0,.23,.95)`;
+
+  setTimeout(function () {
+    clickRippleElem.style.animation = "none";
+    clickRippleElem.remove();
+  }, duration * 1000);
 }
