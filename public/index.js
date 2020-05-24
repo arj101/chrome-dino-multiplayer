@@ -326,3 +326,8 @@ function clickRipple(x, y, durationTemp = 1) {
     clickRippleElem.remove();
   }, duration * 1000);
 }
+
+window.onorientationchange = function () {
+  entryPopupDiv.style.width = "50vw";
+  entryPopupDiv.style.height = "h";
+};
