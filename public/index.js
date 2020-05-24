@@ -29,7 +29,7 @@ let loggedIn = false;
 mdc.ripple.MDCRipple.attachTo(nameSubmitButton);
 mdc.ripple.MDCRipple.attachTo(playButton);
 
-document.onload = function () {
+window.onload = function () {
   fixPosition(entryPopupDiv);
   fixSize(entryPopupDiv);
 };
