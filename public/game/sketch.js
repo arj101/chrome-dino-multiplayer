@@ -178,6 +178,9 @@ function setup() {
   canvas.id("canvas");
   canvas.drawingContext.imageSmoothingEnabled = false;
 
+  document.querySelector("#loader-bg").style.opacity = 0;
+  document.querySelector("#loader-bg").style.pointerEvents = "none";
+
   dino = new Dino(
     100,
     (window.innerHeight * 13.8) / 16,

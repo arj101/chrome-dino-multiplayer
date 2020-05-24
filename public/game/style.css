@@ -77,3 +77,76 @@ button {
   font-weight: 700;
   color: #ffae00;
 }
+
+#loader-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: white;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader {
+  margin: 20px;
+  background-color: #5900ff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  /* animation: loader 1s infinite linear; */
+}
+
+.loader-1 {
+  background-color: #4400ff;
+}
+.loader-2 {
+  background-color: #6200ff;
+}
+.loader-3 {
+  background-color: #7700ff;
+}
+
+.loader::before {
+  content: "";
+  position: absolute;
+  /* background-color: #5900ff; */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.loader-1::before {
+  background-color: #4400ff;
+  animation: ripple 2s infinite cubic-bezier(0, 0, 0.23, 0.95);
+  animation-delay: 0.3s;
+}
+
+.loader-2::before {
+  background-color: #6200ff;
+  animation: ripple 2s infinite cubic-bezier(0, 0, 0.23, 0.95);
+  animation-delay: 0.6s;
+}
+.loader-3::before {
+  background-color: #7700ff;
+  animation: ripple 2s infinite cubic-bezier(0, 0, 0.23, 0.95);
+  animation-delay: 0.9s;
+}
+
+@keyframes ripple {
+  0% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(6);
+  }
+  55%,
+  100% {
+    opacity: 0;
+  }
+}
