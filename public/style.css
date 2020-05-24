@@ -183,3 +183,29 @@ button {
   border-color: #683eff;
   background-color: transparent;
 }
+
+.click-ripple {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: rgba(78, 78, 78, 0.541);
+  position: absolute;
+  top: 1vh;
+  left: 50vw;
+  /* animation: ripple 1s infinite ease; */
+  opacity: 0;
+}
+
+@keyframes ripple {
+  0% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(6);
+  }
+  55%,
+  100% {
+    opacity: 0;
+  }
+}

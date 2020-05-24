@@ -18,6 +18,24 @@ const nameInput = document.querySelector("#name_input");
 
 //-------------------------------------
 
+function clickRipple(x, y, durationTemp = 1) {
+  let clickRippleElem = document.createElement("div");
+  clickRippleElem.className = "click-ripple";
+  // rippleElement.id = "ripple-elem";
+  document.body.append(clickRippleElem);
+  clickRippleElem.style.left = `${x}px`;
+  clickRippleElem.style.top = `${y}px`;
+
+  let duration = durationTemp;
+
+  clickRippleElem.style.animation = `ripple ${duration}s cubic-bezier(0,0,.23,.95)`;
+
+  setTimeout(function () {
+    clickRippleElem.style.animation = "none";
+    clickRippleElem.remove();
+  }, duration * 1000);
+}
+
 let game = {}; // will be an object
 
 let userName;
@@ -85,6 +103,8 @@ socket.emit("query", { type: "game" }, (reply) => {
 
 let clickfirst = true;
 document.addEventListener("click", (event) => {
+  clickRipple(event.pageX, event.pageY);
+
   if (!event.target.closest("#entry_popup") && clickfirst == false) {
     entryPopupDiv.style.opacity = 0;
     entryPopupDiv.style.display = "none";
