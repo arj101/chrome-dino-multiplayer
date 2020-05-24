@@ -110,8 +110,8 @@ document.addEventListener("click", (event) => {
 playButton.addEventListener("click", (play_click) => {
   entryPopupDiv.style.opacity = 1;
   entryPopupDiv.style.display = "flex";
-  fixPosition(entryPopupDiv);
-  fixSize(entryPopupDiv);
+  // fixPosition(entryPopupDiv);
+  // fixSize(entryPopupDiv);
 
   if (game.status == "no_games") {
     timingInput.style.display = "block";
@@ -327,7 +327,7 @@ function clickRipple(x, y, durationTemp = 1) {
   }, duration * 1000);
 }
 
-window.onorientationchange = function () {
-  entryPopupDiv.style.width = "50vw";
-  entryPopupDiv.style.height = "h";
-};
+// window.onorientationchange = function () {
+//   entryPopupDiv.style.width = "50vw";
+//   entryPopupDiv.style.height = "h";
+// };
