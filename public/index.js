@@ -29,10 +29,7 @@ let loggedIn = false;
 mdc.ripple.MDCRipple.attachTo(nameSubmitButton);
 mdc.ripple.MDCRipple.attachTo(playButton);
 
-window.onload = function () {
-  fixPosition(entryPopupDiv);
-  fixSize(entryPopupDiv);
-};
+// fixSize(entryPopupDiv);
 
 socket.emit("query", { type: "game" }, (reply) => {
   game = reply;
@@ -113,6 +110,8 @@ document.addEventListener("click", (event) => {
 playButton.addEventListener("click", (play_click) => {
   entryPopupDiv.style.opacity = 1;
   entryPopupDiv.style.display = "flex";
+  fixPosition(entryPopupDiv);
+  fixSize(entryPopupDiv);
 
   if (game.status == "no_games") {
     timingInput.style.display = "block";
