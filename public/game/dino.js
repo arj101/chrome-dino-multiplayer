@@ -49,9 +49,13 @@ class Dino {
     //rect(this.pos.x, this.pos.y, 5, 5);
     //rect(100, this.basey, 5, 5);
 
-    //stroke(100, 100);
+    // stroke(100, 100);
     // rect(this.pos.x, this.pos.y, this.w, this.h);
-    //ellipse(this.pos.x + this.w / 2, this.pos.y + this.h / 2, this.w);
+    // ellipse(
+    //   this.pos.x + this.w / 2,
+    //   this.pos.y + this.h / 2,
+    //   (this.w / 1.5) * 2
+    // );
     pop();
   }
 
@@ -81,10 +85,10 @@ class Dino {
       dist(
         this.pos.x + this.w / 2,
         this.pos.y + this.h / 2,
-        other.pos.x + other.w / 2,
-        other.pos.y + other.h / 2
+        other.pos.x,
+        other.pos.y
       ) <=
-      this.w / 1.5
+      this.w / 2
     );
     //~changed collision detction method from rectangular to circular.
     // return (

@@ -185,32 +185,7 @@ function setup() {
     [dinoRunTexture1, dinoRunTexture2, dinoJumpTexture, dinoGameOverTexture]
   );
 
-  let r = floor(random(1, 6));
-  switch (r) {
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-      obstacles.push(
-        new Obstacle(
-          width + 500,
-          (window.innerHeight * 13.5) / 16 -
-            window.innerHeight * 0.15 +
-            ((r - 1) * dino.normalH) / 3,
-          window.innerHeight * 0.15,
-          dino.normalH / 3
-        )
-      );
-      break;
-    default:
-      obstacles.push(
-        new Obstacle(
-          width + 500,
-          (window.innerHeight * 13.5) / 16,
-          window.innerHeight * 0.15
-        )
-      );
-  }
+  addObstacle(obstacles);
 
   ground = new Ground(0, (window.innerHeight * 13.5) / 16, groundTexture);
 
@@ -292,34 +267,8 @@ function draw() {
   if (
     random(1) < 0.1 &&
     width + 100 - obstacles[obstacles.length - 1].pos.x > min_spacing
-  ) {
-    let r = floor(random(1, 6));
-    switch (r) {
-      case 2:
-      case 3:
-      case 4:
-      case 5:
-        obstacles.push(
-          new Obstacle(
-            width + 500,
-            (window.innerHeight * 13.5) / 16 -
-              window.innerHeight * 0.15 +
-              ((r - 1) * dino.normalH) / 3,
-            window.innerHeight * 0.15,
-            dino.normalH / 3
-          )
-        );
-        break;
-      default:
-        obstacles.push(
-          new Obstacle(
-            width + 500,
-            (window.innerHeight * 13.5) / 16,
-            window.innerHeight * 0.15
-          )
-        );
-    }
-  }
+  )
+    addObstacle(obstacles);
 
   dino_speed += 0.01;
   dino_speed = constrain(dino_speed, 8, 50);
@@ -445,7 +394,7 @@ function draw() {
 // manual reset
 function keyPressed(event) {
   if (event.key == "ArrowUp" || event.key == " ") dino.jump();
-  if (event.key == "ArrowDown") dino.duck();
+  //TODO if (event.key == "ArrowDown") dino.duck();
   if (keyCode == keyCodes[codePos]) {
     codePos++;
   } else {
@@ -457,7 +406,7 @@ function keyPressed(event) {
 }
 
 function keyReleased(event) {
-  if (event.key == "ArrowDown") dino.duck();
+  //TODO if (event.key == "ArrowDown") dino.unDuck();
 }
 
 function mousePressed() {
@@ -480,4 +429,44 @@ function gameOver() {
   });
   socket.emit("leaving", { username: userName, leaving: true });
   gameOverSound.play();
+}
+
+function addObstacle(array) {
+  // let r = floor(random(1, 6));
+  // switch (r) {
+  //   case 2:
+  //   case 3:
+  //   case 4:
+  //   case 5:
+  //     array.push(
+  //       new Obstacle(
+  //         width + 500,
+  //         (window.innerHeight * 13.5) / 16 -
+  //           window.innerHeight * 0.15 +
+  //           ((r - 1) * dino.normalH) / 3,
+  //         window.innerHeight * 0.15,
+  //         dino.normalH / 3
+  //       )
+  //     );
+  //     break;
+  //   default:
+  //     array.push(
+  //       new Obstacle(
+  //         width + 500,
+  //         (window.innerHeight * 13.5) / 16,
+  //         window.innerHeight * 0.15
+  //       )
+  //     );
+  // }
+
+  let r = random(1);
+
+  array.push(
+    new Obstacle(
+      width + 500,
+      (window.innerHeight * 13.8) / 16,
+      window.innerHeight * 0.15
+      // dino.normalH / 3
+    )
+  );
 }
