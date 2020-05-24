@@ -56,11 +56,14 @@ button {
 }
 
 #entry_popup {
-  margin-left: auto;
+  /* margin-left: auto;
   margin-right: auto;
   margin-top: auto;
-  margin-bottom: auto;
-  position: relative;
+  margin-bottom: auto; */
+  /* position: relative;*/
+  position: absolute;
+  top: 10vh;
+  left: 25vw;
   border-radius: 1rem;
   width: 50vw; /*! to 50vw */
   height: 40vh; /*! to 40vh */
