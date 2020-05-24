@@ -39,8 +39,9 @@ button {
   box-shadow: 2px 4px 10px #5c5c5c57;
   background-color: rgb(255, 255, 255);
   border-radius: 0.4rem;
-  position: absolute;
-  top: 30vh;
+  /* position: absolute;
+  top: 30vh; */
+  margin-top: 1rem;
   width: 60vw;
   min-height: 50vh;
   display: flex;
@@ -207,5 +208,17 @@ button {
   55%,
   100% {
     opacity: 0;
+  }
+}
+
+@media only screen and (max-width: 700px) {
+  #game_info {
+    width: 98vw;
+  }
+}
+
+@media only screen and (max-height: 500px) {
+  #game_info {
+    min-height: 80vh;
   }
 }
