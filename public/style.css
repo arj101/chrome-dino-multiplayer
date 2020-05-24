@@ -5,6 +5,7 @@ body {
   background-color: white;
   font-family: sans-serif;
   padding-left: 1rem;
+  overflow-x: hidden;
 }
 
 button {
@@ -56,13 +57,14 @@ button {
 }
 
 #entry_popup {
+  margin: none;
   /* margin-left: auto;
   margin-right: auto;
   margin-top: auto;
   margin-bottom: auto; */
   /* position: relative;*/
   position: absolute;
-  top: 10vh;
+  top: 30vh;
   left: 25vw;
   border-radius: 1rem;
   width: 50vw; /*! to 50vw */
@@ -216,12 +218,24 @@ button {
 
 @media only screen and (max-width: 700px) {
   #game_info {
-    width: 98vw;
+    width: 97vw;
+  }
+  #entry_popup {
+    width: 97vw;
+    height: 80vh;
+    top: 10vh;
+    left: 1vw;
   }
 }
 
 @media only screen and (max-height: 500px) {
   #game_info {
     min-height: 80vh;
+  }
+  #entry_popup {
+    width: 97vw;
+    height: 80vh;
+    top: 10vh;
+    left: 1vw;
   }
 }
