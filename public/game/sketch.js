@@ -180,6 +180,7 @@ function setup() {
 
   document.querySelector("#loader-bg").style.opacity = 0;
   document.querySelector("#loader-bg").style.pointerEvents = "none";
+  // document.querySelector("#loader-bg").style.display = "none";
 
   dino = new Dino(
     100,
