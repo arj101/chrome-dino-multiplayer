@@ -205,8 +205,7 @@ function setup() {
       width + width * 0.1,
       height * random(0.1, 0.3),
       height * 0.075,
-      cloudTexture,
-      -(dino_speed / 8)
+      cloudTexture
     )
   );
 }
@@ -282,7 +281,7 @@ function draw() {
   }
 
   clouds.forEach((cloud) => {
-    cloud.update();
+    cloud.update(-dino_speed / 8);
     cloud.show();
   });
 
@@ -304,8 +303,7 @@ function draw() {
           width + width * random(0.1, 0.5),
           height * random(0.1, 0.3),
           height * 0.075,
-          cloudTexture,
-          -(dino_speed / random(7, 10))
+          cloudTexture
         )
       );
     }
