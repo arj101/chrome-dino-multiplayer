@@ -37,9 +37,10 @@ button {
 }
 
 #game_info {
-  box-shadow: 2px 4px 10px #5c5c5c57;
-  background-color: rgb(255, 255, 255);
+  /* box-shadow: 2px 4px 10px #5c5c5c57; */
+  background-color: rgb(253, 255, 255);
   border-radius: 0.4rem;
+  border: 2px solid rgb(235, 235, 235);
   /* position: absolute;
   top: 30vh; */
   margin-top: 1rem;

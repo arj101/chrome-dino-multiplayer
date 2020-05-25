@@ -89,11 +89,9 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 300ms ease;
 }
 
 .loader {
-  transition: all 300ms ease;
   margin: 20px;
   background-color: #5900ff;
   border-radius: 50%;

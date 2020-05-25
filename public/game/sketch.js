@@ -286,18 +286,20 @@ function draw() {
     cloud.show();
   });
 
-  for (let i = clouds.length - 1; i >= 0; i--) {
-    if (clouds[i].pos.x + clouds[i].w < 0) {
-      clouds.splice(1, i);
+  if (clouds.length) {
+    for (let i = clouds.length - 1; i >= 0; i--) {
+      if (clouds[i].pos.x + clouds[i].w < 0) {
+        clouds.splice(1, i);
+      }
     }
   }
 
-  if (clouds.length < 2) {
+  if (clouds.length < 3) {
     const lastCloud = clouds[clouds.length - 1];
 
     if (
       dist(lastCloud.pos.x, lastCloud.pos.y, width, height * 0.2) >=
-      width * random(0.4, 0.6)
+      width * random(0.3, 0.5)
     ) {
       clouds.push(
         new Cloud(
