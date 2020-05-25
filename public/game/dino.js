@@ -87,7 +87,6 @@ class Dino {
     if (this.pos.x < other.pos.x && this.pos.y + this.w > other.pos.y) {
       point2.x = other.pos.x;
       point2.y = this.pos.y;
-      console.log(1);
 
       return dist(point1.x, point1.y, point2.x, point2.y) <= this.w;
     }
@@ -99,7 +98,6 @@ class Dino {
     ) {
       point2.x = this.pos.x;
       point2.y = other.pos.y;
-      console.log(2);
 
       return dist(point1.x, point1.y, point2.x, point2.y) <= this.w;
     }
