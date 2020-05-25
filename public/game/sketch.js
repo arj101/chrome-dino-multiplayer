@@ -281,19 +281,6 @@ function draw() {
     obstacle.show();
   }
 
-  clouds.forEach((cloud) => {
-    cloud.update(-dino_speed / 8);
-    cloud.show();
-  });
-
-  if (clouds.length) {
-    for (let i = clouds.length - 1; i >= 0; i--) {
-      if (clouds[i].pos.x + clouds[i].w < 0) {
-        clouds.splice(1, i);
-      }
-    }
-  }
-
   if (clouds.length < 3) {
     const lastCloud = clouds[clouds.length - 1];
 
@@ -309,6 +296,21 @@ function draw() {
           cloudTexture
         )
       );
+    }
+  }
+
+  clouds.forEach((cloud) => {
+    cloud.update(-dino_speed / 8);
+    cloud.show();
+  });
+
+  if (clouds.length) {
+    for (let i = clouds.length - 1; i >= 0; i--) {
+      if (clouds[i]) {
+        if (clouds[i].pos.x + clouds[i].w < 0) {
+          clouds.splice(1, i);
+        }
+      }
     }
   }
 
