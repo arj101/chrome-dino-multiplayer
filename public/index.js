@@ -98,6 +98,7 @@ document.addEventListener("click", (event) => {
       }
     }, 75);
   }
+
   if (clickfirst) {
     setTimeout(function () {
       playButton.disabled = true;

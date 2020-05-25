@@ -44,10 +44,10 @@ class Dino {
 
     image(currTexture, this.pos.x, this.pos.y, this.w, this.h);
 
-    // stroke(50);
-    //noFill();
-    //rect(this.pos.x, this.pos.y, 5, 5);
-    //rect(100, this.basey, 5, 5);
+    stroke(50);
+    noFill();
+    rect(this.pos.x, this.pos.y, 5, 5);
+    // rect(100, this.basey, 5, 5);
 
     // stroke(100, 100);
     // rect(this.pos.x, this.pos.y, this.w, this.h);
@@ -81,21 +81,34 @@ class Dino {
     this.baseY = this.normalY;
   }
   collided(other) {
-    return (
-      dist(
-        this.pos.x + this.w / 2,
-        this.pos.y + this.h / 2,
-        other.pos.x,
-        other.pos.y
-      ) <=
-      this.w / 2
-    );
-    //~changed collision detction method from rectangular to circular.
-    // return (
-    //   this.pos.x + this.w > other.pos.x &&
-    //   this.pos.x < other.pos.x + other.w &&
-    //   this.pos.y + this.h > other.pos.y &&
-    //   this.pos.y < other.pos.y + other.w
-    // );
+    let point1 = createVector(this.pos.x, this.pos.y);
+    let point2 = createVector(0, 0);
+
+    if (this.pos.x < other.pos.x && this.pos.y + this.w > other.pos.y) {
+      point2.x = other.pos.x;
+      point2.y = this.pos.y;
+      console.log(1);
+
+      return dist(point1.x, point1.y, point2.x, point2.y) <= this.w;
+    }
+
+    if (
+      this.pos.x > other.pos.x &&
+      this.pos.x < other.pos.x + other.w &&
+      this.pos.y < other.pos.y
+    ) {
+      point2.x = this.pos.x;
+      point2.y = other.pos.y;
+      console.log(2);
+
+      return dist(point1.x, point1.y, point2.x, point2.y) <= this.w;
+    }
+
+    if (this.pos.x > other.pos.x && this.pos.y > other.pos.y) {
+      point2.x = other.pos.x;
+      point2.y = this.pos.y;
+      console.log(3);
+      return dist(point1.x, point2.y, point2.x, point2.y) <= this.w + other.w;
+    }
   }
 }
