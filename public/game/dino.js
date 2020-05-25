@@ -44,9 +44,9 @@ class Dino {
 
     image(currTexture, this.pos.x, this.pos.y, this.w, this.h);
 
-    stroke(50);
-    noFill();
-    rect(this.pos.x, this.pos.y, 5, 5);
+    // stroke(50);
+    // noFill();
+    // rect(this.pos.x, this.pos.y, 5, 5);
     // rect(100, this.basey, 5, 5);
 
     // stroke(100, 100);
