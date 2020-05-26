@@ -21,7 +21,7 @@ let collided = false;
 
 let ack_pressed = false;
 
-let otherPlayers = [];
+let otherPlayers = {};
 
 //*dino assets--------------------------
 let jumpSound;
@@ -97,35 +97,36 @@ socket.on("gameplay", (data) => {
       console.warn("function draw not found!");
     }
   } else if (data.type == "live") {
-    let playerFound = false;
+    // let playerFound = false;
 
-    otherPlayers.forEach((player, index) => {
-      if (data.name == player.name) {
-        player.position = data.position;
-        playerFound = true;
+    // otherPlayers.forEach((player, index) => {
+    //   if (data.name == player.name) {
+    //     player.position = data.position;
+    //     playerFound = true;
 
-        setTimeout(function () {
-          otherPlayers = otherPlayers.splice(1, index);
-        }, 10000);
-      }
-    });
+    //     setTimeout(function () {
+    //       otherPlayers = otherPlayers.splice(1, index);
+    //     }, 10000);
+    //   }
+    // });
 
-    if (!playerFound) {
-      otherPlayers.push(data);
-    }
-  } else if (data.type == "gameover") {
-    let playerFound = false;
+    // if (!playerFound) {
+    //   otherPlayers.push(data);
+    // }
+    reciveGameData(data);
+    // } else if (data.type == "gameover") {
+    //   let playerFound = false;
 
-    otherPlayers.forEach((player, index) => {
-      if (data.name == player.name) {
-        playerFound = true;
-        player.over = true;
-      }
-    });
+    //   otherPlayers.forEach((player, index) => {
+    //     if (data.name == player.name) {
+    //       playerFound = true;
+    //       player.over = true;
+    //     }
+    //   });
 
-    if (!playerFound) {
-      console.warn("No user named " + data.name);
-    }
+    //   if (!playerFound) {
+    //     console.warn("No user named " + data.name);
+    //   }
   } else if (data.type == "end") {
     noLoop();
     alert("Game has ended (max. time: 20 minutes)");
@@ -332,6 +333,19 @@ function draw() {
     dino.gravity();
     dino.update();
   }
+
+  const otherPlayerName = Object.keys(otherPlayers);
+
+  otherPlayerName.forEach((player) => {
+    drawOtherPlayer(otherPlayers[player]);
+    if (otherPlayers[player].gameover) {
+      console.log("player out " + player);
+      setTimeout(function () {
+        delete otherPlayers[player];
+      }, 7000);
+    }
+  });
+
   dino.show();
 
   if (!collided) score += dino_speed / 128;
@@ -341,33 +355,29 @@ function draw() {
     scoreReached.play();
   }
 
-  socket.emit("gameplay", {
-    type: "live",
-    position: dino.pos.y / height,
-    name: sessionStorage.getItem("username"),
-  });
+  sendGameData();
 
-  otherPlayers.forEach((player) => {
-    push();
-    fill(0);
-    if (player.over == true) {
-      fill(255, 0, 0);
-    }
-    noStroke();
-    textSize(18);
-    text(player.name, 100, player.position * height - 20);
-    fill(50, 100);
-    if (player.over == true) {
-      fill(255, 0, 0, 50);
-    }
-    rect(
-      100,
-      player.position * height,
-      (window.innerHeight * 0.17 * 3) / 4,
-      window.innerHeight * 0.17
-    );
-    pop();
-  });
+  // otherPlayers.forEach((player) => {
+  //   push();
+  //   fill(0);
+  //   if (player.over == true) {
+  //     fill(255, 0, 0);
+  //   }
+  //   noStroke();
+  //   textSize(18);
+  //   text(player.name, 100, player.position * height - 20);
+  //   fill(50, 100);
+  //   if (player.over == true) {
+  //     fill(255, 0, 0, 50);
+  //   }
+  //   rect(
+  //     100,
+  //     player.position * height,
+  //     (window.innerHeight * 0.17 * 3) / 4,
+  //     window.innerHeight * 0.17
+  //   );
+  //   pop();
+  // });
 
   if (collided) {
     noLoop();
@@ -429,10 +439,11 @@ function gameOver() {
     }, 200);
   });
 
-  socket.emit("gameplay", {
-    type: "gameover",
-    name: sessionStorage.getItem("username"),
-  });
+  // socket.emit("gameplay", {
+  //   type: "gameover",
+  //   name: userName,
+  // });
+  sendGameData();
   socket.emit("leaving", { username: userName, leaving: true });
   gameOverSound.play();
 }
@@ -475,4 +486,57 @@ function addObstacle(array) {
       // dino.normalH / 3
     )
   );
+}
+
+function sendGameData() {
+  socket.emit("gameplay", {
+    type: "live",
+    position: dino.pos.y / height,
+    name: userName,
+    score: score,
+    gameover: collided,
+    textureindex: dino.currTexIndex,
+  });
+}
+
+function reciveGameData(data) {
+  if (Object.keys(otherPlayers).includes(data.name)) {
+    otherPlayers[data.name].position = data.position;
+    otherPlayers[data.name].score = data.score;
+    otherPlayers[data.name].gameover = data.gameover;
+    otherPlayers[data.name].textureindex = data.textureindex;
+  } else {
+    otherPlayers[data.name] = {
+      name: data.name,
+      position: data.position,
+      score: data.score,
+      gameover: data.gameover,
+      textureindex: data.textureindex,
+    };
+  }
+}
+
+function drawOtherPlayer(player) {
+  push();
+  tint(255, 100);
+  if (player.gameover) tint(255, 100, 100, 50);
+  switch (player.textureindex) {
+    case 0:
+      image(dinoRunTexture1, 100, player.position * height, dino.w, dino.h);
+      break;
+    case 1:
+      image(dinoRunTexture2, 100, player.position * height, dino.w, dino.h);
+      break;
+    case 2:
+      image(dinoJumpTexture, 100, player.position * height, dino.w, dino.h);
+      break;
+    case 3:
+      image(dinoGameOverTexture, 100, player.position * height, dino.w, dino.h);
+  }
+
+  fill(0);
+  if (player.gameover) fill(255, 0, 0);
+  textSize(18);
+  text(player.name, 100, player.position * height - 20);
+  pop();
 }
