@@ -4,6 +4,8 @@ const socket = require("socket.io");
 const app = express();
 const port = process.env.PORT || 3000;
 
+const serverResetCode = "resetdino33e6##";
+
 console.log(`Starting server at port ${port}...`);
 
 //checking if the protocol is http or http
@@ -27,8 +29,6 @@ app.use(express.static("public"));
 const io = socket(server);
 
 let game_timer;
-
-let gameEndTimer;
 
 let game = {
   status: "no_games",
@@ -158,6 +158,19 @@ io.sockets.on("connection", (socket) => {
     }
   });
 
+  socket.on("reset", (data) => {
+    if (data.resetcode == serverResetCode) {
+      console.log(`Server reset requested by ${data.name}`);
+      console.log("Reseting server....");
+      resetServer();
+      socket.emit("reset", { status: "success" });
+    } else {
+      console.log(`Reset attempt by ${data.name} failed!`);
+      console.log(`Failed reset code is: ${data.resetcode}`);
+      socket.emit("reset", { status: "failed" });
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log(`Client disconnected `);
   });
@@ -174,4 +187,15 @@ function sendGameInvitation() {
     console.log(player);
     console.log(`sent invitation to ${player.username}`);
   });
+}
+
+function resetServer() {
+  game = {
+    status: "no_games",
+    timer: null,
+    players: [],
+    created_by: null,
+  };
+  game_timer = undefined;
+  console.log("Successfully reset the server!");
 }

@@ -322,6 +322,8 @@ function clickRipple(x, y, durationTemp = 1) {
 
   clickRippleElem.style.animation = `ripple ${duration}s cubic-bezier(0,0,.23,.95)`;
 
+  clickRippleElem.style.pointerEvents = "none";
+
   setTimeout(function () {
     clickRippleElem.style.animation = "none";
     clickRippleElem.remove();
@@ -332,3 +334,23 @@ function clickRipple(x, y, durationTemp = 1) {
 //   entryPopupDiv.style.width = "50vw";
 //   entryPopupDiv.style.height = "h";
 // };
+
+document.querySelector("#reset-server").addEventListener("click", () => {
+  let resetCode = prompt("Enter reset code to reset the server.");
+  if (resetCode != null && resetCode.length > 0) {
+    let resetterName = prompt("Enter your name for indentity.");
+  }
+  if (resetterName != null && resetCode && resetterName.length > 0) {
+    socket.emit("reset", { resetcode: resetCode, name: resetterName });
+  }
+  socket.on("reset", (reply) => {
+    if (reply.status == "success") {
+      document.querySelector("#reset-server").disabled = true;
+      alert("Succesfully reset the server!");
+    }
+    if (reply.status == "failed") {
+      document.querySelector("#reset-server").disabled = true;
+      alert("Incorrect reset code.");
+    }
+  });
+});
