@@ -339,9 +339,10 @@ document.querySelector("#reset-server").addEventListener("click", () => {
   let resetCode = prompt("Enter reset code to reset the server.");
   if (resetCode != null && resetCode.length > 0) {
     let resetterName = prompt("Enter your name for indentity.");
-  }
-  if (resetterName != null && resetCode && resetterName.length > 0) {
-    socket.emit("reset", { resetcode: resetCode, name: resetterName });
+
+    if (resetterName != null && resetterName.length > 0) {
+      socket.emit("reset", { resetcode: resetCode, name: resetterName });
+    }
   }
   socket.on("reset", (reply) => {
     if (reply.status == "success") {

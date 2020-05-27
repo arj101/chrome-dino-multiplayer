@@ -221,7 +221,7 @@ button {
   position: absolute;
   top: 2px;
   right: 2px;
-  opacity: 0.2;
+  opacity: 0.1;
   transition: 300ms ease;
 }
 #reset-server:hover {
