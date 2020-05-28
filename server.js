@@ -30,12 +30,19 @@ const io = socket(server);
 
 let game_timer;
 
+let lastObstaclePosition = 0;
+let obstacleStartingPosition = 1.5; //relative to screen width
+let dino_speed = 0;
+let min_spacing = 0;
+
 let game = {
   status: "no_games",
   timer: null,
   players: [],
   created_by: null,
 };
+
+let obstacleAcknowledge = {};
 
 io.sockets.on("connection", (socket) => {
   console.log(`We have a client ${socket.id} !`);
@@ -88,6 +95,7 @@ io.sockets.on("connection", (socket) => {
 
     if (leave_game) {
       game.players.splice(leaver_index, 1);
+      delete obstacleAcknowledge[data.username];
       console.log(game.players[leaver_index]);
       console.log(game.players);
     }
@@ -116,7 +124,13 @@ io.sockets.on("connection", (socket) => {
     if (available) {
       game.players.push({ username: login_username, id: socket.id });
       console.log(`new user ${login_username} id: ${socket.id}`);
-      console.table(game.players);
+      // console.table(game.players);
+      obstacleAcknowledge[login_username] = {
+        acknowledg: false,
+        id: socket.id,
+      };
+      // console.log(obstacleAcknowledge);
+
       io.sockets.emit("game", game);
     }
 
@@ -136,7 +150,10 @@ io.sockets.on("connection", (socket) => {
 
       if (allReady) {
         io.sockets.emit("gameplay", { type: "start" });
-        console.log("all ready !!!!!!!!!!!");
+        console.log("all ready!");
+
+        // gameLoop();
+        // gameLoop(200);
         gameEndTimer = setTimeout(function () {
           //ending game after 20 minutes
           io.sockets.emit("gameplay", { type: "end" });
@@ -155,6 +172,27 @@ io.sockets.on("connection", (socket) => {
 
     if (data.type == "live" || data.type == "gameover") {
       socket.broadcast.emit("gameplay", data);
+    } else if (data.type == "obstacleposition") {
+      if (lastObstaclePosition < data.pos) lastObstaclePosition = data.pos;
+      if (dino_speed < data.speed) dino_speed = data.speed;
+      if (min_spacing < data.spacing) min_spacing = data.spacing;
+    } else if (data.type == "obstacle_acknowledge") {
+      if (obstacleAcknowledge[data.name]) {
+        if (data.id == obstacleAcknowledge[data.name].id) {
+          obstacleAcknowledge[data.name].acknowledge = true;
+
+          let allAcknowleged = true;
+
+          Object.keys(obstacleAcknowledge).forEach((player) => {
+            if (player.acknowledg == false) allAcknowleged = false;
+          });
+          if (allAcknowleged)
+            io.sockets.emit("gameplay", { type: "obstacle", name: "cactus" });
+        } else
+          console.log(
+            "Request info for obstacle acknowledge cannot be matched with server data"
+          );
+      } else console.log("Cannot find user in the server");
     }
   });
 
@@ -199,3 +237,16 @@ function resetServer() {
   game_timer = undefined;
   console.log("Successfully reset the server!");
 }
+
+// function gameLoop() {
+//   if (1.5 - lastObstaclePosition > dino_speed / 58.1) {
+//     io.sockets.emit("gameplay", { type: "obstacle", name: "cactus" });
+//     console.log("sent obstacle");
+//   }
+//   console.log(min_spacing);
+//   console.log(lastObstaclePosition);
+
+//   if (game.status == "game_started") {
+//     setTimeout(gameLoop, 200);
+//   }
+// }

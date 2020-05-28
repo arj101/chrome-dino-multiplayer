@@ -98,41 +98,15 @@ socket.on("gameplay", (data) => {
     }
   } else if (data.type == "live") {
     // let playerFound = false;
-
-    // otherPlayers.forEach((player, index) => {
-    //   if (data.name == player.name) {
-    //     player.position = data.position;
-    //     playerFound = true;
-
-    //     setTimeout(function () {
-    //       otherPlayers = otherPlayers.splice(1, index);
-    //     }, 10000);
-    //   }
-    // });
-
-    // if (!playerFound) {
-    //   otherPlayers.push(data);
-    // }
     reciveGameData(data);
-    // } else if (data.type == "gameover") {
-    //   let playerFound = false;
-
-    //   otherPlayers.forEach((player, index) => {
-    //     if (data.name == player.name) {
-    //       playerFound = true;
-    //       player.over = true;
-    //     }
-    //   });
-
-    //   if (!playerFound) {
-    //     console.warn("No user named " + data.name);
-    //   }
   } else if (data.type == "end") {
     noLoop();
     alert("Game has ended (max. time: 20 minutes)");
     sessionStorage.removeItem("user_id");
     sessionStorage.removeItem("username");
     window.location.href += "../";
+  } else if (data.type == "obstacle") {
+    addObstacle(obstacles);
   }
 });
 
@@ -190,7 +164,7 @@ function setup() {
     [dinoRunTexture1, dinoRunTexture2, dinoJumpTexture, dinoGameOverTexture]
   );
 
-  addObstacle(obstacles);
+  // addObstacle(obstacles);
 
   ground = new Ground(0, (window.innerHeight * 13.5) / 16, groundTexture);
 
@@ -201,6 +175,12 @@ function setup() {
   //      window.innerHeight * 0.15
   //    )
   //  );
+  socket.emit("gameplay", {
+    type: "obstacle_acknowledge",
+    acknowledg: true,
+    id: sessionStorage.getItem("user_id"),
+    name: userName,
+  });
 
   clouds.push(
     new Cloud(
@@ -268,11 +248,20 @@ function draw() {
 
   min_spacing = dino_speed * 50;
 
-  if (
-    random(1) < 0.1 &&
-    width + 100 - obstacles[obstacles.length - 1].pos.x > min_spacing
-  )
-    addObstacle(obstacles);
+  if (obstacles.length >= 1) {
+    if (
+      random(1) < 0.1 &&
+      width + 100 - obstacles[obstacles.length - 1].pos.x > min_spacing
+    ) {
+      // addObstacle(obstacles);
+      socket.emit("gameplay", {
+        type: "obstacle_acknowledge",
+        acknowledg: true,
+        id: sessionStorage.getItem("user_id"),
+        name: userName,
+      });
+    }
+  }
 
   dino_speed += 0.01;
   dino_speed = constrain(dino_speed, 8, 50);
@@ -476,7 +465,7 @@ function addObstacle(array) {
   //     );
   // }
 
-  let r = random(1);
+  // let r = random(1);
 
   array.push(
     new Obstacle(
@@ -497,6 +486,14 @@ function sendGameData() {
     gameover: collided,
     textureindex: dino.currTexIndex,
   });
+  socket.emit("gameplay", {
+    type: "obstacleposition",
+    pos: obstacles[obstacles.length - 1]
+      ? obstacles[obstacles.length - 1].pos.x / width
+      : 0,
+    speed: dino_speed,
+    spacing: min_spacing / width,
+  }); //send last obstacle position
 }
 
 function reciveGameData(data) {
