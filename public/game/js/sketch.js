@@ -328,7 +328,6 @@ function draw() {
   otherPlayerName.forEach((player) => {
     drawOtherPlayer(otherPlayers[player]);
     if (otherPlayers[player].gameover) {
-      console.log("player out " + player);
       setTimeout(function () {
         delete otherPlayers[player];
       }, 7000);

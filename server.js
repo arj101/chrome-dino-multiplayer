@@ -95,10 +95,18 @@ io.sockets.on("connection", (socket) => {
 
     if (leave_game) {
       game.players.splice(leaver_index, 1);
-      delete obstacleAcknowledge[data.username];
+      // delete obstacleAcknowledge[data.username];
       console.log(game.players[leaver_index]);
       console.log(game.players);
     }
+
+    console.log(obstacleAcknowledge[data.username] + "e4647");
+
+    if (obstacleAcknowledge[data.username]) {
+      delete obstacleAcknowledge[data.username];
+      console.log(`deleting user: ${data.username} from obstacleAcknowledge`);
+    }
+    console.log(obstacleAcknowledge);
 
     console.log(`user leaving ${data.username}`);
     console.table(game.players);
@@ -179,15 +187,19 @@ io.sockets.on("connection", (socket) => {
     } else if (data.type == "obstacle_acknowledge") {
       if (obstacleAcknowledge[data.name]) {
         if (data.id == obstacleAcknowledge[data.name].id) {
-          obstacleAcknowledge[data.name].acknowledge = true;
+          obstacleAcknowledge[data.name].acknowledg = true;
 
           let allAcknowleged = true;
 
           Object.keys(obstacleAcknowledge).forEach((player) => {
             if (player.acknowledg == false) allAcknowleged = false;
           });
-          if (allAcknowleged)
+          if (allAcknowleged) {
             io.sockets.emit("gameplay", { type: "obstacle", name: "cactus" });
+            Object.keys(obstacleAcknowledge).forEach((player) => {
+              player.acknowledg == false;
+            });
+          }
         } else
           console.log(
             "Request info for obstacle acknowledge cannot be matched with server data"
