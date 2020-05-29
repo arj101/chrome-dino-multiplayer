@@ -105,9 +105,10 @@ socket.on("gameplay", (data) => {
     sessionStorage.removeItem("user_id");
     sessionStorage.removeItem("username");
     window.location.href += "../";
-  } else if (data.type == "obstacle") {
-    addObstacle(obstacles);
   }
+  //else if (data.type == "obstacle") {
+  //   addObstacle(obstacles);
+  // }
 });
 
 document.querySelector("#game_start_ack").addEventListener("click", () => {
@@ -175,12 +176,13 @@ function setup() {
   //      window.innerHeight * 0.15
   //    )
   //  );
-  socket.emit("gameplay", {
-    type: "obstacle_acknowledge",
-    acknowledg: true,
-    id: sessionStorage.getItem("user_id"),
-    name: userName,
-  });
+  // socket.emit("gameplay", {
+  //   type: "obstacle_acknowledge",
+  //   acknowledg: true,
+  //   id: sessionStorage.getItem("user_id"),
+  //   name: userName,
+  // });
+  addObstacle(obstacles);
 
   clouds.push(
     new Cloud(
@@ -253,13 +255,13 @@ function draw() {
       random(1) < 0.1 &&
       width + 100 - obstacles[obstacles.length - 1].pos.x > min_spacing
     ) {
-      // addObstacle(obstacles);
-      socket.emit("gameplay", {
-        type: "obstacle_acknowledge",
-        acknowledg: true,
-        id: sessionStorage.getItem("user_id"),
-        name: userName,
-      });
+      addObstacle(obstacles);
+      // socket.emit("gameplay", {
+      //   type: "obstacle_acknowledge",
+      //   acknowledg: true,
+      //   id: sessionStorage.getItem("user_id"),
+      //   name: userName,
+      // });
     }
   }
 

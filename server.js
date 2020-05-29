@@ -42,7 +42,7 @@ let game = {
   created_by: null,
 };
 
-let obstacleAcknowledge = {};
+// let obstacleAcknowledge = {};
 
 io.sockets.on("connection", (socket) => {
   console.log(`We have a client ${socket.id} !`);
@@ -100,13 +100,13 @@ io.sockets.on("connection", (socket) => {
       console.log(game.players);
     }
 
-    console.log(obstacleAcknowledge[data.username] + "e4647");
+    // console.log(obstacleAcknowledge[data.username] + "e4647");
 
-    if (obstacleAcknowledge[data.username]) {
-      delete obstacleAcknowledge[data.username];
-      console.log(`deleting user: ${data.username} from obstacleAcknowledge`);
-    }
-    console.log(obstacleAcknowledge);
+    // if (obstacleAcknowledge[data.username]) {
+    //   delete obstacleAcknowledge[data.username];
+    //   console.log(`deleting user: ${data.username} from obstacleAcknowledge`);
+    // }
+    // console.log(obstacleAcknowledge);
 
     console.log(`user leaving ${data.username}`);
     console.table(game.players);
@@ -133,10 +133,10 @@ io.sockets.on("connection", (socket) => {
       game.players.push({ username: login_username, id: socket.id });
       console.log(`new user ${login_username} id: ${socket.id}`);
       // console.table(game.players);
-      obstacleAcknowledge[login_username] = {
-        acknowledg: false,
-        id: socket.id,
-      };
+      // obstacleAcknowledge[login_username] = {
+      //   acknowledg: false,
+      //   id: socket.id,
+      // };
       // console.log(obstacleAcknowledge);
 
       io.sockets.emit("game", game);
@@ -184,27 +184,27 @@ io.sockets.on("connection", (socket) => {
       if (lastObstaclePosition < data.pos) lastObstaclePosition = data.pos;
       if (dino_speed < data.speed) dino_speed = data.speed;
       if (min_spacing < data.spacing) min_spacing = data.spacing;
-    } else if (data.type == "obstacle_acknowledge") {
-      if (obstacleAcknowledge[data.name]) {
-        if (data.id == obstacleAcknowledge[data.name].id) {
-          obstacleAcknowledge[data.name].acknowledg = true;
+      // } else if (data.type == "obstacle_acknowledge") {
+      //   if (obstacleAcknowledge[data.name]) {
+      //     if (data.id == obstacleAcknowledge[data.name].id) {
+      //       obstacleAcknowledge[data.name].acknowledg = true;
 
-          let allAcknowleged = true;
+      //       let allAcknowleged = true;
 
-          Object.keys(obstacleAcknowledge).forEach((player) => {
-            if (player.acknowledg == false) allAcknowleged = false;
-          });
-          if (allAcknowleged) {
-            io.sockets.emit("gameplay", { type: "obstacle", name: "cactus" });
-            Object.keys(obstacleAcknowledge).forEach((player) => {
-              player.acknowledg == false;
-            });
-          }
-        } else
-          console.log(
-            "Request info for obstacle acknowledge cannot be matched with server data"
-          );
-      } else console.log("Cannot find user in the server");
+      //       Object.keys(obstacleAcknowledge).forEach((player) => {
+      //         if (player.acknowledg == false) allAcknowleged = false;
+      //       });
+      //       if (allAcknowleged) {
+      //         io.sockets.emit("gameplay", { type: "obstacle", name: "cactus" });
+      //         Object.keys(obstacleAcknowledge).forEach((player) => {
+      //           player.acknowledg == false;
+      //         });
+      //       }
+      //     } else
+      //       console.log(
+      //         "Request info for obstacle acknowledge cannot be matched with server data"
+      //       );
+      //   } else console.log("Cannot find user in the server");
     }
   });
 
