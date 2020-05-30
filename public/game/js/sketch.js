@@ -487,14 +487,6 @@ function sendGameData() {
     gameover: collided,
     textureindex: dino.currTexIndex,
   });
-  socket.emit("gameplay", {
-    type: "obstacleposition",
-    pos: obstacles[obstacles.length - 1]
-      ? obstacles[obstacles.length - 1].pos.x / width
-      : 0,
-    speed: dino_speed,
-    spacing: min_spacing / width,
-  }); //send last obstacle position
 }
 
 function reciveGameData(data) {
@@ -503,6 +495,7 @@ function reciveGameData(data) {
     otherPlayers[data.name].score = data.score;
     otherPlayers[data.name].gameover = data.gameover;
     otherPlayers[data.name].textureindex = data.textureindex;
+    rerenderPlayerScore(otherPlayers[data.name]);
   } else {
     otherPlayers[data.name] = {
       name: data.name,
@@ -511,6 +504,7 @@ function reciveGameData(data) {
       gameover: data.gameover,
       textureindex: data.textureindex,
     };
+    renderPlayerScore(otherPlayers[data.name]);
   }
 }
 
@@ -537,4 +531,27 @@ function drawOtherPlayer(player) {
   textSize(18);
   text(player.name, 100, player.position * height - 20);
   pop();
+}
+
+function renderPlayerScore(player) {
+  const playerInfo = document.createElement("div");
+  playerInfo.className = "player-info";
+  playerInfo.classList.add(player.name);
+
+  const name = document.createElement("h2");
+  name.textContent = player.name;
+  name.className = "player-name";
+
+  const score = document.createElement("h2");
+  score.textContent = player.score.toFixed(0);
+  score.className = "player-score";
+
+  playerInfo.append(score, name);
+  document.querySelector("#score_board").append(playerInfo);
+}
+
+function rerenderPlayerScore(player) {
+  document.querySelector(
+    `.${player.name} .player-score`
+  ).textContent = player.score.toFixed(0);
 }

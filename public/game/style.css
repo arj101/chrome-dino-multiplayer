@@ -91,6 +91,43 @@ button {
   justify-content: center;
 }
 
+#score_board {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20vw;
+  max-height: 75vh;
+  min-height: 20vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  border: none;
+  border-top-left-radius: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  background-color: transparent;
+  z-index: 3;
+  font-family: sans-serif;
+}
+
+.player-info {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-evenly;
+  width: inherit;
+  height: fit-content;
+  background-color: transparent;
+  color: black;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.player-name {
+  font-weight: 200;
+}
+
 .loader {
   margin: 20px;
   background-color: #5900ff;
