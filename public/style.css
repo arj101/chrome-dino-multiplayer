@@ -228,6 +228,37 @@ button {
   opacity: 1;
 }
 
+#score_board {
+  width: 50vw;
+  min-height: 20vh;
+  border: none;
+  border-top-left-radius: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  background-color: transparent;
+  font-family: sans-serif;
+  display: none;
+}
+
+.player-info {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-evenly;
+  width: inherit;
+  height: fit-content;
+  background-color: transparent;
+  color: black;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.player-name {
+  font-weight: 200;
+}
+
 @media only screen and (max-width: 800px) {
   #game_info {
     width: 97vw;

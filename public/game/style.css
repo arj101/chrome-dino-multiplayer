@@ -52,7 +52,7 @@ button {
   opacity: 0;
   pointer-events: none;
 
-  z-index: 2;
+  z-index: 3;
   background-color: rgba(255, 255, 255, 0.884);
   box-shadow: 5px 5px 15px rgba(58, 58, 58, 0.329);
   border-radius: 0.4rem;
@@ -107,7 +107,7 @@ button {
   align-items: center;
   justify-content: space-evenly;
   background-color: transparent;
-  z-index: 3;
+  z-index: 2;
   font-family: sans-serif;
 }
 

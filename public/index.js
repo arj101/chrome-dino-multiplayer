@@ -26,10 +26,18 @@ let game_timer;
 
 let loggedIn = false;
 
+let players = {};
+
 mdc.ripple.MDCRipple.attachTo(nameSubmitButton);
 mdc.ripple.MDCRipple.attachTo(playButton);
 
 // fixSize(entryPopupDiv);
+
+socket.on("gameplay", (data) => {
+  if (data.type == "live") {
+    reciveGameData(data);
+  }
+});
 
 socket.emit("query", { type: "game" }, (reply) => {
   game = reply;
@@ -39,6 +47,7 @@ socket.emit("query", { type: "game" }, (reply) => {
     gameStatusH3.style.color = "#333333";
     playButtonLabel.textContent = "Create new game!";
     playButton.disabled = false;
+    gameTimerP.style.display = "none";
     setPadding(playButton, "1.7rem");
   }
 
@@ -46,16 +55,22 @@ socket.emit("query", { type: "game" }, (reply) => {
     gameStatusH3.textContent = "A game has started";
     playButtonLabel.textContent = "Join";
     playButton.disabled = true;
+    gamePlayersDiv.style.display = "none";
+    gameTimerP.style.display = "none";
     setPadding(playButton, "1.7rem");
   }
 
   if (reply.status == "game_timing") {
+    gameTimerP.style.display = "block";
+
     document.querySelector(
       "#game_status"
     ).innerHTML = `A new game has been set by ${game.created_by}`;
     playButtonLabel.textContent = "Join";
     playButton.disabled = false;
     setPadding(playButton, "1.7rem");
+    document.querySelector("#score_board").style.display = "none";
+    gamePlayersDiv.style.display = "flex";
 
     gameTimerP.textContent = `${formatTime(game.timer)}`;
 
@@ -190,8 +205,11 @@ socket.on("game", (data) => {
   game = data;
 
   if (data.status == "game_started") {
+    gameTimerP.style.display = "none";
+
     gameStatusH3.textContent = "A game has started";
     playButton.disabled = true;
+    gamePlayersDiv.style.display = "none";
     setPadding(playButton, "1.7rem");
   }
 
@@ -202,10 +220,14 @@ socket.on("game", (data) => {
     if (!loggedIn) {
       playButton.disabled = false;
     }
+    gameTimerP.style.display = "none";
     setPadding(playButton, "1.7rem");
   }
 
   if (data.status == "game_timing") {
+    gameTimerP.style.display = "block";
+
+    gamePlayersDiv.style.display = "flex";
     document.querySelector(
       "#game_status"
     ).innerHTML = `A new game has been set by ${game.created_by}`;
@@ -214,6 +236,8 @@ socket.on("game", (data) => {
       playButton.disabled = false;
     }
     setPadding(playButton, "1.7rem");
+
+    document.querySelector("#score_board").style.display = "none";
 
     gameTimerP.textContent = `${(game.timer / 60).toFixed(0)}:${
       game.timer % 60
@@ -355,3 +379,47 @@ document.querySelector("#reset-server").addEventListener("click", () => {
     }
   });
 });
+
+function reciveGameData(data) {
+  if (Object.keys(players).includes(data.name)) {
+    players[data.name].position = data.position;
+    players[data.name].score = data.score;
+    players[data.name].gameover = data.gameover;
+    players[data.name].textureindex = data.textureindex;
+    rerenderPlayerScore(players[data.name]);
+  } else {
+    players[data.name] = {
+      name: data.name,
+      position: data.position,
+      score: data.score,
+      gameover: data.gameover,
+      textureindex: data.textureindex,
+    };
+    renderPlayerScore(players[data.name]);
+  }
+}
+
+function renderPlayerScore(player) {
+  document.querySelector("#score_board").style.display = "flex";
+
+  const playerInfo = document.createElement("div");
+  playerInfo.className = "player-info";
+  playerInfo.classList.add(player.name);
+
+  const name = document.createElement("h2");
+  name.textContent = player.name;
+  name.className = "player-name";
+
+  const score = document.createElement("h2");
+  score.textContent = player.score.toFixed(0);
+  score.className = "player-score";
+
+  playerInfo.append(score, name);
+  document.querySelector("#score_board").append(playerInfo);
+}
+
+function rerenderPlayerScore(player) {
+  document.querySelector(
+    `.${player.name} .player-score`
+  ).textContent = player.score.toFixed(0);
+}
