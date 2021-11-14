@@ -1,4 +1,5 @@
 > Keeping the old source code for nostalgia :D
+> (Its mostly broken)
 
 ## Chrome dino game multiplayer
 
