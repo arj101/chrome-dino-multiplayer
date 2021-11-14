@@ -1,0 +1,17 @@
+[package]
+name = "dino-backend"
+version = "0.1.0"
+edition = "2018"
+
+
+[dependencies]
+tokio-tungstenite = "*"
+futures-channel = "*"
+futures-util = "*"
+tokio = { version = "*",   features = [ "rt", "macros", "rt-multi-thread", "sync"] }
+serde_json = "1.0"
+serde = { version = "1.0", features = [ "derive" ] }
+rayon = "1.5"
+uuid  = { version = "0.8", features = [ "serde", "v4" ] }
+rand  = "0.8"
+phf   = { version = "0.9", features = [ "macros" ] }
