@@ -1,8 +1,11 @@
+use crate::config_options::SessionConfig;
 use crate::map_generator::GameMap;
-use crate::session_exec::{RxData, TransmissionQueue, TxData, MAX_USERNAME_LEN};
+use crate::session_exec::{RxData, TransmissionQueue, TxData};
 
 use futures_channel::mpsc::UnboundedSender;
 use tokio_tungstenite::tungstenite::protocol::Message;
+
+use serde::{Deserialize, Serialize};
 
 use uuid::Uuid;
 
@@ -12,9 +15,8 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::{self, Duration, Instant, SystemTime};
 
-pub const MAX_SESSION_USERS: usize = 10;
 pub const X_ACC: f32 = 0.1;
-pub const INITIAL_X_VEL: f32 = 2.0;
+pub const INITIAL_X_VEL: f32 = 1.0;
 pub const GRAVITY: f32 = -1.0;
 pub const JUMP_VEL: f32 = 2.5;
 
@@ -38,18 +40,21 @@ pub enum SessionStatus {
 
 pub struct Session {
     session_id: Uuid,
+    session_name: String,
     host_id: Uuid,
     player_data: HashMap<Uuid, PlayerData>,
     game_data: GameData,
     status: SessionStatus,
     timers: HashMap<Uuid, Rc<(SystemTime, fn(&mut Self, &mut TransmissionQueue), bool)>>,
     has_finished: bool,
+    config: SessionConfig,
 }
 
 impl Session {
-    pub fn new() -> Self {
+    pub fn new(session_name: String, config: SessionConfig) -> Self {
         Self {
             session_id: Uuid::new_v4(),
+            session_name,
             host_id: Uuid::nil(),
             player_data: HashMap::new(),
             game_data: GameData {
@@ -59,6 +64,7 @@ impl Session {
             status: SessionStatus::Uninit,
             timers: HashMap::new(),
             has_finished: false,
+            config,
         }
     }
 
@@ -69,7 +75,7 @@ impl Session {
         username: String,
         addr: SocketAddr,
     ) -> Result<Self, ()> {
-        if username.len() > MAX_USERNAME_LEN {
+        if username.len() > self.config.max_username_len {
             return Err(());
         }
 
@@ -113,6 +119,14 @@ impl Session {
 
     pub fn id(&self) -> &Uuid {
         &self.session_id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.session_name
+    }
+
+    pub fn status(&self) -> &SessionStatus {
+        &self.status
     }
 
     fn set_timeout(
@@ -220,23 +234,41 @@ impl Session {
         }
     }
 
-    pub fn user_game_over(&mut self, tx: &mut TransmissionQueue, user_id: Uuid, addr: SocketAddr) -> Result<usize, ()> {
+    pub fn user_game_over(
+        &mut self,
+        tx: &mut TransmissionQueue,
+        user_id: Uuid,
+        addr: SocketAddr,
+    ) -> Result<usize, ()> {
         let score = if let SessionStatus::Active { start_time, .. } = self.status {
             self.curr_score(start_time)
         } else {
-            return Err(())
+            return Err(());
         };
 
         let username = if let Some(player) = self.player_data.get_mut(&user_id) {
-            if addr != player.addr { return Err(()) }
+            if addr != player.addr {
+                return Err(());
+            }
             player.score = score;
             player.username.clone()
         } else {
-            return Err(())
+            return Err(());
         };
 
-        tx.send_to_addr(addr, TxData::UserGameOver { score: score, user_id});
-        self.broadcast(tx, addr, user_id, TxData::UserGameOverBroadcast { username, score});
+        tx.send_to_addr(
+            addr,
+            TxData::UserGameOver {
+                score: score,
+                user_id,
+            },
+        );
+        self.broadcast(
+            tx,
+            addr,
+            user_id,
+            TxData::UserGameOverBroadcast { username, score },
+        );
 
         let active_players = self.player_data.values().filter(|v| v.score == 0).count();
         Ok(active_players)
@@ -245,19 +277,20 @@ impl Session {
     fn map_req(&mut self, tx: &mut TransmissionQueue, addr: SocketAddr, user_id: Uuid, idx: u32) {
         if let None = self.player_data.get(&user_id) {
             println!(
-                "[session] map requested by unknown user `{}` (addr: `{}`)",
+                "[sesson] map requested by unknown user `{}` (addr: `{}`)",
                 user_id, addr
             );
-            return;
+            println!("[session] still sending map bc idc")
+            // return;
         }
 
         match self.status {
-            SessionStatus::Active { .. } => {
+            _ => {
                 let idx = idx as usize;
                 let (from, to) = (idx as usize * 100, (idx as usize + 1) * 100 - 1); //0-99, 100-199, ..
 
                 let map = self.game_data.map.get_map(from, to).to_vec();
-                tx.send_to_addr(addr, TxData::Map(map))
+                tx.send_to_addr(addr, TxData::Map { map })
             }
             _ => {
                 println!(
@@ -324,8 +357,8 @@ impl Session {
             _ => return Err(()),
         }
 
-        if self.player_data.keys().len() >= MAX_SESSION_USERS
-            || username.len() > MAX_USERNAME_LEN
+        if self.player_data.keys().len() >= self.config.max_users
+            || username.len() > self.config.max_username_len
             || self.username_exists(&username)
         {
             tx.send_to_addr(
@@ -346,6 +379,7 @@ impl Session {
                 username,
                 score: 0,
                 addr,
+                status: PlayerStatus::Connected,
             },
         );
         tx.send_to_addr(
@@ -403,7 +437,9 @@ impl Session {
 
     pub fn game_loop(&mut self, tx: &mut TransmissionQueue) -> bool {
         self.exec_timers(tx);
-        if self.has_finished { return true }
+        if self.has_finished {
+            return true;
+        }
         if let SessionStatus::Active {
             start_time,
             max_duration,
@@ -421,28 +457,39 @@ impl Session {
     }
 
     pub fn on_user_con_close(&mut self, addr: SocketAddr) -> bool {
-        let user_id = if let Some(id) = self.player_data.values().filter(|p| p.addr == addr).map(|p| p.id).next() {
+        let user_id = if let Some(id) = self
+            .player_data
+            .values()
+            .filter(|p| p.addr == addr)
+            .map(|p| p.id)
+            .next()
+        {
             id
         } else {
-            return false
+            return false;
         };
-
 
         let start_time = match self.status {
             SessionStatus::Active { start_time, .. } => start_time,
             SessionStatus::Countdown { .. } | SessionStatus::Waiting { .. } => {
-                let player_data = self.player_data.get(&user_id).unwrap();
-                println!("[session] `{}` (id: `{}`, addr: `{}`) just closed connection.", player_data.username, player_data.id, player_data.addr);
-                self.player_data.remove(&user_id);
-                return self.player_data.is_empty();
+                let player_data = self.player_data.get_mut(&user_id).unwrap();
+                println!(
+                    "[session] `{}` (id: `{}`, addr: `{}`) just closed connection.",
+                    player_data.username, player_data.id, player_data.addr
+                );
+                player_data.disconnect();
+                return false;
             }
-            _ => return false
+            _ => return false,
         };
 
         let curr_score = self.curr_score(start_time);
         if let Some(player) = self.player_data.get_mut(&user_id) {
             player.score = curr_score;
-            println!("[session] `{}` (id: `{}`, addr: `{}`) just closed connection. Final score: `{}`", player.username, player.id, player.addr, player.score);
+            println!(
+                "[session] `{}` (id: `{}`, addr: `{}`) just closed connection. Final score: `{}`",
+                player.username, player.id, player.addr, player.score
+            );
             self.player_data.remove(&user_id);
             return self.player_data.is_empty();
         }
@@ -451,7 +498,9 @@ impl Session {
     }
 
     pub fn shutdown(&mut self, tx: &mut TransmissionQueue) {
-        self.player_data.values().for_each(|player| tx.close_con(player.addr));
+        self.player_data
+            .values()
+            .for_each(|player| tx.close_con(player.addr));
         self.has_finished = true;
         println!("[session] `{}` shutting down...", self.id());
     }
@@ -462,11 +511,17 @@ pub struct GameData {
     sync_score: u64, //score of every player is same until they lose. This will be the highest score.
 }
 
+pub enum PlayerStatus {
+    Connected,
+    Disconnected,
+}
+
 pub struct PlayerData {
     id: Uuid,
     username: String,
     score: u64, //when the player loses, this score gets out of sync w/ sync_score
     addr: SocketAddr,
+    status: PlayerStatus,
 }
 
 impl PlayerData {
@@ -476,6 +531,13 @@ impl PlayerData {
             username,
             addr,
             score: 0,
+            status: PlayerStatus::Connected,
         }
+    }
+    pub fn disconnect(&mut self) {
+        self.status = PlayerStatus::Disconnected
+    }
+    pub fn connect(&mut self) {
+        self.status = PlayerStatus::Connected
     }
 }

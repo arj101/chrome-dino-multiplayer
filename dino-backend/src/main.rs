@@ -1,4 +1,6 @@
+mod config_options;
 mod map_generator;
+mod obstacles;
 mod math;
 mod session;
 mod session_exec;
@@ -10,8 +12,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use config_options::{ConfigOptions, SessionConfig, SessionExecConfig};
+
 use futures_channel::mpsc::unbounded;
-use futures_util::{future, pin_mut, stream::TryStreamExt, SinkExt, StreamExt};
+use futures_util::{future, pin_mut, stream::TryStreamExt, StreamExt};
 
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::mpsc;
@@ -91,6 +95,17 @@ async fn handle_connection(
 #[tokio::main]
 async fn main() -> Result<(), IoError> {
     let addr = "127.0.0.1:8080";
+    let config = ConfigOptions {
+        session: SessionConfig {
+            max_users: 20,
+            max_username_len: 15,
+        },
+        session_exec: SessionExecConfig {
+            max_sessions: 10,
+            allow_multiple_inactive_sessions: true,
+            dummy_sessions: true,
+        },
+    };
 
     // let state = PeerMap::new(Mutex::new(HashMap::new()));
     let try_socket = TcpListener::bind(addr).await;
@@ -103,7 +118,8 @@ async fn main() -> Result<(), IoError> {
 
     let session_tx_tmp = session_tx.clone();
     let session_exec_thread = std::thread::spawn(move || {
-        let mut session_exec = SessionExecutor::new_with_channel((session_tx_tmp, session_rx));
+        let mut session_exec =
+            SessionExecutor::new_with_channel((session_tx_tmp, session_rx), config);
         loop {
             session_exec.poll_channel();
             session_exec.run();

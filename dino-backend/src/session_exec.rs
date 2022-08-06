@@ -5,51 +5,71 @@ use tokio_tungstenite::tungstenite::protocol::Message as WsMessage;
 
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use uuid::adapter::Hyphenated;
 use uuid::Uuid;
 
 use std::sync::{Arc, Mutex};
 use std::{collections::HashMap, net::SocketAddr};
 
-use crate::map_generator::Obstacle;
+use crate::config_options::{ConfigOptions, SessionConfig, SessionExecConfig};
+use crate::obstacles::Obstacle;
 use crate::session::Session;
-
-pub const MAX_SESSIONS: usize = 10;
-pub const MAX_USERNAME_LEN: usize = 20;
+use crate::session::SessionStatus;
 
 #[derive(Deserialize)]
+#[serde(tag = "type")]
 pub enum QueryType {
     Sessions,
-    LeaderBoard { session_id: Uuid },
+    LeaderBoard {
+        #[serde(rename = "sessionId")]
+        session_id: Uuid,
+    },
 }
 
 #[derive(Serialize, Clone)]
+pub enum SessionStatusSimplified {
+    Waiting,
+    Busy,
+    Ended,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(tag = "type")]
 pub enum QueryResponseType {
     Sessions {
-        active_sessions: Vec<(Uuid, Vec<String>)>,
+        sessions: Vec<(Uuid, String, SessionStatusSimplified, Vec<String>)>,
     },
     LeaderBoard {
+        #[serde(rename = "sessionId")]
         session_id: Uuid,
         scores: Vec<(String, u64)>,
     },
 }
 
 #[derive(Serialize, Clone)]
+#[serde(tag = "type")]
 pub enum TxData {
-    QueryResponse(QueryResponseType),
+    QueryResponse {
+        #[serde(rename = "queryRes")]
+        query_res: QueryResponseType,
+    },
 
     SessionCreationResponse {
+        #[serde(rename = "creationSucceeded")]
         creation_succeeded: bool,
+        #[serde(rename = "sessionId")]
         session_id: Option<Uuid>,
     },
 
     UserCreationResponse {
+        #[serde(rename = "creationSucceeded")]
         creation_succeeded: bool,
+        #[serde(rename = "userId")]
         user_id: Option<Uuid>,
     },
 
     PlayerDataBroadcast {
         username: String,
+        #[serde(rename = "posY")]
         pos_y: f32,
     },
 
@@ -59,7 +79,9 @@ pub enum TxData {
 
     GameStart,
 
-    Map(Vec<(f64, Vec<Obstacle>)>),
+    Map {
+        map: Vec<(f64, Vec<Obstacle>)>,
+    },
 
     UserGameOverBroadcast {
         username: String,
@@ -68,6 +90,7 @@ pub enum TxData {
 
     UserGameOver {
         score: u64,
+        #[serde(rename = "userId")]
         user_id: Uuid,
     },
 
@@ -76,48 +99,66 @@ pub enum TxData {
 
 // parsed data from ChannelData::Message
 #[derive(Deserialize)]
+#[serde(tag = "type")]
 pub enum RxData {
-    Query(QueryType),
+    Query {
+        query: QueryType,
+    },
 
     CreateSession {
         // wait_time: u32,
         username: String,
+        #[serde(rename = "sessionName")]
+        session_name: String,
     },
 
     CreateUser {
+        #[serde(rename = "sessionId")]
         session_id: Uuid,
         username: String,
     },
 
     LaunchGame {
+        #[serde(rename = "sessionId")]
         session_id: Uuid,
+        #[serde(rename = "userId")]
         user_id: Uuid,
     },
 
     BroadcastRequest {
+        #[serde(rename = "userId")]
         user_id: Uuid,
+        #[serde(rename = "posY")]
         pos_y: f32,
     },
 
     ValidationData {
+        #[serde(rename = "sessionId")]
         session_id: Uuid,
+        #[serde(rename = "userId")]
         user_id: Uuid,
+        #[serde(rename = "posX")]
         pos_x: f64,
         score: u64,
         timestamp: u64,
-        move_dir: PlayerMove,
+        #[serde(rename = "moveDir")]
+        move_dir: Option<PlayerMove>,
     },
 
     Map {
+        #[serde(rename = "sessionId")]
         session_id: Uuid,
+        #[serde(rename = "userId")]
         user_id: Uuid,
         index: u32,
     },
 
     GameOver {
+        #[serde(rename = "sessionId")]
         session_id: Uuid,
+        #[serde(rename = "userId")]
         user_id: Uuid,
-    }
+    },
 }
 
 #[derive(Deserialize)]
@@ -181,14 +222,40 @@ pub struct SessionExecutor {
     user_session_map: UserSessionMap,
     tx_queue: TransmissionQueue,
     closable_sessions: Vec<Uuid>,
+    config: ConfigOptions,
 }
 
 impl SessionExecutor {
-    pub fn new() -> Self {
+    pub fn new(config: ConfigOptions) -> Self {
         //FIXME: not sure what the buffer size should be
         let (channel_tx, channel_rx) = mpsc::channel(1024);
+
+        let mut sessions = HashMap::new();
+
+        if config.session_exec.dummy_sessions {
+            sessions.insert(
+                Uuid::new_v4(),
+                Session::new("idk".to_string(), config.session),
+            );
+            sessions.insert(
+                Uuid::new_v4(),
+                Session::new("idk2".to_string(), config.session),
+            );
+            sessions.insert(
+                Uuid::new_v4(),
+                Session::new("id3k".to_string(), config.session),
+            );
+            sessions.insert(
+                Uuid::new_v4(),
+                Session::new("1idk".to_string(), config.session),
+            );
+            sessions.insert(
+                Uuid::new_v4(),
+                Session::new("id4k".to_string(), config.session),
+            );
+        }
         Self {
-            sessions: HashMap::new(),
+            sessions,
             session_hosts: HashMap::new(),
             channel_rx,
             channel_tx,
@@ -196,14 +263,41 @@ impl SessionExecutor {
             user_session_map: UserSessionMap::new(),
             tx_queue: TransmissionQueue::new(),
             closable_sessions: vec![],
+            config,
         }
     }
 
     pub fn new_with_channel(
         (tx, rx): (mpsc::Sender<ChannelData>, mpsc::Receiver<ChannelData>),
+        config: ConfigOptions,
     ) -> Self {
+        let mut sessions = HashMap::new();
+
+        if config.session_exec.dummy_sessions {
+            sessions.insert(
+                Uuid::new_v4(),
+                Session::new("idk".to_string(), config.session),
+            );
+            sessions.insert(
+                Uuid::new_v4(),
+                Session::new("idk2".to_string(), config.session),
+            );
+            sessions.insert(
+                Uuid::new_v4(),
+                Session::new("id3k".to_string(), config.session),
+            );
+            sessions.insert(
+                Uuid::new_v4(),
+                Session::new("1idk".to_string(), config.session),
+            );
+            sessions.insert(
+                Uuid::new_v4(),
+                Session::new("id4k".to_string(), config.session),
+            );
+        }
+
         Self {
-            sessions: HashMap::new(),
+            sessions,
             session_hosts: HashMap::new(),
             channel_rx: rx,
             channel_tx: tx,
@@ -211,6 +305,7 @@ impl SessionExecutor {
             user_session_map: UserSessionMap::new(),
             tx_queue: TransmissionQueue::new(),
             closable_sessions: vec![],
+            config,
         }
     }
 
@@ -271,11 +366,12 @@ impl SessionExecutor {
         };
 
         match &rx_data {
-            RxData::Query(q) => self.handle_query(addr, q),
+            RxData::Query { query } => self.handle_query(addr, query),
             RxData::CreateSession {
                 // wait_time,
                 username,
-            } => self.create_session(addr, /* *wait_time,*/ username),
+                session_name,
+            } => self.create_session(addr, /* *wait_time,*/ username, session_name),
             RxData::CreateUser {
                 session_id,
                 username,
@@ -305,9 +401,14 @@ impl SessionExecutor {
                     );
                 }
             }
-            RxData::GameOver { session_id, user_id, ..} => {
+            RxData::GameOver {
+                session_id,
+                user_id,
+                ..
+            } => {
                 if let Some(s) = self.sessions.get_mut(&session_id) {
-                    if let Ok(active_players) = s.user_game_over(&mut self.tx_queue, *user_id, addr) {
+                    if let Ok(active_players) = s.user_game_over(&mut self.tx_queue, *user_id, addr)
+                    {
                         self.user_session_map.remove(&addr);
                         self.session_hosts.remove(&addr);
                         if active_players <= 0 {
@@ -316,7 +417,10 @@ impl SessionExecutor {
                         }
                     }
                 } else {
-                    println!("[session_exec] `{}` sent game over message to invalid session: `{}`", addr, session_id);
+                    println!(
+                        "[session_exec] `{}` sent game over message to invalid session: `{}`",
+                        addr, session_id
+                    );
                 }
             }
             RxData::BroadcastRequest { user_id, pos_y } => {
@@ -343,10 +447,12 @@ impl SessionExecutor {
                 if self.sessions.contains_key(&session_id) {
                     self.tx_queue.send_to_addr(
                         addr,
-                        TxData::QueryResponse(QueryResponseType::LeaderBoard {
-                            session_id: *session_id,
-                            scores: self.sessions.get(&session_id).unwrap().get_leaderboard(),
-                        }),
+                        TxData::QueryResponse {
+                            query_res: QueryResponseType::LeaderBoard {
+                                session_id: *session_id,
+                                scores: self.sessions.get(&session_id).unwrap().get_leaderboard(),
+                            },
+                        },
                     )
                 } else {
                     println!(
@@ -357,27 +463,65 @@ impl SessionExecutor {
             }
             QueryType::Sessions => self.tx_queue.send_to_addr(
                 addr,
-                TxData::QueryResponse(QueryResponseType::Sessions {
-                    active_sessions: self
-                        .sessions
-                        .keys()
-                        .map(|k| (*k, self.sessions.get(k).unwrap().get_usernames()))
-                        .collect(),
-                }),
+                TxData::QueryResponse {
+                    query_res: QueryResponseType::Sessions {
+                        sessions: self
+                            .sessions
+                            .keys()
+                            .map(|k| {
+                                let session = self.sessions.get(k).unwrap();
+                                let status = match session.status() {
+                                    SessionStatus::Waiting { .. } | SessionStatus::Uninit => {
+                                        SessionStatusSimplified::Waiting
+                                    }
+                                    SessionStatus::Active { .. }
+                                    | SessionStatus::Countdown { .. } => {
+                                        SessionStatusSimplified::Busy
+                                    }
+                                    SessionStatus::Ended => SessionStatusSimplified::Ended,
+                                };
+                                (
+                                    *k,
+                                    session.name().to_owned(),
+                                    status,
+                                    session.get_usernames(),
+                                )
+                            })
+                            .collect(),
+                    },
+                },
             ),
         }
     }
 
-    fn create_session(&mut self, addr: SocketAddr, /*_wait_time: u32,*/ username: &str) {
+    fn create_session(
+        &mut self,
+        addr: SocketAddr,
+        /*_wait_time: u32,*/ username: &str,
+        session_name: &str,
+    ) {
         if let Some(s) = self.user_session_map.get(&addr).unwrap() {
             println!("[session_exec] `{}` requested session creation as `{}` but was already in another sesssion: `{}`", addr, username, s);
             return;
         }
-        if self.sessions.len() < MAX_SESSIONS
+        if self.sessions.len() < self.config.session_exec.max_sessions
             && !self.session_hosts.contains_key(&addr)
-            && username.len() <= MAX_USERNAME_LEN
+            && username.len() <= self.config.session.max_username_len
+            && (self
+                .sessions
+                .iter()
+                .filter(|(_, s)| {
+                    if let SessionStatus::Waiting { .. } = s.status() {
+                        true
+                    } else {
+                        false
+                    }
+                })
+                .count()
+                == 0
+                || self.config.session_exec.allow_multiple_inactive_sessions)
         {
-            let new_session = Session::new()
+            let new_session = Session::new(session_name.to_owned(), self.config.session)
                 .with_host(&mut self.tx_queue, username.to_owned(), addr)
                 .unwrap();
             let id = *new_session.id();
@@ -431,7 +575,10 @@ impl SessionExecutor {
                 senders.remove(addr);
                 println!("[session_exec] closed connection from `{}`", addr);
             } else {
-                println!("[session_exec] requested closing unknown address: `{}`", addr);
+                println!(
+                    "[session_exec] requested closing unknown address: `{}`",
+                    addr
+                );
             }
         });
         self.tx_queue.clear_closable();
@@ -449,7 +596,7 @@ impl SessionExecutor {
 
     pub fn run(&mut self) {
         for (s_id, s) in &mut self.sessions {
-            let game_finished =  s.game_loop(&mut self.tx_queue);
+            let game_finished = s.game_loop(&mut self.tx_queue);
             if game_finished {
                 s.shutdown(&mut self.tx_queue);
                 self.closable_sessions.push(*s_id);
@@ -457,7 +604,9 @@ impl SessionExecutor {
         }
         self.send_tx_queue();
         self.close_abandoned_cons();
-        if self.closable_sessions.len() <= 0 { return }
+        if self.closable_sessions.len() <= 0 {
+            return;
+        }
 
         for s in self.closable_sessions.clone() {
             self.close_session(s);

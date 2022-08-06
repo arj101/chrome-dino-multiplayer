@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E</title>
+</head>
+<body>
+    <style>
+        body {
+            background-color: rgb(255, 255, 255);
+            overflow: hidden;
+        }
+        * {
+            font-family: sans-serif;
+            padding: 0rem;
+            border: 0;
+            margin: 0;
+        }
+
+        canvas {
+            box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.15);
+            image-rendering: optimizeSpeed;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -o-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: pixelated;
+            image-rendering: optimize-contrast;
+        }
+    </style>
+    <script>
+        navigator.serviceWorker.register('/service-worker.js', { scope: './' })
+            .then(() => console.log('succefully registered service worker'))
+            .catch((e) => console.error(`Error registering service worker: ${e}`))
+    </script>
+    <script src="https://pixijs.download/release/pixi.js"></script>
+    <script src="./sprites.js"></script>
+    <script src="./keyboard-events.js"></script>
+    <script src="./main.js"></script>
+</body>
+</html>

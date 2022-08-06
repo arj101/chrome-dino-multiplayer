@@ -1,0 +1,125 @@
+* {
+    padding: 0.5rem 1rem;
+    margin: 0.5rem;
+    border: 0;
+    font-family: 'Press Start 2P', monospace;
+    color: white;
+}
+
+body {
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background-color: #3D3D3D;
+    overflow: hidden;
+}
+
+h1 {
+    position: absolute;
+    margin-left: 3rem;
+    font-size: 3rem;
+    width: 60vw;
+    color: white;
+    top: 50%;
+    transform: translateY(-50%) translateX(-500px);
+    animation: slide-in 500ms ease-out;
+    animation-fill-mode: forwards;
+}
+
+img {
+    padding: 0;
+    margin: 0;
+    position: absolute;
+    transform: translateX(-500px);
+    animation: slide-in 500ms ease-out;
+    animation-fill-mode: forwards;
+}
+
+#img-ground {
+    left: 0;
+    bottom: 20vh;
+    filter: brightness(500%);
+}
+
+@keyframes slide-in {
+    from {
+        transform: translateX(-500px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0px);
+        opacity: 1;
+    }
+}
+
+#img-cactus-0 {
+    left: 1rem;
+    bottom: 20vh;
+}
+
+#img-cactus-1 {
+    right: 10rem;
+    bottom: 20vh;
+}
+
+div {
+    position: absolute;
+    right: 20vw;
+    top: 50vh;
+    transform: translateY(calc(-50% - 2rem));
+    height: fit-content;
+    width: 45vw;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-evenly;
+    transform: scale(0) translateY(-50%);
+    animation: scale-in 300ms forwards;
+    animation-delay: 200ms;
+}
+
+@keyframes scale-in {
+    from {
+        transform: scale(0) translateY(-50%);
+    }
+    to {
+        transform: scale(1) translateY(-50%);
+    }
+}
+
+div button {
+    position: relative;
+    padding: 1.5rem 1.5em;
+    background-color: #2D2D2D;
+    font-size: 1.8rem;
+    box-shadow: 3px 4px 0px #636363;
+    cursor: pointer;
+    transform: scale(100%);
+    transition: transform 300ms cubic-bezier(0,1.12,.33,1.97);
+    /* opacity: 0;
+    left: -200px; */
+    /* animation: button-in 300ms ease;
+    animation-delay: 200ms;
+    animation-fill-mode: forwards; */
+}
+
+div button:hover {
+    
+    box-shadow: 0px 0px 10px #00000005;
+    transform: scale(105%);
+}
+
+div button:active {
+    transform: scale(98%);
+}
+
+@keyframes button-in {
+    from {
+        left: -200px;
+        opacity: 0;
+    }
+    to {
+        left: 0;
+        opacity: 1;
+    }
+}

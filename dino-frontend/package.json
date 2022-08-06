@@ -37,6 +37,10 @@
 		"@lukeed/uuid": "^2.0.0",
 		"cookie": "^0.4.1",
 		"material-icons": "^1.10.1",
+		"p5": "^1.4.0",
+		"pixi.js": "^6.2.0",
+		"svelte-progress-bar": "^2.0.0",
+		"uuidv4": "^6.2.12",
 		"ws": "^8.2.3"
 	}
 }

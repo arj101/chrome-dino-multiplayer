@@ -2,34 +2,8 @@ use crate::math;
 
 use rand::prelude::*;
 use rand::rngs::ThreadRng;
-use serde::Serialize;
-
-// sizes are relative to the dino. 1 unit = 1 dino height
-
-#[derive(Clone, Copy, Serialize, PartialEq, Debug)]
-pub enum CactusType {
-    Short,
-    Tall,
-}
-
-
-#[derive(Clone, Copy, Serialize, Debug)]
-pub enum Obstacle {
-    Cactus(CactusType),
-    Padding,
-}
-
-pub fn obstacle_size(obs: &Obstacle) -> (f32, f32) {
-    match obs {
-        &Obstacle::Cactus(CactusType::Short) => (0.25, 0.6),
-        &Obstacle::Cactus(CactusType::Tall) => (0.4, 0.9),
-        &Obstacle::Padding => (0.0, 0.0),
-    }
-}
-
-pub fn tallest_cactus() -> CactusType {
-    CactusType::Tall
-}
+use crate::obstacles::Obstacle;
+use crate::obstacles::{random_cactus, obstacle_size, TALLEST_CACTUS};
 
 pub struct GameMap {
     map: Vec<(f64, Vec<Obstacle>)>,
@@ -59,11 +33,8 @@ impl GameMap {
         (self.u.powi(2) + 2.0 * self.acc * x as f32).sqrt() as f32
     }
 
-    fn random_cactus(&mut self) -> CactusType {
-        match self.rng.gen_range(0..=1) {
-            0 => CactusType::Short,
-            _ => CactusType::Tall,
-        }
+    fn random_cactus(&mut self) -> Obstacle {
+        random_cactus(&mut self.rng)
     }
 
     fn gen_map(&mut self, len: usize) {
@@ -78,17 +49,17 @@ impl GameMap {
                 let range = math::x_above_jump_height_c_acc(
                     self.vel_at_pos(self.pos + margin as f64),
                     self.acc,
-                    obstacle_size(&Obstacle::Cactus(tallest_cactus())).1,
+                    obstacle_size(&TALLEST_CACTUS).1,
                     self.jump_vel,
-                    self.g
+                    self.g,
                 );
 
                 let obss = self.gen_obs_group(range);
 
                 (obss, range.0)
             } else {
-                let obs = Obstacle::Cactus(self.random_cactus());
-            
+                let obs = self.random_cactus();
+
                 let x_at_height = math::x_above_jump_height_c_acc(
                     self.vel_at_pos(self.pos + margin as f64),
                     self.acc,
@@ -111,15 +82,19 @@ impl GameMap {
     }
 
     fn gen_obs_group(&mut self, range: (f32, f32)) -> Vec<Obstacle> {
-        let mut group: Vec<Obstacle> = vec![Obstacle::Cactus(self.random_cactus())];
+        let mut group: Vec<Obstacle> = vec![self.random_cactus()];
         let mut curr_pos = range.0 + obstacle_size(&group[0]).0;
 
         while curr_pos < range.1 {
-            let cactus = Obstacle::Cactus(self.random_cactus());
-            if curr_pos + obstacle_size(&cactus).0 > range.1 { break }
-            curr_pos +=  obstacle_size(&cactus).0;
+            let cactus = self.random_cactus();
+            if curr_pos + obstacle_size(&cactus).0 > range.1 {
+                break;
+            }
+            curr_pos += obstacle_size(&cactus).0;
             group.push(cactus);
-            if self.rng.gen::<f32>() > 0.4 { break }
+            if self.rng.gen::<f32>() > 0.4 {
+                break;
+            }
         }
 
         group

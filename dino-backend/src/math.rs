@@ -212,8 +212,8 @@ fn jump_test() {
 fn jump_graph_c_acc() {
     use std::io::prelude::*;
 
-    let uy = 20.0;
-    let g = -10.0;
+    let uy = 10.0;
+    let g = -60.0;
     let ux = 5.0;
     let ax = 2.0;
     let distance = jump_distance_c_acc(ux, ax, uy, g);
@@ -239,10 +239,10 @@ fn jump_graph_c_acc() {
 fn jump_graph_c_v() {
     use std::io::prelude::*;
 
-    let uy = 20.0;
-    let g = -10.0;
-    let ux = 5.0;
-    let ax = 2.0;
+    let uy = 1.4;
+    let g = -60.0;
+    let ux = 50.0;
+    let ax = 10.0;
     let distance = jump_distance_c_v(ux, uy, g);
     let mut file = std::fs::File::create("graph_c_v.csv").unwrap();
     let mut content = "x, y, h\n".to_owned();
