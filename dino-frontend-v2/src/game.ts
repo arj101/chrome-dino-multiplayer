@@ -1,7 +1,5 @@
 import { SocketClient } from "./socket-client";
 import { GameRenderData, Renderer, SpriteAlign } from "./renderer";
-import { navigateTo } from "./main";
-import { CanvasUI } from "./canvas-ui";
 import { Sprite } from "./sprites";
 import { createNoise2D } from "simplex-noise";
 
@@ -220,14 +218,14 @@ const main = async () => {
         const pressFn = keys.get(evt.key)?.onPress || (() => {});
         if (!keys.get(evt.key)?.state) pressFn();
 
-        keys.get(evt.key).state = true;
+        (keys.get(evt.key) || { state: true }).state = true; //FIXME: Better way to convince typescript
     });
     window.addEventListener("keyup", (evt) => {
         if (!keys.has(evt.key)) return;
 
         const releaseFn = keys.get(evt.key)?.onRelease || (() => {});
         releaseFn();
-        keys.get(evt.key).state = false;
+        (keys.get(evt.key) || { state: true }).state = false;
     });
 };
 

@@ -90,8 +90,8 @@ class Renderer {
         return this.groundPos - this.relUnitLen * y;
     }
 
-    getSprite(sprite: Sprite): HTMLImageElement | null {
-        return this.textureMap.getTexture(sprite);
+    getSprite(sprite: Sprite): HTMLImageElement {
+        return this.textureMap.getTexture(sprite) as HTMLImageElement;
     }
 
     drawBackground() {
@@ -193,7 +193,7 @@ class Renderer {
     /**
      * use requestAnimationFrame to run this loop
      */
-    loop(gameData: GameRenderData, t: number, dt: number) {
+    loop(gameData: GameRenderData, t: number, _dt: number) {
         const xPos = gameData.xPos;
         this.drawBackground();
 

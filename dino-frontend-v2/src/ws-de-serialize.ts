@@ -50,7 +50,7 @@ type TxData =
           moveDir: MoveDir;
       }
     | { type: "Map"; sessionId: string; userId: string; index: number }
-    | { type: "GameOver"; sessionId: string; userId; string };
+    | { type: "GameOver"; sessionId: string; userId: string };
 
 function deserialize(jsonStr: string): RxData {
     let json = JSON.parse(jsonStr);
@@ -125,7 +125,7 @@ function deserialize(jsonStr: string): RxData {
     }
 }
 
-function parseQueryResponse(json: JSON): QueryResponse {
+function parseQueryResponse(json: any): QueryResponse {
     switch (json["type"]) {
         case "Sessions":
             if (!validateKeys(json, { sessions: [] })) return { type: "None" };
@@ -149,7 +149,7 @@ function serialize(data: TxData): string {
 }
 
 //probably the worst way to runtime type check
-function validateKeys(msg: Object, ref: Object): boolean {
+function validateKeys(msg: any, ref: any): boolean {
     const msgKeys = Object.keys(msg);
     const refKeys = Object.keys(ref);
 
