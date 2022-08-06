@@ -1,11 +1,12 @@
 import "./style.css";
+import indexURl from "./html/game.html?url";
 import { main as gameMain } from "./game";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
 const pageCache: Map<string, string> = new Map();
 
-loadPage("game.html", gameMain);
+loadPage(indexURl, gameMain);
 
 function loadPage(
     page: string,
@@ -13,7 +14,7 @@ function loadPage(
     attachElement?: HTMLElement
 ) {
     const attachElt = attachElement ? attachElement : app;
-    const path = `./src/html/${page}`;
+    const path = page;
     if (pageCache.has(path)) {
         const cached = pageCache.get(path);
         attachElt.innerHTML = cached ? cached : "";
