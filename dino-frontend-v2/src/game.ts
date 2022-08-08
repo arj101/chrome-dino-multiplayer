@@ -110,7 +110,7 @@ const main = async () => {
     };
 
     const jump = () => {
-        if (dino.yPos != renderer.groundPos && !renderer.boundingBox) return;
+        // if (dino.yPos != renderer.groundPos && !renderer.boundingBox) return;
         textureSwap.dinoJumpTexture();
         dino.yVel = -config.jumpVel;
     };
