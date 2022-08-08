@@ -1,6 +1,6 @@
 import { SocketClient } from "./socket-client";
 import { GameRenderData, Renderer, SpriteAlign } from "./renderer";
-import { Sprite } from "./sprites";
+import { Sprite, spriteUrl } from "./sprites";
 import { createNoise2D } from "simplex-noise";
 
 const main = async () => {
@@ -33,9 +33,18 @@ const main = async () => {
         console.log(msg);
     });
 
+    const dinoImg = new Image();
+    dinoImg.src = spriteUrl.get("dinoRun1") as string;
+    await (() => {
+        return new Promise((resolve, _reject) => {
+            dinoImg.onload = resolve;
+        });
+    })();
+
     const renderer = new Renderer(
         document.getElementsByTagName("canvas")[0],
-        250
+        dinoImg.height,
+        window.innerHeight * 0.13
     );
 
     const noise2d = createNoise2D();
@@ -54,10 +63,10 @@ const main = async () => {
         "cactusSmall5",
     ];
     const config = {
-        initialSpeed: renderer.xFromRelUnit(1),
-        acc: renderer.xFromRelUnit(0.1),
-        jumpVel: renderer.xFromRelUnit(7),
-        gravity: renderer.xFromRelUnit(-30),
+        initialSpeed: renderer.xFromRelUnit(8),
+        acc: renderer.xFromRelUnit(0.3),
+        jumpVel: renderer.xFromRelUnit(15),
+        gravity: renderer.xFromRelUnit(-60),
     };
     let speed = config.initialSpeed;
     let prevTimestamp = new Date().getTime();
@@ -66,7 +75,7 @@ const main = async () => {
             ["dinoRun1", { swapDelay: 500 }],
             ["dinoRun2", { swapDelay: 500 }],
         ],
-        { x: 1, y: 0 },
+        { x: 2, y: 0 },
         SpriteAlign.BottomLeft,
         true
     );
@@ -100,14 +109,23 @@ const main = async () => {
         yVel: 0,
     };
 
+    const jump = () => {
+        if (dino.yPos != renderer.groundPos && !renderer.boundingBox) return;
+        textureSwap.dinoJumpTexture();
+        dino.yVel = -config.jumpVel;
+    };
+
     keys.set("ArrowUp", {
         state: false,
-        onPress: () => {
-            if (dino.yPos != renderer.groundPos) return;
-            textureSwap.dinoJumpTexture();
-            dino.yVel = -config.jumpVel;
-        },
+        onPress: jump,
     });
+
+    keys.set(" ", {
+        state: false,
+        onPress: jump,
+    });
+
+    window.addEventListener("click", jump);
 
     keys.set("ArrowDown", {
         state: false,
@@ -149,21 +167,37 @@ const main = async () => {
                 SpriteAlign.BottomLeft
             );
         }
-        if (Math.random() > 0.85) {
+        if (Math.random() > 0.5) {
             renderer.drawBackgroundSpriteAtPos(
                 "cloud",
                 {
                     x: renderer.xToRelUnit(
                         renderData.xPos + 1000 + Math.random() * 5000
                     ),
-                    y: 1.5 - Math.random() / 2,
+                    y: 2.5 - Math.random() / 2,
                 },
                 Math.random() * 3
             );
         }
     }, 100);
 
+    let offDir = Math.random() * 2 * Math.PI;
+
+    let isRunning = true;
+
+    const testCanvas = document.createElement("canvas");
+    const reductionCanvas = document.createElement("canvas");
+
+    let mouseX = 20;
+    let mouseY = 0;
+
+    window.addEventListener("mousemove", (evt) => {
+        mouseX = evt.clientX;
+        mouseY = evt.clientY;
+    });
+
     const loop = () => {
+        if (!isRunning) return;
         requestAnimationFrame(loop);
         const currTimestamp = new Date().getTime();
         const dt = currTimestamp - prevTimestamp;
@@ -183,19 +217,75 @@ const main = async () => {
 
         renderer.animatedSprites[dinoIdx][1].y = dino.yPos;
 
-        const offDir = noise2d(xoff, 0) * Math.PI * 2;
+        offDir += noise2d(xoff, 0) / 1000;
         let offMag =
             (renderer.canvas.height * 0.1 * noise2d(0, yoff) * speed) /
-            4 /
+            10 /
             renderer.relUnitLen;
-        if (Math.abs(offMag) > 140) offMag = Math.sign(offMag) * 140;
+        if (Math.abs(offMag) > 110) offMag = Math.sign(offMag) * 110;
 
         renderer.offsetScreen(
             offMag * Math.cos(offDir),
             offMag * Math.sin(offDir) + (renderer.groundPos - dino.yPos) / 4
         );
 
-        renderer.loop(renderData, currTimestamp, dt);
+        // renderer.animatedSprites[dinoIdx][1].x = mouseX;
+        // renderer.animatedSprites[dinoIdx][1].y = mouseY;
+        const {
+            x: dinoX,
+            y: dinoY,
+            relY: _relY,
+            gamePos: _gamePos,
+        } = renderer.animatedSprites[dinoIdx][1];
+        const { w, h } = renderer.getSpriteDimensions(
+            renderer.animatedSprites[dinoIdx][0][
+                renderer.animatedSprites[dinoIdx][2].currIdx
+            ][0]
+        );
+        renderer.loop(renderData, currTimestamp, dt, (sprite, obj2, _) => {
+            //Collission detection
+            if (sprite === "cloud" || sprite.startsWith("dino")) return;
+            const obj1 = { x: dinoX, y: dinoY - h, w, h };
+            const obj2f = {
+                x: obj2.x + (speed * dt) / 1000,
+                y: obj2.y,
+                w: obj2.w,
+                h: obj2.h,
+            };
+            const collission = checkCollission(obj1, obj2, obj2f);
+            if (!collission) return;
+
+            const img1 = renderer.getSprite(
+                renderer.animatedSprites[dinoIdx][0][
+                    renderer.animatedSprites[dinoIdx][2].currIdx
+                ][0]
+            );
+
+            const img2 = renderer.getSprite(sprite);
+
+            const collissionPerPixel = isPixelOverlap(
+                testCanvas,
+                reductionCanvas,
+                img1,
+                obj1.x,
+                obj1.y,
+                obj1.w,
+                obj1.h,
+                img2,
+                obj2.x,
+                obj2.y,
+                obj2.w,
+                obj2.h
+            );
+            if (collissionPerPixel) {
+                isRunning = false;
+                if (!renderer.boundingBox) return;
+                renderer.ctx.fillStyle = "rgba(200, 150, 50, 0.5)";
+                renderer.ctx.fillRect(obj2.x, obj2.y, obj2.w, obj2.h);
+                renderer.ctx.fill();
+                return;
+            }
+        });
 
         renderData.xPos += (speed * dt) / 1000;
         renderData.vel = speed;
@@ -204,8 +294,8 @@ const main = async () => {
         renderer.animatedSprites[dinoIdx][0][1][1].swapDelay = dinoTextureSwap;
         speed += (config.acc * dt) / 1000;
 
-        xoff += 0.001;
-        yoff += ((speed / 1000 / renderer.relUnitLen) * dt) / 50;
+        xoff += Math.min(0.1, ((speed / 1000 / renderer.relUnitLen) * dt) / 50);
+        yoff += Math.min(0.1, ((speed / 1000 / renderer.relUnitLen) * dt) / 50);
 
         prevTimestamp = currTimestamp;
     };
@@ -229,4 +319,138 @@ const main = async () => {
     });
 };
 
+type RectBox2D = { x: number; y: number; w: number; h: number };
+
+/**
+ * obj2 is assumed to be moving in the negative x direction
+ * @param obj1
+ * @param obj2i
+ * @param obj2f
+ * @returns
+ */
+function checkCollission(
+    obj1: RectBox2D,
+    obj2i: RectBox2D,
+    obj2f: RectBox2D
+): boolean {
+    if (obj1.x + obj1.w < obj2i.x && obj1.x + obj1.w < obj2f.x) return false;
+    if (obj1.x > obj2f.x + obj2f.w && obj1.x > obj2i.x + obj2i.w) return false;
+
+    if (obj1.y > obj2f.y + obj2f.h && obj1.y > obj2i.y + obj2i.h) return false;
+    if (obj1.y + obj2f.h < obj2f.y && obj1.y + obj1.h < obj2i.y) return false;
+
+    return true;
+}
+
+// returns true if any pixels are overlapping
+// https://stackoverflow.com/questions/40952985/how-to-perform-per-pixel-collision-test-for-transparent-images
+// Have no idea how this works
+function isPixelOverlap(
+    pixCanvas: HTMLCanvasElement,
+    pixCanvas1: HTMLCanvasElement,
+    img1: HTMLImageElement,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    img2: HTMLImageElement,
+    x1: number,
+    y1: number,
+    w1: number,
+    h1: number
+) {
+    // function to check if any pixels are visible
+    function checkPixels(
+        context: CanvasRenderingContext2D,
+        w: number,
+        h: number
+    ) {
+        const imageData = new Uint32Array(
+            context.getImageData(0, 0, w, h).data.buffer
+        );
+        let i = 0;
+        // if any pixel is not zero then there must be an overlap
+        while (i < imageData.length) {
+            if (imageData[i++] !== 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // check if they overlap (redundant)
+    if (x > x1 + w1 || x + w < x1 || y > y1 + h1 || y + h < y1) {
+        return false; // no overlap
+    }
+    // size of overlapping area
+    // find left edge
+    const ax = x < x1 ? x1 : x;
+    let aw = x + w < x1 + w1 ? x + w - ax : x1 + w1 - ax;
+    // do the same for top and bottom
+    const ay = y < y1 ? y1 : y;
+    let ah = y + h < y1 + h1 ? y + h - ay : y1 + h1 - ay;
+
+    // Create a canvas to do the masking on
+    pixCanvas.width = aw;
+    pixCanvas.height = ah;
+    const ctx = pixCanvas.getContext("2d") as CanvasRenderingContext2D;
+
+    // draw the first image relative to the overlap area
+    ctx.drawImage(img1, x - ax, y - ay, w, h);
+
+    // set the composite operation to destination-in
+    ctx.globalCompositeOperation = "destination-in"; // this means only pixels
+    // will remain if both images
+    // are not transparent
+    ctx.drawImage(img2, x1 - ax, y1 - ay, w1, h1);
+    ctx.globalCompositeOperation = "source-over";
+
+    // now draw over its self to amplify any pixels that have low alpha
+    try {
+        for (let i = 0; i < 32; i++) {
+            ctx.drawImage(pixCanvas, 0, 0);
+        }
+    } catch (_) {
+        return false;
+    }
+    // create a second canvas 1/8th the size but not smaller than 1 by 1
+    if (!pixCanvas) pixCanvas = document.createElement("canvas");
+    const ctx1 = pixCanvas1.getContext("2d") as CanvasRenderingContext2D;
+    // reduced size rw, rh
+    let rw = (pixCanvas1.width = Math.max(1, Math.floor(aw / 8)));
+    let rh = (pixCanvas1.height = Math.max(1, Math.floor(ah / 8)));
+    // repeat the following untill the canvas is just 64 pixels
+    while (rw > 8 && rh > 8) {
+        // draw the mask image several times
+        for (let i = 0; i < 32; i++) {
+            ctx1.drawImage(
+                pixCanvas,
+                0,
+                0,
+                aw,
+                ah,
+                Math.random(),
+                Math.random(),
+                rw,
+                rh
+            );
+        }
+        // clear original
+        ctx.clearRect(0, 0, aw, ah);
+        // set the new size
+        aw = rw;
+        ah = rh;
+        // draw the small copy onto original
+        ctx.drawImage(pixCanvas1, 0, 0);
+        // clear reduction canvas
+        ctx1.clearRect(0, 0, pixCanvas1.width, pixCanvas1.height);
+        // get next size down
+        rw = Math.max(1, Math.floor(rw / 8));
+        rh = Math.max(1, Math.floor(rh / 8));
+    }
+
+    // check for overlap
+    return checkPixels(ctx, aw, ah);
+}
 export { main };
+export type { RectBox2D };

@@ -1,5 +1,6 @@
 import { TextureMap } from "./texture-map";
 import { spriteUrl, Sprite } from "./sprites";
+import type { RectBox2D } from "./game";
 
 interface GameRenderData {
     score: number;
@@ -37,9 +38,12 @@ class Renderer {
     screenOffset: { x: number; y: number };
     relUnitLen: number;
     groundPos: number;
+    scalingFactor: number;
+    boundingBox: boolean;
 
     constructor(
         canvas: HTMLCanvasElement,
+        dinoHeight: number,
         unitLength: number,
         bgColor?: string
     ) {
@@ -59,6 +63,8 @@ class Renderer {
         this.relUnitLen = unitLength;
         this.groundPos = this.canvas.height * 0.6;
         this.backgroundSprites = [];
+        this.scalingFactor = unitLength / dinoHeight;
+        this.boundingBox = window.localStorage.getItem("debug") != null;
 
         this.bgColor = bgColor ? bgColor : "rgba(30, 30, 30, 1)";
 
@@ -94,6 +100,14 @@ class Renderer {
         return this.textureMap.getTexture(sprite) as HTMLImageElement;
     }
 
+    getSpriteDimensions(sprite: Sprite): { w: number; h: number } {
+        const dimensions = this.textureMap.getTexureDimensions(
+            sprite,
+            this.scalingFactor
+        );
+        return { w: dimensions?.w || 0, h: dimensions?.h || 0 };
+    }
+
     drawBackground() {
         this.ctx.fillStyle = this.bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -119,7 +133,16 @@ class Renderer {
             x = this.xFromRelUnit(x);
             y = this.yFromRelUnit(y);
         }
-        this.ctx.drawImage(this.getSprite(sprite) as HTMLImageElement, x, y);
+        const spriteObj = this.getSprite(sprite);
+        const w = spriteObj.width * this.scalingFactor;
+        const h = spriteObj.height * this.scalingFactor;
+        this.ctx.drawImage(
+            this.getSprite(sprite) as HTMLImageElement,
+            x,
+            y,
+            w,
+            h
+        );
     }
 
     drawSpriteScaled(
@@ -127,11 +150,11 @@ class Renderer {
         pos: { x: number; y: number },
         scale: number
     ) {
-        let x = pos.x;
-        let y = pos.y;
+        const x = pos.x;
+        const y = pos.y;
         const spriteObj = this.getSprite(sprite) as HTMLImageElement;
-        let w = spriteObj.width * scale;
-        let h = spriteObj.height * scale;
+        const w = spriteObj.width * scale * this.scalingFactor;
+        const h = spriteObj.height * scale * this.scalingFactor;
         this.ctx.drawImage(spriteObj, x, y, w, h);
     }
 
@@ -193,7 +216,16 @@ class Renderer {
     /**
      * use requestAnimationFrame to run this loop
      */
-    loop(gameData: GameRenderData, t: number, _dt: number) {
+    loop(
+        gameData: GameRenderData,
+        t: number,
+        _dt: number,
+        predrawFn: (sprite: Sprite, obj2: RectBox2D, xVel: number) => void = (
+            _,
+            __,
+            ___
+        ) => {}
+    ) {
         const xPos = gameData.xPos;
         this.drawBackground();
 
@@ -218,9 +250,13 @@ class Renderer {
             );
             const spriteImg = this.getSprite(sprite[0]) as HTMLImageElement;
             this.ctx.globalAlpha = 1.2 / sprite[1].parallaxCoeff;
+            const realY = sprite[1].y - spriteImg.height * this.scalingFactor;
             this.drawSpriteScaled(
                 sprite[0],
-                { x: realX, y: sprite[1].y - spriteImg.height },
+                {
+                    x: realX,
+                    y: realY,
+                },
                 scaleFactor
             );
             this.ctx.restore();
@@ -229,7 +265,7 @@ class Renderer {
         //PARALLAX LEVEL 1
         this.ctx.save();
         this.ctx.translate(this.screenOffset.x / 4, this.screenOffset.y / 4);
-        const scoreText = `SCORE: ${Math.round(xPos / 100)}`;
+        const scoreText = `SCORE: ${Math.round(xPos / 25)}`;
         this.ctx.fillStyle = "rgb(200, 200, 200)";
         this.ctx.font = "38px Bungee";
         this.ctx.fillText(
@@ -247,15 +283,16 @@ class Renderer {
             0.4,
             1 / Math.exp(gameData.vel / 10000) // motion blur
         )})`;
-        const groundLength = this.getSprite("ground")?.width as number;
+        const groundLength =
+            (this.getSprite("ground")?.width as number) * this.scalingFactor;
         const groundX = xPos % groundLength;
         this.drawSprite("ground", {
             x: groundLength - groundX,
-            y: this.groundPos - 20,
+            y: this.groundPos - 20 * this.scalingFactor,
         });
         this.drawSprite("ground", {
             x: 0 * groundLength - groundX,
-            y: this.groundPos - 20,
+            y: this.groundPos - 20 * this.scalingFactor,
         });
 
         for (let i = this.animatedSprites.length - 1; i >= 0; i--) {
@@ -280,14 +317,23 @@ class Renderer {
             let x = sprite[1].x;
             if (sprite[1].relY) y = this.groundPos - y;
             if (sprite[1].align == SpriteAlign.BottomLeft) {
-                y -= this.getSprite(sprite[0][sprite[2].currIdx][0]).height;
+                y -=
+                    this.getSprite(sprite[0][sprite[2].currIdx][0]).height *
+                    this.scalingFactor;
             }
 
             if (sprite[1].gamePos) x -= xPos;
+            const spriteName = sprite[0][sprite[2].currIdx][0];
+            const { w, h } = this.getSpriteDimensions(spriteName);
+            predrawFn(spriteName, { x, y, w, h }, gameData.vel);
             this.drawSprite(sprite[0][sprite[2].currIdx][0], {
                 x,
                 y,
             });
+            if (!this.boundingBox) continue;
+            this.ctx.strokeStyle = "rgb(200, 80, 30)";
+            this.ctx.strokeRect(x, y, w, h);
+            this.ctx.stroke();
         }
 
         for (let i = this.renderList.length - 1; i >= 0; i--) {
@@ -297,15 +343,23 @@ class Renderer {
             const sprite = this.getSprite(
                 this.renderList[i][0]
             ) as HTMLImageElement;
-            if (pos.x + sprite.width < -5) {
+            if (pos.x + sprite.width * this.scalingFactor < -5) {
                 this.renderList.splice(i, 1);
                 continue;
             }
-
+            const realX = pos.x - xPos;
+            const realY = pos.y - sprite.height * this.scalingFactor;
+            const spriteName = this.renderList[i][0];
+            const { w, h } = this.getSpriteDimensions(spriteName);
+            predrawFn(spriteName, { x: realX, y: realY, w, h }, gameData.vel);
             this.drawSprite(this.renderList[i][0], {
-                x: pos.x - xPos,
-                y: pos.y - sprite.height,
+                x: realX,
+                y: realY,
             });
+            if (!this.boundingBox) continue;
+            this.ctx.strokeStyle = "rgb(80, 200, 30)";
+            this.ctx.strokeRect(realX, realY, w, h);
+            this.ctx.stroke();
         }
         this.ctx.restore();
     }
