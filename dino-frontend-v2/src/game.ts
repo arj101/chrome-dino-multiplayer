@@ -188,8 +188,8 @@ const main = async () => {
     const testCanvas = document.createElement("canvas");
     const reductionCanvas = document.createElement("canvas");
 
-    let mouseX = 20;
-    let mouseY = 0;
+    let _mouseX = 20;
+    let _mouseY = 0;
 
     window.addEventListener("mousemove", (evt) => {
         mouseX = evt.clientX;
