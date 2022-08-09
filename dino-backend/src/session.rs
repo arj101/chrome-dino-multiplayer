@@ -15,10 +15,10 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::{self, Duration, Instant, SystemTime};
 
-pub const X_ACC: f32 = 0.1;
-pub const INITIAL_X_VEL: f32 = 1.0;
-pub const GRAVITY: f32 = -1.0;
-pub const JUMP_VEL: f32 = 2.5;
+pub const X_ACC: f32 = 0.3;
+pub const INITIAL_X_VEL: f32 = 8.0;
+pub const GRAVITY: f32 = -60.0;
+pub const JUMP_VEL: f32 = 15.0;
 
 #[derive(PartialEq)]
 pub enum SessionStatus {

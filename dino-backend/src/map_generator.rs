@@ -1,12 +1,12 @@
 use crate::math;
 
+use crate::obstacles::Obstacle;
+use crate::obstacles::{obstacle_size, random_cactus, TALLEST_CACTUS};
 use rand::prelude::*;
 use rand::rngs::ThreadRng;
-use crate::obstacles::Obstacle;
-use crate::obstacles::{random_cactus, obstacle_size, TALLEST_CACTUS};
 
 pub struct GameMap {
-    map: Vec<(f64, Vec<Obstacle>)>,
+    map: Vec<((f64, f64), Vec<Obstacle>)>,
     pos: f64,
     u: f32,
     acc: f32,
@@ -37,48 +37,94 @@ impl GameMap {
         random_cactus(&mut self.rng)
     }
 
+    fn add_random_cactus(&mut self, p_grouping: f32) {
+        let is_grouping = self.rng.gen::<f32>() <= p_grouping;
+        let x_vel = self.vel_at_pos(self.pos);
+
+        let jump_distance = math::jump_distance_c_acc(x_vel, self.acc, self.jump_vel, self.g);
+        let margin = jump_distance / 5.0 + self.rng.gen::<f32>() * jump_distance / 2.0;
+
+        let (obs, x_at_height) = if is_grouping {
+            let range = math::x_above_jump_height_c_acc(
+                self.vel_at_pos(self.pos + margin as f64),
+                self.acc,
+                obstacle_size(&TALLEST_CACTUS).1,
+                self.jump_vel,
+                self.g,
+            );
+
+            let obss = self.gen_obs_group(range);
+
+            (obss, range.0)
+        } else {
+            let obs = self.random_cactus();
+
+            let x_at_height = math::x_above_jump_height_c_acc(
+                self.vel_at_pos(self.pos + margin as f64),
+                self.acc,
+                obstacle_size(&obs).1,
+                self.jump_vel,
+                self.g,
+            )
+            .0;
+
+            (vec![obs], x_at_height)
+        };
+
+        let obs_pos = self.pos + (x_at_height + margin) as f64;
+
+        self.map.push(((obs_pos, 0.0), obs));
+        self.pos += (margin + jump_distance) as f64;
+    }
+
+    fn add_bird(&mut self) {
+        let x_vel = self.vel_at_pos(self.pos);
+
+        let jump_distance = math::jump_distance_c_acc(x_vel, self.acc, self.jump_vel, self.g);
+        let margin = jump_distance / 5.0 + self.rng.gen::<f32>() * jump_distance / 5.0;
+
+        let bird_y = 0.5 + self.rng.gen::<f32>() / 1.5;
+        let clearance_height = obstacle_size(&Obstacle::Bird1).1 + bird_y;
+        let x_at_height = math::x_above_jump_height_c_acc(
+            x_vel,
+            self.acc,
+            clearance_height,
+            self.jump_vel,
+            self.g,
+        )
+        .0;
+
+        let bird_x = self.pos + (margin + x_at_height) as f64;
+
+        self.map
+            .push(((bird_x, bird_y as f64), [Obstacle::Bird1].to_vec()));
+        self.pos += (margin + jump_distance) as f64;
+    }
+
     fn gen_map(&mut self, len: usize) {
         let new_len = self.map.len() + len;
+        let mut x_vel = self.vel_at_pos(self.pos);
         while self.map.len() < new_len {
-            let jump_distance = math::jump_distance_c_acc(self.u, self.acc, self.jump_vel, self.g);
-            let margin = 0.5 + self.rng.gen::<f32>() * 3.0;
+            let add_obs = self.rng.gen::<f32>() > 0.25;
+            let jump_distance = math::jump_distance_c_acc(x_vel, self.acc, self.jump_vel, self.g);
+            let margin = jump_distance / 5.0 + self.rng.gen::<f32>() * jump_distance / 2.0;
 
-            let is_grouping = self.rng.gen::<f32>() > 0.5;
+            if !add_obs {
+                self.pos += (margin + jump_distance) as f64;
+                x_vel = self.vel_at_pos(self.pos);
+                continue;
+            }
+            let is_cactus = self.rng.gen::<f32>() > 0.5;
 
-            let (obs, x_at_height) = if is_grouping {
-                let range = math::x_above_jump_height_c_acc(
-                    self.vel_at_pos(self.pos + margin as f64),
-                    self.acc,
-                    obstacle_size(&TALLEST_CACTUS).1,
-                    self.jump_vel,
-                    self.g,
-                );
-
-                let obss = self.gen_obs_group(range);
-
-                (obss, range.0)
+            if is_cactus {
+                self.add_random_cactus(0.5);
             } else {
-                let obs = self.random_cactus();
-
-                let x_at_height = math::x_above_jump_height_c_acc(
-                    self.vel_at_pos(self.pos + margin as f64),
-                    self.acc,
-                    obstacle_size(&obs).1,
-                    self.jump_vel,
-                    self.g,
-                )
-                .0;
-
-                (vec![obs], x_at_height)
-            };
-
-            let obs_pos = self.pos + (x_at_height + margin) as f64;
-
-            self.map.push((obs_pos, obs));
-            self.pos += (margin + jump_distance) as f64;
+                self.add_bird();
+            }
+            x_vel = self.vel_at_pos(self.pos)
         }
         self.pos +=
-            (math::jump_distance_c_acc(self.u, self.acc, self.jump_vel, self.g) / 2.0) as f64;
+            (math::jump_distance_c_acc(x_vel, self.acc, self.jump_vel, self.g) / 2.0) as f64;
     }
 
     fn gen_obs_group(&mut self, range: (f32, f32)) -> Vec<Obstacle> {
@@ -100,7 +146,7 @@ impl GameMap {
         group
     }
 
-    pub fn get_map(&mut self, from: usize, to: usize) -> &[(f64, Vec<Obstacle>)] {
+    pub fn get_map(&mut self, from: usize, to: usize) -> &[((f64, f64), Vec<Obstacle>)] {
         if to >= self.map.len() {
             self.gen_map(to + 1 - self.map.len())
         }

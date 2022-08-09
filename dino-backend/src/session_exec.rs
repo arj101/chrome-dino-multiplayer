@@ -80,7 +80,7 @@ pub enum TxData {
     GameStart,
 
     Map {
-        map: Vec<(f64, Vec<Obstacle>)>,
+        map: Vec<((f64, f64), Vec<Obstacle>)>,
     },
 
     UserGameOverBroadcast {
