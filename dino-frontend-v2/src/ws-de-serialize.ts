@@ -22,7 +22,7 @@ type RxData =
     | { type: "PlayerDataBroadcast"; username: string; posY: number }
     | { type: "GameCountdownStart"; duration: number }
     | { type: "GameStart" }
-    | { type: "Map"; map: [[number, [any]]] }
+    | { type: "Map"; map: [[[number, number], [any]]] }
     | { type: "UserGameOverBroadcast"; username: string; score: number }
     | { type: "UserGameOver"; score: number; userId: string }
     | { type: "InvalidationNotice" }
@@ -38,7 +38,7 @@ type TxData =
     | { type: "Query"; query: QueryType }
     | { type: "CreateSession"; username: string; sessionName: string }
     | { type: "CreateUser"; sessionId: string; username: string }
-    | { type: "LaunchGame"; sessionId: string; username: string }
+    | { type: "LaunchGame"; sessionId: string; userId: string }
     | { type: "BroadcastRequest"; userId: string; posY: number }
     | {
           type: "ValidationData";

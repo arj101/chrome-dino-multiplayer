@@ -14,25 +14,6 @@ const main = async () => {
         }
     );
 
-    wsclient.onOpen(() => {
-        wsclient.send({
-            type: "Query",
-            query: {
-                type: "Sessions",
-            },
-        });
-        wsclient.send({
-            type: "CreateSession",
-            username: "jhsfhfsh",
-            sessionName: "kfjfhjf",
-        });
-    });
-
-    wsclient.onMessage((msg) => {
-        console.log(`Recieved a message: `);
-        console.log(msg);
-    });
-
     const dinoImg = new Image();
     dinoImg.src = spriteUrl.get("dinoRun1") as string;
     await (() => {
@@ -46,6 +27,80 @@ const main = async () => {
         dinoImg.height,
         window.innerHeight * 0.13
     );
+
+    let userId = "";
+    let sessionId = "";
+    let gameLaunchSent = false;
+    let isRunning = false;
+    let mapIdx = 0;
+    let mapRequestSent = false;
+
+    wsclient.onOpen(() => {
+        wsclient.onMessage((msg) => {
+            console.log(`Recieved a message: `);
+            console.log(msg);
+            if (msg.type == "UserCreationResponse") {
+                if (msg.creationSucceeded) userId = msg.userId || "";
+                console.log(`User id: ${msg.userId}`);
+            }
+            if (msg.type == "SessionCreationResponse") {
+                if (msg.creationSucceeded) sessionId = msg.sessionId || "";
+            }
+
+            if (userId.length > 0 && sessionId.length > 0 && !gameLaunchSent) {
+                wsclient.send({
+                    type: "LaunchGame",
+                    sessionId,
+                    userId,
+                });
+                wsclient.send({
+                    type: "Map",
+                    sessionId,
+                    userId,
+                    index: mapIdx,
+                });
+                gameLaunchSent = true;
+            }
+
+            if (msg.type == "GameStart") {
+                isRunning = true;
+            }
+
+            if (msg.type == "Map") {
+                for (const item of msg.map) {
+                    let [x, y] = item[0];
+                    const obs = item[1] as Array<string>;
+                    for (const ob of obs) {
+                        const obName = (ob.charAt(0).toLowerCase() +
+                            ob.substring(1)) as Sprite;
+
+                        const obWidth = renderer.getSpriteDimensions(obName).w;
+                        if (obName.startsWith("bird")) {
+                            renderer.registerAnimatedSpriteAtPos(
+                                [
+                                    ["bird1", { swapDelay: 150 }],
+                                    ["bird2", { swapDelay: 150 }],
+                                ],
+                                { x, y },
+                                SpriteAlign.BottomLeft
+                            );
+                            x += renderer.xToRelUnit(obWidth);
+                            break; //obstacle grouping doesnt exist for birds
+                        }
+
+                        renderer.drawSpriteAtPos(obName, { x, y }, true);
+                        x += renderer.xToRelUnit(obWidth);
+                    }
+                }
+                mapRequestSent = false;
+            }
+        });
+        wsclient.send({
+            type: "CreateSession",
+            username: "jhsfhfsh",
+            sessionName: "kfjfhjf",
+        });
+    });
 
     const noise2d = createNoise2D();
 
@@ -85,7 +140,6 @@ const main = async () => {
         String,
         { state: boolean; onPress?: () => void; onRelease?: () => void }
     > = new Map();
-    keys.set(" ", { state: false });
 
     const textureSwap = {
         dinoRunTexture: () => {
@@ -109,10 +163,13 @@ const main = async () => {
         yVel: 0,
     };
 
+    let queuedJump = false;
     const jump = () => {
-        // if (dino.yPos != renderer.groundPos && !renderer.boundingBox) return;
+        if (Math.abs(dino.yPos - renderer.groundPos) < 20) queuedJump = true;
+        if (dino.yPos != renderer.groundPos && !renderer.boundingBox) return;
         textureSwap.dinoJumpTexture();
         dino.yVel = -config.jumpVel;
+        queuedJump = false;
     };
 
     keys.set("ArrowUp", {
@@ -140,33 +197,33 @@ const main = async () => {
     });
 
     setInterval(() => {
-        if (Math.random() > 0.9) {
-            renderer.drawSpriteAtPos(
-                cactuses[Math.round(Math.random() * (cactuses.length - 1))],
-                {
-                    x: renderer.xToRelUnit(
-                        renderData.xPos + 1000 + Math.random() * 10000
-                    ),
-                    y: 0,
-                },
-                true
-            );
-        }
-        if (Math.random() > 0.96) {
-            renderer.registerAnimatedSpriteAtPos(
-                [
-                    ["bird1", { swapDelay: 150 }],
-                    ["bird2", { swapDelay: 150 }],
-                ],
-                {
-                    x: renderer.xToRelUnit(
-                        renderData.xPos + 1000 + Math.random() * 1000
-                    ),
-                    y: 0.18,
-                },
-                SpriteAlign.BottomLeft
-            );
-        }
+        // if (Math.random() > 0.9) {
+        //     renderer.drawSpriteAtPos(
+        //         cactuses[Math.round(Math.random() * (cactuses.length - 1))],
+        //         {
+        //             x: renderer.xToRelUnit(
+        //                 renderData.xPos + 1000 + Math.random() * 10000
+        //             ),
+        //             y: 0,
+        //         },
+        //         true
+        //     );
+        // }
+        // if (Math.random() > 0.96) {
+        //     renderer.registerAnimatedSpriteAtPos(
+        //         [
+        //             ["bird1", { swapDelay: 150 }],
+        //             ["bird2", { swapDelay: 150 }],
+        //         ],
+        //         {
+        //             x: renderer.xToRelUnit(
+        //                 renderData.xPos + 1000 + Math.random() * 1000
+        //             ),
+        //             y: 0.18,
+        //         },
+        //         SpriteAlign.BottomLeft
+        //     );
+        // }
         if (Math.random() > 0.5) {
             renderer.drawBackgroundSpriteAtPos(
                 "cloud",
@@ -183,8 +240,6 @@ const main = async () => {
 
     let offDir = Math.random() * 2 * Math.PI;
 
-    let isRunning = true;
-
     const testCanvas = document.createElement("canvas");
     const reductionCanvas = document.createElement("canvas");
 
@@ -197,8 +252,8 @@ const main = async () => {
     // });
 
     const loop = () => {
-        if (!isRunning) return;
         requestAnimationFrame(loop);
+        if (!isRunning) return;
         const currTimestamp = new Date().getTime();
         const dt = currTimestamp - prevTimestamp;
 
@@ -212,17 +267,16 @@ const main = async () => {
                 dino.yPos = renderer.groundPos;
                 dino.yVel = 0;
                 textureSwap.dinoRunTexture();
+                if (queuedJump) jump();
             }
         }
 
         renderer.animatedSprites[dinoIdx][1].y = dino.yPos;
 
-        offDir += noise2d(xoff, 0) / 1000;
+        offDir += noise2d(xoff, 0) / 1000 - 1 / 2000;
         let offMag =
-            (renderer.canvas.height * 0.1 * noise2d(0, yoff) * speed) /
-            10 /
-            renderer.relUnitLen;
-        if (Math.abs(offMag) > 110) offMag = Math.sign(offMag) * 110;
+            noise2d(0, yoff) * Math.exp(speed / (renderer.relUnitLen * 20));
+        if (Math.abs(offMag) > 50) offMag = Math.sign(offMag) * 50;
 
         renderer.offsetScreen(
             offMag * Math.cos(offDir),
@@ -278,14 +332,25 @@ const main = async () => {
                 obj2.h
             );
             if (collissionPerPixel) {
-                isRunning = false;
-                if (!renderer.boundingBox) return;
+                // isRunning = false;
+                // if (!renderer.boundingBox) return;
                 renderer.ctx.fillStyle = "rgba(200, 150, 50, 0.5)";
                 renderer.ctx.fillRect(obj2.x, obj2.y, obj2.w, obj2.h);
                 renderer.ctx.fill();
                 return;
             }
         });
+
+        if (renderer.renderList.length < 5 && !mapRequestSent) {
+            mapIdx += 1;
+            wsclient.send({
+                type: "Map",
+                sessionId,
+                userId,
+                index: mapIdx,
+            });
+            mapRequestSent = true;
+        }
 
         renderData.xPos += (speed * dt) / 1000;
         renderData.vel = speed;
@@ -294,8 +359,8 @@ const main = async () => {
         renderer.animatedSprites[dinoIdx][0][1][1].swapDelay = dinoTextureSwap;
         speed += (config.acc * dt) / 1000;
 
-        xoff += Math.min(0.1, ((speed / 1000 / renderer.relUnitLen) * dt) / 50);
-        yoff += Math.min(0.1, ((speed / 1000 / renderer.relUnitLen) * dt) / 50);
+        xoff += Math.log(Math.E + speed) / 3000;
+        yoff += Math.log(Math.E + speed) / 1000;
 
         prevTimestamp = currTimestamp;
     };

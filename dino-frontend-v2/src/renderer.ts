@@ -343,7 +343,7 @@ class Renderer {
             const sprite = this.getSprite(
                 this.renderList[i][0]
             ) as HTMLImageElement;
-            if (pos.x + sprite.width * this.scalingFactor < -5) {
+            if (pos.x + sprite.width * this.scalingFactor - xPos < -5) {
                 this.renderList.splice(i, 1);
                 continue;
             }
