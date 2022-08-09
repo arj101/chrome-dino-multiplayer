@@ -109,7 +109,7 @@ const main = async () => {
         xPos: 0,
         vel: 0,
     };
-    const cactuses: Array<Sprite> = [
+    const _cactuses: Array<Sprite> = [
         "cactusBig1",
         "cactusBig2",
         "cactusBigPair",
