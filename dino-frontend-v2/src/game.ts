@@ -109,14 +109,6 @@ const main = async () => {
         xPos: 0,
         vel: 0,
     };
-    const _cactuses: Array<Sprite> = [
-        "cactusBig1",
-        "cactusBig2",
-        "cactusBigPair",
-        "cactusBigSmall",
-        "cactusSmall1",
-        "cactusSmall5",
-    ];
     const config = {
         initialSpeed: renderer.xFromRelUnit(8),
         acc: renderer.xFromRelUnit(0.3),
