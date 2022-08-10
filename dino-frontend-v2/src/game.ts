@@ -335,6 +335,11 @@ const main = async () => {
         yoff += Math.min(0.15, speed * Math.pow(10, -5.5));
 
         prevTimestamp = currTimestamp;
+
+        server.broadcastData(
+            (renderer.groundPos - dinoY) / renderer.relUnitLen,
+            renderData.xPos / renderer.relUnitLen
+        );
     };
 
     requestAnimationFrame(loop);
