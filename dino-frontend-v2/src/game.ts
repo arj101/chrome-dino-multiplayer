@@ -1,19 +1,9 @@
-import { GameState, ServerBridge, SocketClient } from "./socket-client";
+import { GameState, ServerBridge } from "./socket-client";
 import { GameRenderData, Renderer, SpriteAlign } from "./renderer";
 import { Sprite, spriteUrl } from "./sprites";
 import { createNoise2D } from "simplex-noise";
 
 const main = async () => {
-    const wsclient = new SocketClient(
-        "ws://127.0.0.1:8080",
-        (_) => {
-            console.log(`Socket connection opened at ${wsclient.socket.url}`);
-        },
-        (_) => {
-            console.log("Socket connection closed.");
-        }
-    );
-
     const dinoImg = new Image();
     dinoImg.src = spriteUrl.get("dinoRun1") as string;
     await (() => {
