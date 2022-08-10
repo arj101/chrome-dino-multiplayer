@@ -1,4 +1,4 @@
-import { SocketClient } from "./socket-client";
+import { GameState, ServerBridge, SocketClient } from "./socket-client";
 import { GameRenderData, Renderer, SpriteAlign } from "./renderer";
 import { Sprite, spriteUrl } from "./sprites";
 import { createNoise2D } from "simplex-noise";
@@ -28,79 +28,63 @@ const main = async () => {
         window.innerHeight * 0.13
     );
 
-    let userId = "";
-    let sessionId = "";
-    let gameLaunchSent = false;
-    let isRunning = false;
-    let mapIdx = 0;
-    let mapRequestSent = false;
+    //=================================================================
+    const server = new ServerBridge("ws://127.0.0.1:8080");
+    server.initClient();
 
-    wsclient.onOpen(() => {
-        wsclient.onMessage((msg) => {
-            console.log(`Recieved a message: `);
-            console.log(msg);
-            if (msg.type == "UserCreationResponse") {
-                if (msg.creationSucceeded) userId = msg.userId || "";
-                console.log(`User id: ${msg.userId}`);
-            }
-            if (msg.type == "SessionCreationResponse") {
-                if (msg.creationSucceeded) sessionId = msg.sessionId || "";
-            }
-
-            if (userId.length > 0 && sessionId.length > 0 && !gameLaunchSent) {
-                wsclient.send({
-                    type: "LaunchGame",
-                    sessionId,
-                    userId,
-                });
-                wsclient.send({
-                    type: "Map",
-                    sessionId,
-                    userId,
-                    index: mapIdx,
-                });
-                gameLaunchSent = true;
-            }
-
-            if (msg.type == "GameStart") {
-                isRunning = true;
-            }
-
-            if (msg.type == "Map") {
-                for (const item of msg.map) {
-                    let [x, y] = item[0];
-                    const obs = item[1] as Array<string>;
-                    for (const ob of obs) {
-                        const obName = (ob.charAt(0).toLowerCase() +
-                            ob.substring(1)) as Sprite;
-
-                        const obWidth = renderer.getSpriteDimensions(obName).w;
-                        if (obName.startsWith("bird")) {
-                            renderer.registerAnimatedSpriteAtPos(
-                                [
-                                    ["bird1", { swapDelay: 150 }],
-                                    ["bird2", { swapDelay: 150 }],
-                                ],
-                                { x, y },
-                                SpriteAlign.BottomLeft
-                            );
-                            x += renderer.xToRelUnit(obWidth);
-                            break; //obstacle grouping doesnt exist for birds
-                        }
-
-                        renderer.drawSpriteAtPos(obName, { x, y }, true);
-                        x += renderer.xToRelUnit(obWidth);
-                    }
-                }
-                mapRequestSent = false;
-            }
-        });
-        wsclient.send({
-            type: "CreateSession",
-            username: "jhsfhfsh",
-            sessionName: "kfjfhjf",
-        });
+    await server.getSessionList().then((list) => {
+        console.log(list);
     });
+    await server.createSession("ahehhu", "kjsghietiuet").catch((_) => {
+        alert("Session creation failed");
+        return;
+    });
+
+    const appendMap = (map: Array<[[number, number], Array<string>]>) => {
+        for (const item of map) {
+            let [x, y] = item[0];
+            const obs = item[1] as Array<string>;
+            for (const ob of obs) {
+                const obName = (ob.charAt(0).toLowerCase() +
+                    ob.substring(1)) as Sprite;
+
+                const obWidth = renderer.getSpriteDimensions(obName).w;
+                if (obName.startsWith("bird")) {
+                    renderer.registerAnimatedSpriteAtPos(
+                        [
+                            ["bird1", { swapDelay: 150 }],
+                            ["bird2", { swapDelay: 150 }],
+                        ],
+                        { x, y },
+                        SpriteAlign.BottomLeft
+                    );
+                    x += renderer.xToRelUnit(obWidth);
+                    break; //obstacle grouping doesnt exist for birds
+                }
+
+                renderer.drawSpriteAtPos(obName, { x, y }, true);
+                x += renderer.xToRelUnit(obWidth);
+            }
+        }
+    };
+
+    server
+        .onCountdownStart((duration) => {
+            let currCount = duration;
+            console.log(currCount);
+            const int = setInterval(() => {
+                currCount -= 1;
+                console.log(currCount);
+                if (currCount <= 0) clearInterval(int);
+            }, 1000);
+        })
+        .then(server.requestMap)
+        .then(appendMap);
+
+    server.onGameStart(() => {}); //sets game state to active internally
+
+    server.requestGameLaunch();
+    //=================================================================
 
     const noise2d = createNoise2D();
 
@@ -245,7 +229,7 @@ const main = async () => {
 
     const loop = () => {
         requestAnimationFrame(loop);
-        if (!isRunning) return;
+        if (server.gameData.state !== GameState.Active) return;
         const currTimestamp = new Date().getTime();
         const dt = currTimestamp - prevTimestamp;
 
@@ -265,10 +249,10 @@ const main = async () => {
 
         renderer.animatedSprites[dinoIdx][1].y = dino.yPos;
 
-        offDir += noise2d(xoff, 0) / 1000 - 1 / 2000;
-        let offMag =
-            noise2d(0, yoff) * Math.exp(speed / (renderer.relUnitLen * 20));
-        if (Math.abs(offMag) > 50) offMag = Math.sign(offMag) * 50;
+        offDir +=
+            ((noise2d(xoff, 0) / 1000 - 1 / 2000) * speed) /
+            (renderer.relUnitLen * 30);
+        let offMag = (noise2d(0, yoff) * speed) / renderer.relUnitLen;
 
         renderer.offsetScreen(
             offMag * Math.cos(offDir),
@@ -333,15 +317,11 @@ const main = async () => {
             }
         });
 
-        if (renderer.renderList.length < 5 && !mapRequestSent) {
-            mapIdx += 1;
-            wsclient.send({
-                type: "Map",
-                sessionId,
-                userId,
-                index: mapIdx,
-            });
-            mapRequestSent = true;
+        if (
+            renderer.renderList.length < 5 &&
+            !server.gameData.map.mapRequestSent
+        ) {
+            server.requestMap().then(appendMap);
         }
 
         renderData.xPos += (speed * dt) / 1000;
@@ -351,8 +331,8 @@ const main = async () => {
         renderer.animatedSprites[dinoIdx][0][1][1].swapDelay = dinoTextureSwap;
         speed += (config.acc * dt) / 1000;
 
-        xoff += Math.log(Math.E + speed) / 3000;
-        yoff += Math.log(Math.E + speed) / 1000;
+        xoff += Math.min(0.15, speed * Math.pow(10, -5.5));
+        yoff += Math.min(0.15, speed * Math.pow(10, -5.5));
 
         prevTimestamp = currTimestamp;
     };

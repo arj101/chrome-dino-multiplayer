@@ -265,7 +265,7 @@ class Renderer {
         //PARALLAX LEVEL 1
         this.ctx.save();
         this.ctx.translate(this.screenOffset.x / 4, this.screenOffset.y / 4);
-        const scoreText = `SCORE: ${Math.round(xPos / 25)}`;
+        const scoreText = `SCORE: ${Math.round(this.xToRelUnit(xPos))}`;
         this.ctx.fillStyle = "rgb(200, 200, 200)";
         this.ctx.font = "38px Bungee";
         this.ctx.fillText(
