@@ -251,6 +251,7 @@ class ServerBridge {
             const callerIdx = this.socketClient?.onMessage(msg => {
                 if (msg.type !== 'GameCountdownStart') return
                 this.socketClient?.deleteMsgCaller(callerIdx as number)
+                this.gameData.countdownDuration = msg.duration
                 onRecv(msg.duration)
             })
         }
