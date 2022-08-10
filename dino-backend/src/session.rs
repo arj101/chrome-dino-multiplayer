@@ -192,6 +192,7 @@ impl Session {
         addr: SocketAddr,
         id: Uuid,
         pos_y: f32,
+        pos_x: f32,
     ) {
         let username = if let Some(player) = self.player_data.get(&id) {
             if addr != player.addr {
@@ -206,7 +207,11 @@ impl Session {
             tx,
             addr,
             id,
-            TxData::PlayerDataBroadcast { username, pos_y },
+            TxData::PlayerDataBroadcast {
+                username,
+                pos_y,
+                pos_x,
+            },
         )
     }
 

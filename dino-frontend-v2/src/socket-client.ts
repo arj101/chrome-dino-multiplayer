@@ -166,9 +166,9 @@ class ServerBridge {
             })
             
             const callerIdx = this.socketClient?.onMessage(msg => {
-                if (msg.type === 'QueryResponse' && msg.queryRes.type === 'Sessions') {
-                    onRcv(msg.queryRes.sessions)           
+                if (msg.type === 'QueryResponse' && msg.queryRes.type === 'Sessions') {           
                     this.socketClient?.deleteMsgCaller(callerIdx as number)
+                    onRcv(msg.queryRes.sessions)
                 }
             })
         }
@@ -185,7 +185,10 @@ class ServerBridge {
     }
     
     createSession(sessionName: string, username: string): Promise<void> {
-        const createSession = (onSuccess: (sessionName: string, username: string, sessionId: string, userId: string) => void, onUnable: () => void = () => {}) => {
+        const createSession = (onSuccess: 
+            (sessionName: string, username: string, sessionId: string, userId: string) => void,
+            onUnable: () => void = () => {}
+        ) => {
             this.socketClient?.send({
                 type: 'CreateSession',
                 sessionName,
@@ -213,7 +216,7 @@ class ServerBridge {
             })
         }
         return new Promise((resolve, reject) => {
-            createSession(() => resolve(), reject)
+           this.callOnOpenSocket(() => createSession(() => resolve(), reject))
         })
     }
     
@@ -241,7 +244,80 @@ class ServerBridge {
                 }, reject)
             })
         })
-    } 
+    }
+    
+    onCountdownStart(fn: (duration: number) => void): Promise<void> {
+        const listenForCountdownStart = (onRecv: (duration: number) => void) => {
+            const callerIdx = this.socketClient?.onMessage(msg => {
+                if (msg.type !== 'GameCountdownStart') return
+                this.socketClient?.deleteMsgCaller(callerIdx as number)
+                onRecv(msg.duration)
+            })
+        }
+        
+        return new Promise((resolve, _reject) => {
+            listenForCountdownStart(duration => { fn(duration); resolve()})
+        })
+    }
+    
+    onGameStart(fn: () => void): Promise<void> {
+        const listenForGameLaunch = (onRecv: () => void) => {
+            const callerIdx = this.socketClient?.onMessage(msg => {
+                if (msg.type !== 'GameStart') return
+                this.socketClient?.deleteMsgCaller(callerIdx as number)
+                onRecv()
+            })
+        }
+        
+        return new Promise((resolve, _reject) => listenForGameLaunch(() => {fn(); resolve()}))
+    }
+    
+    requestGameLaunch() {
+        const requestGameLaunch = () => {
+            this.socketClient?.send({
+                type: 'LaunchGame',
+                sessionId: this.gameData.sessionId || '',
+                userId: this.gameData.userId || '',
+            })
+        }
+        this.callOnOpenSocket(requestGameLaunch)
+    }
+    
+    //This function assumes that socket connection is already open
+    //MOST TIME SENSITIVE function
+    broadcastData(relYPos: number, relXPos: number) {
+        (this.socketClient as SocketClient).send({
+            type: 'BroadcastRequest',
+            userId: this.gameData.userId as string,
+            posY: relYPos,
+            posX: relXPos,
+        })
+    }
+    
+    requestMap(): Promise<Array<[[number, number], Array<string>]>> {
+        const requestMap = (onRecv: (map: Array<[[number, number], Array<string>]>) => void) => {
+            this.socketClient?.send({
+                type: 'Map',
+                sessionId: this.gameData.sessionId as string,
+                userId: this.gameData.userId as string,
+                index: this.gameData.map.mapIdx
+            })
+            this.gameData.map.mapRequestSent = true
+            
+            const callerIdx = this.socketClient?.onMessage(msg => {
+                if (msg.type !== 'Map') return;
+                this.socketClient?.deleteMsgCaller(callerIdx as number)
+                this.gameData.map.mapRequestSent = false;
+                this.gameData.map.mapIdx += 1;
+                onRecv(msg.map)           
+            })
+        }
+        
+        return new Promise((resolve, reject) => {
+            if (this.gameData.map.mapRequestSent) reject()
+            this.callOnOpenSocket(() => requestMap(resolve))  
+        })
+    }
     
     onConnect(fn: (event: Event) => void) {
         this.socketOpenCallers.push(fn)

@@ -71,6 +71,8 @@ pub enum TxData {
         username: String,
         #[serde(rename = "posY")]
         pos_y: f32,
+        #[serde(rename = "posX")]
+        pos_x: f32,
     },
 
     GameCountdownStart {
@@ -130,6 +132,8 @@ pub enum RxData {
         user_id: Uuid,
         #[serde(rename = "posY")]
         pos_y: f32,
+        #[serde(rename = "posX")]
+        pos_x: f32,
     },
 
     ValidationData {
@@ -423,13 +427,18 @@ impl SessionExecutor {
                     );
                 }
             }
-            RxData::BroadcastRequest { user_id, pos_y } => {
+            RxData::BroadcastRequest {
+                user_id,
+                pos_y,
+                pos_x,
+            } => {
                 if let Some(session_id) = self.user_session_map.get(&addr).unwrap() {
                     self.sessions.get_mut(session_id).unwrap().on_broadcast_req(
                         &mut self.tx_queue,
                         addr,
                         *user_id,
                         *pos_y,
+                        *pos_x,
                     )
                 } else {
                     println!(

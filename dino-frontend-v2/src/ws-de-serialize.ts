@@ -19,7 +19,7 @@ type RxData =
           creationSucceeded: boolean;
           userId?: string;
       }
-    | { type: "PlayerDataBroadcast"; username: string; posY: number }
+    | { type: "PlayerDataBroadcast"; username: string; posY: number, posX: number }
     | { type: "GameCountdownStart"; duration: number }
     | { type: "GameStart" }
     | { type: "Map"; map: [[[number, number], [any]]] }
@@ -39,7 +39,7 @@ type TxData =
     | { type: "CreateSession"; username: string; sessionName: string }
     | { type: "CreateUser"; sessionId: string; username: string }
     | { type: "LaunchGame"; sessionId: string; userId: string }
-    | { type: "BroadcastRequest"; userId: string; posY: number }
+    | { type: "BroadcastRequest"; userId: string; posY: number, posX: number }
     | {
           type: "ValidationData";
           sessionId: string;
@@ -87,12 +87,13 @@ function deserialize(jsonStr: string): RxData {
                 return dezerd;
             }
         case "PlayDataBroadcast":
-            if (!validateKeys(json, { username: "", posY: 0 }))
+            if (!validateKeys(json, { username: "", posY: 0, posX: 0 }))
                 return { type: "None" };
             return {
                 type: "PlayerDataBroadcast",
                 username: json["username"],
                 posY: json["posY"],
+                posX: json["posX"],
             };
         case "GameCountdownStart":
             if (!validateKeys(json, { duration: 0 })) return { type: "None" };
