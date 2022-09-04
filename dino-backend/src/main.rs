@@ -1,7 +1,7 @@
 mod config_options;
 mod map_generator;
-mod obstacles;
 mod math;
+mod obstacles;
 mod session;
 mod session_exec;
 mod validator;
@@ -67,7 +67,7 @@ async fn handle_connection(
         );
         // session_channel.send(ChannelData::Message(msg));
         match session_channel.try_send(ChannelData::Message { addr, msg }) {
-            Err(err) => panic!("Failed sending message to session executor: {}", err),
+            Err(err) => println!("Failed sending message to session executor: {}", err),
             _ => (),
         }
         future::ok(())
@@ -79,7 +79,7 @@ async fn handle_connection(
     future::select(broadcast_incoming, recv_from_session_exec).await;
 
     match session_channel.send(ChannelData::Disconnect(addr)).await {
-        Err(err) => panic!(
+        Err(err) => println!(
             "Failed to send `{}`s disconnect message to session executor: {}",
             &addr, err
         ),

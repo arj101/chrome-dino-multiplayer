@@ -23,6 +23,10 @@ pub enum QueryType {
         #[serde(rename = "sessionId")]
         session_id: Uuid,
     },
+    SessionStatus {
+        #[serde(rename = "sessionId")]
+        session_id: Uuid,
+    },
 }
 
 #[derive(Serialize, Clone)]
@@ -42,6 +46,10 @@ pub enum QueryResponseType {
         #[serde(rename = "sessionId")]
         session_id: Uuid,
         scores: Vec<(String, u64)>,
+    },
+    SessionStatus {
+        state: u32, //refers to the enum,
+        time: u64,
     },
 }
 
@@ -65,6 +73,10 @@ pub enum TxData {
         creation_succeeded: bool,
         #[serde(rename = "userId")]
         user_id: Option<Uuid>,
+    },
+
+    LoginResponse {
+        succeeded: bool,
     },
 
     PlayerDataBroadcast {
@@ -108,16 +120,24 @@ pub enum RxData {
     },
 
     CreateSession {
-        // wait_time: u32,
         username: String,
         #[serde(rename = "sessionName")]
         session_name: String,
+        #[serde(rename = "waitTime")]
+        wait_time: u64,
     },
 
     CreateUser {
         #[serde(rename = "sessionId")]
         session_id: Uuid,
         username: String,
+    },
+
+    Login {
+        #[serde(rename = "sessionId")]
+        session_id: Uuid,
+        #[serde(rename = "userId")]
+        user_id: Uuid,
     },
 
     LaunchGame {
@@ -375,7 +395,8 @@ impl SessionExecutor {
                 // wait_time,
                 username,
                 session_name,
-            } => self.create_session(addr, /* *wait_time,*/ username, session_name),
+                wait_time,
+            } => self.create_session(addr, *wait_time, username, session_name),
             RxData::CreateUser {
                 session_id,
                 username,
@@ -387,10 +408,26 @@ impl SessionExecutor {
                         if let Ok(_) = s.create_user(&mut self.tx_queue, addr, username.to_owned())
                         {
                             self.user_session_map.insert(addr, Some(*s.id()));
+                        } else {
+                            println!("User creation failed. {} in {}", username, s.id());
                         }
                     }
                 } else {
                     println!("[session_exec] `{}` requested user creation to invalid session: `{}` as `{}`", addr, session_id, username);
+                }
+            }
+            RxData::Login {
+                session_id,
+                user_id,
+            } => {
+                if let Some(s) = self.sessions.get_mut(&session_id) {
+                    if let Some(s_id) = self.user_session_map.get(&addr).unwrap() {
+                        println!("[session_exec] `{}` requested login to `{}` but was already in session `{}`", addr, session_id, s_id)
+                    } else {
+                        if let Ok(_) = s.login_user(&mut self.tx_queue, addr, *user_id) {
+                            self.user_session_map.insert(addr, Some(*s.id()));
+                        }
+                    }
                 }
             }
             RxData::ValidationData { session_id, .. }
@@ -432,14 +469,10 @@ impl SessionExecutor {
                 pos_y,
                 pos_x,
             } => {
-                if let Some(session_id) = self.user_session_map.get(&addr).unwrap() {
-                    self.sessions.get_mut(session_id).unwrap().on_broadcast_req(
-                        &mut self.tx_queue,
-                        addr,
-                        *user_id,
-                        *pos_y,
-                        *pos_x,
-                    )
+                if let Some(Some(session_id)) = self.user_session_map.get(&addr) {
+                    if let Some(s) = self.sessions.get_mut(session_id) {
+                        s.on_broadcast_req(&mut self.tx_queue, addr, *user_id, *pos_y, *pos_x)
+                    }
                 } else {
                     println!(
                         "[session_exec] `{}` requested broadcast while not being in any session.",
@@ -470,6 +503,18 @@ impl SessionExecutor {
                     )
                 }
             }
+            QueryType::SessionStatus { session_id } => {
+                todo!();
+                // if let Some(s) = self.sessions.get(session_id) {
+                //self.tx_queue.send_to_addr(
+                //  addr, TxData::QueryResponse { query_res: QueryResponseType::SessionStatus {
+                //                            status: s.status(),
+
+                //}}
+                //)
+                // }
+            }
+
             QueryType::Sessions => self.tx_queue.send_to_addr(
                 addr,
                 TxData::QueryResponse {
@@ -506,7 +551,8 @@ impl SessionExecutor {
     fn create_session(
         &mut self,
         addr: SocketAddr,
-        /*_wait_time: u32,*/ username: &str,
+        wait_time: u64,
+        username: &str,
         session_name: &str,
     ) {
         if let Some(s) = self.user_session_map.get(&addr).unwrap() {
@@ -531,7 +577,7 @@ impl SessionExecutor {
                 || self.config.session_exec.allow_multiple_inactive_sessions)
         {
             let new_session = Session::new(session_name.to_owned(), self.config.session)
-                .with_host(&mut self.tx_queue, username.to_owned(), addr)
+                .with_host(&mut self.tx_queue, username.to_owned(), addr, wait_time)
                 .unwrap();
             let id = *new_session.id();
             self.session_hosts.insert(addr, id);

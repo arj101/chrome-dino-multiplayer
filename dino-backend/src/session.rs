@@ -74,6 +74,7 @@ impl Session {
         tx: &mut TransmissionQueue,
         username: String,
         addr: SocketAddr,
+        wait_time: u64,
     ) -> Result<Self, ()> {
         if username.len() > self.config.max_username_len {
             return Err(());
@@ -107,7 +108,7 @@ impl Session {
                 s.launch_game(tx);
                 let _ = s.game_data.map.get_map(0, 99);
             },
-            Duration::from_secs(5 * 60), //TODO: change wait time back to 5 minutes
+            Duration::from_secs(wait_time), //TODO: change wait time back to 5 minutes
         );
         self.status = SessionStatus::Waiting {
             start_time: SystemTime::now(),
@@ -357,9 +358,11 @@ impl Session {
         addr: SocketAddr,
         username: String,
     ) -> Result<(), ()> {
-        match self.status {
-            SessionStatus::Waiting { .. } => (),
-            _ => return Err(()),
+        if !self.host_id.is_nil() {
+            match self.status {
+                SessionStatus::Waiting { .. } => (),
+                _ => return Err(()),
+            }
         }
 
         if self.player_data.keys().len() >= self.config.max_users
@@ -377,6 +380,13 @@ impl Session {
         }
 
         let id = Uuid::new_v4();
+        if self.host_id.is_nil() {
+            self.host_id = id;
+            self.status = SessionStatus::Waiting {
+                start_time: SystemTime::now(),
+                timeout: Uuid::nil(),
+            };
+        };
         self.player_data.insert(
             id,
             PlayerData {
@@ -412,7 +422,15 @@ impl Session {
             .keys()
             .map(|k| {
                 let player_data = self.player_data.get(k).unwrap();
-                (player_data.username.clone(), player_data.score)
+
+                (
+                    player_data.username.clone(),
+                    if (player_data.score > 0) {
+                        player_data.score
+                    } else {
+                        self.game_data.sync_score
+                    },
+                )
             })
             .collect();
 
@@ -461,6 +479,22 @@ impl Session {
         }
     }
 
+    pub fn login_user(
+        &mut self,
+        tx: &mut TransmissionQueue,
+        addr: SocketAddr,
+        user_id: Uuid,
+    ) -> Result<(), ()> {
+        if let Some(player) = self.player_data.get_mut(&user_id) {
+            player.connect();
+            player.addr = addr;
+            tx.send_to_addr(addr, TxData::LoginResponse { succeeded: true });
+            return Ok(());
+        }
+        tx.send_to_addr(addr, TxData::LoginResponse { succeeded: false });
+        Err(())
+    }
+
     pub fn on_user_con_close(&mut self, addr: SocketAddr) -> bool {
         let user_id = if let Some(id) = self
             .player_data
@@ -495,7 +529,17 @@ impl Session {
                 "[session] `{}` (id: `{}`, addr: `{}`) just closed connection. Final score: `{}`",
                 player.username, player.id, player.addr, player.score
             );
-            self.player_data.remove(&user_id);
+            player.disconnect();
+            //   self.set_timeout(
+            //     |s, tx| {
+            //       if let Some(player) = s.player_data.get_mut(&user_id) {
+            //         println!("[session] One minute past last connection from `{}`(`{}`), removing user...", player.addr, player.id);
+            //       s.player_data.remove(&user_id);
+            // }
+
+            //}
+            //, Duration::from_secs(60)
+            //);
             return self.player_data.is_empty();
         }
 

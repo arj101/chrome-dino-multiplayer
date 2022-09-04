@@ -1,0 +1,115 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Card from '../components/Card.astro';
+import E from '../components/E.svelte'
+import Overview from '../components/Overview.svelte'
+---
+
+<Layout title="trex-runner">
+	<main>
+		<img src="/sprites/ground.png" alt="">
+		<h1>T-rex Runner <span>Multiplayer</span></h1>
+		<ul>
+			<li><a href="/game">Play</a></li>
+			<li><a href="/what">What?</a></li>
+			<li><a href="/why">Why?!</a></li>
+		</ul>
+	</main>
+</Layout>
+
+<style>
+	:root {
+		--grey-1: rgb(48, 48, 48);
+		--grey-2: rgb(24, 24, 24);
+		--font-color: white;
+		--font-family: 'Bungee', sans-serif;
+	}
+	h1 {
+		text-shadow: 0px 0px 0px hsl(263, 100%, 77%);
+		transition: text-shadow 500ms ease;
+	}
+	h1 span {
+		text-shadow: 0px 0px 0rem hsl(320, 100%, 77%);
+		transition: text-shadow 500ms ease;
+
+	}
+	h1:hover {
+		text-shadow: 0px 0px 1rem hsl(263, 100%, 77%);
+		cursor: default
+	}
+	h1:hover span {
+		text-shadow: 0px 0px 1rem hsl(320, 100%, 77%);
+	}
+	main {
+		width: 100%;
+		min-height: 100vh;
+		background-color: var(--grey-1);
+		color: var(--font-color);
+		font-family: var(--font-family);
+
+		display: flex;
+		flex-direction: row;
+		justify-content: space-evenly;
+		align-items: center;
+		padding: 1.5rem;
+	}
+	span {
+		font-size: 1.2rem;
+	}
+	img {
+		position: absolute;
+		left: 0;
+		bottom: 20vh;
+		height: 1.5rem;
+		object-fit: cover;
+		image-rendering: crisp-edges;
+		image-rendering: pixelated;
+		z-index: 0;
+	}
+	ul {
+		display: flex;
+		align-items: stretch;
+		justify-content: space-around;
+		flex-direction: column;
+		z-index: 1;
+	}
+
+	li {
+		display: flex;
+		justify-content: stretch;
+		align-items: stretch;
+	}
+	a {
+		width: 100%;
+		text-align: center;
+		padding: 1rem;
+		background-color: rgb(233, 255, 255);
+		color: var(--grey-2);
+		margin: 0.4rem;
+		border-radius: 0.2rem;
+		box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.192);
+		transition: all 150ms ease;
+		cursor: pointer;
+	}
+
+	a:hover {
+		transform: scale(105%) translateY(-2%);
+		box-shadow: 3px 3px 15px rgba(0, 0, 0, 0.192)
+	}
+
+	a:active {
+        transform: scale(99%) translateY(0.5%);
+        box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.192);
+    }
+
+	@media only screen and (max-width: 600px) {
+		main {
+			flex-direction: column;
+		}
+		ul {
+		width: 100%;
+
+			align-items: flex-end;
+		}
+	}
+</style>

@@ -4,6 +4,24 @@ import { Sprite, spriteUrl } from "./sprites";
 import { createNoise2D } from "simplex-noise";
 
 const main = async () => {
+    const serverAddr = window.localStorage.getItem("server-addr");
+    const sessionId = window.localStorage.getItem("session-id");
+    const userId = window.localStorage.getItem("user-id");
+    const username = window.localStorage.getItem("username");
+
+    if (!serverAddr || !sessionId || !userId || !username) return;
+
+    //=================================================================
+    const server = new ServerBridge("ws://127.0.0.1:8080");
+    server.initClient();
+
+    if (!(await server.login(sessionId, userId, username))) {
+        alert(`Login to ${sessionId} as ${userId} failed`);
+        return;
+    }
+
+    //=================================================================
+
     const dinoImg = new Image();
     dinoImg.src = spriteUrl.get("dinoRun1") as string;
     await (() => {
@@ -19,16 +37,6 @@ const main = async () => {
     );
 
     //=================================================================
-    const server = new ServerBridge("ws://127.0.0.1:8080");
-    server.initClient();
-
-    await server.getSessionList().then((list) => {
-        console.log(list);
-    });
-    await server.createSession("ahehhu", "kjsghietiuet").catch((_) => {
-        alert("Session creation failed");
-        return;
-    });
 
     const appendMap = (map: Array<[[number, number], Array<string>]>) => {
         for (const item of map) {
@@ -73,7 +81,7 @@ const main = async () => {
 
     server.onGameStart(() => {}); //sets game state to active internally
 
-    server.requestGameLaunch();
+    // server.requestGameLaunch();
     //=================================================================
 
     const noise2d = createNoise2D();
@@ -163,23 +171,22 @@ const main = async () => {
     });
 
     setInterval(() => {
-            renderer.drawBackgroundSpriteAtPos(
-                "cloud",
-                {
-                    x: renderer.xToRelUnit(
-                        renderData.xPos + 1000 + Math.random() * 5000
-                    ),
-                    y: 2.5 - Math.random() / 2,
-                },
-                Math.random() * 3
-            );
+        renderer.drawBackgroundSpriteAtPos(
+            "cloud",
+            {
+                x: renderer.xToRelUnit(
+                    renderData.xPos + 1000 + Math.random() * 5000
+                ),
+                y: 2.5 - Math.random() / 2,
+            },
+            Math.random() * 3
+        );
     }, 100);
 
     let offDir = Math.random() * 2 * Math.PI;
 
     const testCanvas = document.createElement("canvas");
     const reductionCanvas = document.createElement("canvas");
-
 
     const loop = () => {
         requestAnimationFrame(loop);
