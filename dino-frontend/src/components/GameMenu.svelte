@@ -23,10 +23,10 @@
     setInterval(() => server.getSessionList().then((s) => (sessions = s)), 500);
 
     function scrollIntoView({ target }) {
-		const el = document.querySelector(target.getAttribute('href'));
-		if (!el) return;
+        const el = document.querySelector(target.getAttribute("href"));
+        if (!el) return;
         el.scrollIntoView({
-            behavior: 'smooth'
+            behavior: "smooth",
         });
     }
 
@@ -139,7 +139,66 @@
         </button>
     </div>
 
-    <div class="items-stretch justify-stretch flex-col md:flex-row-reverse w-full">
+    <div
+        class="items-stretch justify-stretch flex-col-reverse md:flex-row w-full"
+    >
+        <div
+            class="items-stretch justify-start flex-col w-full md:w-1/2 transition-all"
+        >
+            {#if (sessions && sessions.length > 0) || server.socketClient?.socketOpen}
+                <div
+                    class="justify-around items-center border-blue-200 border-0 border-b-2 border-opacity-10"
+                    transition:fade={{ duration: 200 }}
+                >
+                    <button on:click={showCreateSession}>
+                        Create New<span class="material-symbols-outlined">
+                            add
+                        </span>
+                    </button>
+                </div>
+            {/if}
+            {#each sessions as session, i}
+                <div
+                    class="justify-between px-3 items-center border-blue-200 border-0 border-b-2 border-opacity-10"
+                    in:fly={{
+                        x: -(100 + Math.random() * 50),
+                        y: 0,
+                        duration: 150 + (300 * i) / sessions.length,
+                    }}
+                    out:fade={{ duration: 200 }}
+                >
+                    <p>
+                        {session[1]}
+                        <span
+                            class="text-sm p-2 ml-4 border-md {session[2] ==
+                            'Waiting'
+                                ? 'bg-green-600'
+                                : session[2] == 'Busy'
+                                ? 'bg-orange-600'
+                                : 'bg-gray-600'}">{session[2]}</span
+                        >
+                    </p>
+                    <div class="flex-row">
+                        <button
+                            disabled={sessionId &&
+                                sessionId == session[0] &&
+                                login}
+                            on:click={() => showJoinMenu(session[0])}
+                        >
+                            Join <span class="material-symbols-outlined">
+                                login
+                            </span>
+                        </button>
+
+                        <button on:click={() => showLeaderboard(session[0])}>
+                            <span class="material-symbols-outlined">
+                                leaderboard
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            {/each}
+        </div>
         {#if sessionId && login}
             <div
                 class="items-start justify-around flex-col h-fit p-10"
@@ -208,61 +267,6 @@
                 <button on:click={createSession}> Continue </button>
             </div>
         {/if}
-        <div class="items-stretch justify-start flex-col w-full md:w-1/2 transition-all">
-            {#if (sessions && sessions.length > 0) || server.socketClient?.socketOpen}
-                <div
-                    class="justify-around items-center border-blue-200 border-0 border-b-2 border-opacity-10"
-                    transition:fade={{ duration: 200 }}
-                >
-                    <button on:click={showCreateSession}>
-                        Create New<span class="material-symbols-outlined">
-                            add
-                        </span>
-                    </button>
-                </div>
-            {/if}
-            {#each sessions as session, i}
-                <div
-                    class="justify-between px-3 items-center border-blue-200 border-0 border-b-2 border-opacity-10"
-                    in:fly={{
-                        x: -(100 + Math.random() * 50),
-                        y: 0,
-                        duration: 150 + (300 * i) / sessions.length,
-                    }}
-                    out:fade={{ duration: 200 }}
-                >
-                    <p>
-                        {session[1]}
-                        <span
-                            class="text-sm p-2 ml-4 border-md {session[2] ==
-                            'Waiting'
-                                ? 'bg-green-600'
-                                : session[2] == 'Busy'
-                                ? 'bg-orange-600'
-                                : 'bg-gray-600'}">{session[2]}</span
-                        >
-                    </p>
-                    <div class="flex-row">
-                        <button
-                            disabled={sessionId &&
-                                sessionId == session[0] &&
-                                login}
-                            on:click={() => showJoinMenu(session[0])}
-                        >
-                            Join <span class="material-symbols-outlined">
-                                login
-                            </span>
-                        </button>
-
-                        <button on:click={() => showLeaderboard(session[0])}>
-                            <span class="material-symbols-outlined">
-                                leaderboard
-                            </span>
-                        </button>
-                    </div>
-                </div>
-            {/each}
-        </div>
     </div>
 </main>
 
