@@ -1,7 +1,8 @@
 <script>
     import { ServerBridge } from "../game/socket-client";
-    import { fly, fade } from "svelte/transition";
+    import { fly, fade, scale } from "svelte/transition";
     import { clickOutside } from "../clickOutside.js";
+    import { onMount } from "svelte";
 
     let serverAddr = "ws://127.0.0.1:8080";
     /**
@@ -13,6 +14,12 @@
     let username;
     let sessionName;
     let waitTime;
+
+    onMount(() => {
+        serverAddr = window.localStorage.getItem("server-addr") || serverAddr;
+        username = window.localStorage.getItem("username") || username;
+        waitTime = window.localStorage.getItem("wait-time") || username;
+    });
 
     let login;
     let leaderboard;
@@ -123,7 +130,10 @@
             name="server-addr"
             spellcheck="false"
             bind:value={serverAddr}
-            on:input={closeConnection}
+            on:change={() => {
+                closeConnection();
+                initConnection();
+            }}
         />
 
         <button on:click={initConnection}>
@@ -150,11 +160,16 @@
                     class="justify-around items-center border-blue-200 border-0 border-b-2 border-opacity-10"
                     transition:fade={{ duration: 200 }}
                 >
-                    <button on:click={showCreateSession}>
-                        Create New<span class="material-symbols-outlined">
-                            add
-                        </span>
-                    </button>
+                    {#if !newSession}
+                        <button
+                            on:click={showCreateSession}
+                            transition:scale={{ duration: 200 }}
+                        >
+                            Create New<span class="material-symbols-outlined">
+                                add
+                            </span>
+                        </button>
+                    {/if}
                 </div>
             {/if}
             {#each sessions as session, i}
@@ -179,22 +194,26 @@
                         >
                     </p>
                     <div class="flex-row">
-                        <button
-                            disabled={sessionId &&
-                                sessionId == session[0] &&
-                                login}
-                            on:click={() => showJoinMenu(session[0])}
-                        >
-                            Join <span class="material-symbols-outlined">
-                                login
-                            </span>
-                        </button>
-
-                        <button on:click={() => showLeaderboard(session[0])}>
-                            <span class="material-symbols-outlined">
-                                leaderboard
-                            </span>
-                        </button>
+                        {#if !(sessionId === session[0] && login)}
+                            <button
+                                on:click={() => showJoinMenu(session[0])}
+                                transition:scale={{ duration: 200 }}
+                            >
+                                Join <span class="material-symbols-outlined">
+                                    login
+                                </span>
+                            </button>
+                        {/if}
+                        {#if !(sessionId === session[0] && leaderboard)}
+                            <button
+                                on:click={() => showLeaderboard(session[0])}
+                                transition:scale={{ duration: 200 }}
+                            >
+                                <span class="material-symbols-outlined">
+                                    leaderboard
+                                </span>
+                            </button>
+                        {/if}
                     </div>
                 </div>
             {/each}
@@ -217,7 +236,12 @@
                     bind:value={username}
                 />
 
-                <button on:click={joinSession}> Continue </button>
+                <button
+                    on:click={joinSession}
+                    transition:scale={{ duration: 200 }}
+                >
+                    Continue
+                </button>
             </div>
         {/if}
         {#if sessionId && leaderboard}
@@ -264,7 +288,12 @@
                     bind:value={waitTime}
                 />
 
-                <button on:click={createSession}> Continue </button>
+                <button
+                    on:click={createSession}
+                    transition:scale={{ duration: 200 }}
+                >
+                    Continue
+                </button>
             </div>
         {/if}
     </div>
