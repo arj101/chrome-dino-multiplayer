@@ -131,8 +131,8 @@
         </button>
     </div>
 
-    <div class="items-stretch justify-stretch flex-row w-full">
-        <div class="items-stretch justify-start flex-col w-1/2 transition-all">
+    <div class="items-stretch justify-stretch flex-col lg:flex-row w-full">
+        <div class="items-stretch justify-start flex-col w-full lg:w-1/2 transition-all">
             {#if (sessions && sessions.length > 0) || server.socketClient?.socketOpen}
                 <div
                     class="justify-around items-center border-blue-200 border-0 border-b-2 border-opacity-10"
