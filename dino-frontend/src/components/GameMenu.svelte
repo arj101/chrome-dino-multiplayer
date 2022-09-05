@@ -145,7 +145,7 @@
                 class="items-start justify-around flex-col h-fit p-10"
                 use:clickOutside
                 on:click_outside={() => (sessionId = null)}
-                transition:fly={{ y: 50, x: 0, duration: 100 }}
+                transition:fly={{ y: -50, x: 0, duration: 100 }}
             >
                 <h1 class="text-white">
                     {sessions.filter((s) => s[0] == sessionId)[0][1]}
@@ -166,7 +166,7 @@
                 class="items-start justify-around flex-col h-fit p-10"
                 use:clickOutside
                 on:click_outside={closeLeaderboard}
-                transition:fly={{ y: 50, x: 0, duration: 100 }}
+                transition:fly={{ y: -50, x: 0, duration: 100 }}
             >
                 <h1 class="text-white">Leaderboard</h1>
                 {#each leaderboardData as player}
@@ -179,7 +179,7 @@
                 class="items-start justify-around flex-col h-fit p-10"
                 use:clickOutside
                 on:click_outside={() => (newSession = false)}
-                transition:fly={{ y: 50, x: 0, duration: 100 }}
+                transition:fly={{ y: -50, x: 0, duration: 100 }}
             >
                 <h1 class="text-white">New Session</h1>
                 <label for="user-name">Username</label>
