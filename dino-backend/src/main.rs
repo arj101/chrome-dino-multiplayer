@@ -95,7 +95,8 @@ async fn handle_connection(
 #[tokio::main]
 async fn main() -> Result<(), IoError> {
     let port = std::env::var("PORT").unwrap_or("8080".to_string()).parse::<usize>();
-    let addr = &format!("127.0.0.1:{}", port.unwrap_or(8080));
+    let ip = std::env::var("IP_ADDR").unwrap_or("127.0.0.1".to_string());
+    let addr = &format!("{}:{}",ip, port.unwrap_or(8080));
     let config = ConfigOptions {
         session: SessionConfig {
             max_users: 20,
