@@ -139,7 +139,7 @@
         </button>
     </div>
 
-    <div class="items-stretch justify-stretch flex-col lg:flex-row w-full">
+    <div class="items-stretch justify-stretch flex-col md:flex-row-reverse w-full">
         {#if sessionId && login}
             <div
                 class="items-start justify-around flex-col h-fit p-10"
@@ -208,7 +208,7 @@
                 <button on:click={createSession}> Continue </button>
             </div>
         {/if}
-        <div class="items-stretch justify-start flex-col w-full lg:w-1/2 transition-all">
+        <div class="items-stretch justify-start flex-col w-full md:w-1/2 transition-all">
             {#if (sessions && sessions.length > 0) || server.socketClient?.socketOpen}
                 <div
                     class="justify-around items-center border-blue-200 border-0 border-b-2 border-opacity-10"
