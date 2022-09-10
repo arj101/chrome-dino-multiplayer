@@ -26,6 +26,7 @@ pub enum SessionStatus {
     Waiting {
         start_time: SystemTime,
         timeout: Uuid,
+        duration: Duration,
     },
     Countdown {
         start: SystemTime,
@@ -113,6 +114,7 @@ impl Session {
         self.status = SessionStatus::Waiting {
             start_time: SystemTime::now(),
             timeout: id,
+            duration: Duration::from_secs(wait_time),
         };
 
         Ok(self)
@@ -173,8 +175,11 @@ impl Session {
     ) {
         self.player_data
             .values()
-            .filter(|p| p.id != id && &p.addr != &rx_addr)
-            .for_each(|p| tx.send_to_addr(p.addr, data.clone()))
+            //.filter(|p| p.id != id && p.addr != rx_addr)
+            .for_each(|p| {
+                println!("Sending broadcast to {}", p.addr);
+                tx.send_to_addr(p.addr, data.clone());
+            })
     }
 
     fn emit(&mut self, tx: &mut TransmissionQueue, data: TxData) {
@@ -385,6 +390,7 @@ impl Session {
             self.status = SessionStatus::Waiting {
                 start_time: SystemTime::now(),
                 timeout: Uuid::nil(),
+                duration: Duration::MAX,
             };
         };
         self.player_data.insert(
@@ -436,6 +442,29 @@ impl Session {
 
         leaderboard.sort_by_key(|d| d.1);
         leaderboard
+    }
+
+    pub fn get_status(&self) -> (&'static str, i64) {
+        match self.status {
+            SessionStatus::Waiting {
+                start_time,
+                duration,
+                ..
+            } => (
+                "Waiting",
+                duration.as_secs() as i64
+                    - SystemTime::elapsed(&start_time).unwrap().as_secs() as i64,
+            ),
+            SessionStatus::Active { start_time, .. } => {
+                ("Active", Instant::elapsed(&start_time).as_secs() as i64)
+            }
+            SessionStatus::Countdown { start, duration } => (
+                "Countdown",
+                duration.as_secs() as i64 - SystemTime::elapsed(&start).unwrap().as_secs() as i64,
+            ),
+            SessionStatus::Uninit => ("Uninit", 0),
+            SessionStatus::Ended => ("Ended", 0),
+        }
     }
 
     pub fn get_usernames(&self) -> Vec<String> {

@@ -1,5 +1,10 @@
 import { GameState, ServerBridge } from "./socket-client";
-import { GameRenderData, Renderer, SpriteAlign } from "./renderer";
+import {
+    GameRenderData,
+    Renderer,
+    MultiplayerRenderer,
+    SpriteAlign,
+} from "./renderer";
 import { Sprite, spriteUrl } from "./sprites";
 import { createNoise2D } from "simplex-noise";
 
@@ -99,10 +104,11 @@ const main = async () => {
     };
     let speed = config.initialSpeed;
     let prevTimestamp = new Date().getTime();
+    let dinoTextureSwap = 500;
     const dinoIdx = renderer.registerAnimatedSprite(
         [
-            ["dinoRun1", { swapDelay: 500 }],
-            ["dinoRun2", { swapDelay: 500 }],
+            ["dinoRun1", { swapDelay: dinoTextureSwap }],
+            ["dinoRun2", { swapDelay: dinoTextureSwap }],
         ],
         { x: 2, y: 0 },
         SpriteAlign.BottomLeft,
@@ -117,23 +123,24 @@ const main = async () => {
 
     const textureSwap = {
         dinoRunTexture: () => {
-            renderer.animatedSprites[dinoIdx][0][0][0] = "dinoRun1";
-            renderer.animatedSprites[dinoIdx][0][1][0] = "dinoRun2";
+            
+            renderer.animatedSprites.get(dinoIdx)![0][0][0] = "dinoRun1";
+            renderer.animatedSprites.get(dinoIdx)![0][1][0] = "dinoRun2";
         },
 
         dinoDuckTexture: () => {
-            renderer.animatedSprites[dinoIdx][0][0][0] = "dinoDuck1";
-            renderer.animatedSprites[dinoIdx][0][1][0] = "dinoDuck2";
+            renderer.animatedSprites.get(dinoIdx)![0][0][0] = "dinoDuck1";
+            renderer.animatedSprites.get(dinoIdx)![0][1][0] = "dinoDuck2";
         },
 
         dinoJumpTexture: () => {
-            renderer.animatedSprites[dinoIdx][0][0][0] = "dinoJump";
-            renderer.animatedSprites[dinoIdx][0][1][0] = "dinoJump";
+            renderer.animatedSprites.get(dinoIdx)![0][0][0] = "dinoJump";
+            renderer.animatedSprites.get(dinoIdx)![0][1][0] = "dinoJump";
         },
     };
 
     const dino = {
-        yPos: renderer.animatedSprites[dinoIdx][1].y,
+        yPos: renderer.animatedSprites.get(dinoIdx)![1].y,
         yVel: 0,
     };
 
@@ -162,7 +169,7 @@ const main = async () => {
         state: false,
         onPress: () => {
             textureSwap.dinoDuckTexture();
-            speed += 5 + Math.random() * 5;
+            speed += 50 + Math.random() * 5;
         },
         onRelease: () => {
             textureSwap.dinoRunTexture();
@@ -188,6 +195,19 @@ const main = async () => {
     const testCanvas = document.createElement("canvas");
     const reductionCanvas = document.createElement("canvas");
 
+    const multiplayerRenderer = new MultiplayerRenderer();
+
+    // server.onRecvBroadcast((username, posX, posY) => {
+    //     console.log("here");
+    //     multiplayerRenderer.onBrodcastRecv(
+    //         renderer,
+    //         username,
+    //         { x: posX, y: posY },
+    //         renderData.xPos,
+    //         dinoTextureSwap
+    //     );
+    // });
+
     const loop = () => {
         requestAnimationFrame(loop);
         if (server.gameData.state !== GameState.Active) return;
@@ -198,7 +218,7 @@ const main = async () => {
             dino.yPos += (dino.yVel * dt) / 1000;
             dino.yVel -= (config.gravity * dt) / 1000;
             if (
-                renderer.animatedSprites[dinoIdx][1].y <= renderer.groundPos &&
+                renderer.animatedSprites.get(dinoIdx)![1].y <= renderer.groundPos &&
                 dino.yPos >= renderer.groundPos
             ) {
                 dino.yPos = renderer.groundPos;
@@ -208,7 +228,20 @@ const main = async () => {
             }
         }
 
-        renderer.animatedSprites[dinoIdx][1].y = dino.yPos;
+        if (server.broadcastAvailable()) {
+            for (const broadcast of server.getBroadcast()) {
+                if (broadcast.type !== "PlayerDataBroadcast") continue;
+                multiplayerRenderer.onBrodcastRecv(
+                    renderer,
+                    broadcast.username,
+                    { x: broadcast.posX, y: broadcast.posY },
+                    renderData.xPos,
+                    dinoTextureSwap
+                );
+            }
+        }
+
+        renderer.animatedSprites.get(dinoIdx)![1].y = dino.yPos;
 
         offDir +=
             ((noise2d(xoff, 0) / 1000 - 1 / 2000) * speed) /
@@ -227,10 +260,10 @@ const main = async () => {
             y: dinoY,
             relY: _relY,
             gamePos: _gamePos,
-        } = renderer.animatedSprites[dinoIdx][1];
+        } = renderer.animatedSprites.get(dinoIdx)![1];
         const { w, h } = renderer.getSpriteDimensions(
-            renderer.animatedSprites[dinoIdx][0][
-                renderer.animatedSprites[dinoIdx][2].currIdx
+            renderer.animatedSprites.get(dinoIdx)![0][
+                renderer.animatedSprites.get(dinoIdx)![2].currIdx
             ][0]
         );
         renderer.loop(renderData, currTimestamp, dt, (sprite, obj2, _) => {
@@ -247,8 +280,8 @@ const main = async () => {
             if (!collission) return;
 
             const img1 = renderer.getSprite(
-                renderer.animatedSprites[dinoIdx][0][
-                    renderer.animatedSprites[dinoIdx][2].currIdx
+                renderer.animatedSprites.get(dinoIdx)![0][
+                    renderer.animatedSprites.get(dinoIdx)![2].currIdx
                 ][0]
             );
 
@@ -287,9 +320,9 @@ const main = async () => {
 
         renderData.xPos += (speed * dt) / 1000;
         renderData.vel = speed;
-        const dinoTextureSwap = ((350 / speed) * 1000) / dt;
-        renderer.animatedSprites[dinoIdx][0][0][1].swapDelay = dinoTextureSwap;
-        renderer.animatedSprites[dinoIdx][0][1][1].swapDelay = dinoTextureSwap;
+        dinoTextureSwap = ((350 / speed) * 1000) / dt;
+        renderer.animatedSprites.get(dinoIdx)![0][0][1].swapDelay = dinoTextureSwap;
+        renderer.animatedSprites.get(dinoIdx)![0][1][1].swapDelay = dinoTextureSwap;
         speed += (config.acc * dt) / 1000;
 
         xoff += Math.min(0.15, speed * Math.pow(10, -5.5));

@@ -5,7 +5,7 @@ type QueryResponse =
           sessionId: string;
           scores: Array<[string, number]>;
       }
-    | { type: "SessionStatus"; state: string; time: number }
+    | { type: "SessionStatus"; status: string; time: number }
     | { type: "None" };
 
 type RxData =
@@ -103,7 +103,7 @@ function deserialize(jsonStr: string): RxData {
                 if (dezerd.creationSucceeded) dezerd.userId = json["userId"];
                 return dezerd;
             }
-        case "PlayDataBroadcast":
+        case "PlayerDataBroadcast":
             if (!validateKeys(json, { username: "", posY: 0, posX: 0 }))
                 return { type: "None" };
             return {
@@ -168,7 +168,7 @@ function parseQueryResponse(json: any): QueryResponse {
                 return { type: "None" };
             return {
                 type: "SessionStatus",
-                state: json["state"],
+                status: json["status"],
                 time: json["time"],
             };
         default:

@@ -48,8 +48,8 @@ pub enum QueryResponseType {
         scores: Vec<(String, u64)>,
     },
     SessionStatus {
-        state: u32, //refers to the enum,
-        time: u64,
+        status: &'static str, //refers to the enum,
+        time: i64,
     },
 }
 
@@ -513,6 +513,18 @@ impl SessionExecutor {
                 //}}
                 //)
                 // }
+                if let Some(s) = self.sessions.get(session_id) {
+                    let (status, duration) = s.get_status();
+                    self.tx_queue.send_to_addr(
+                        addr,
+                        TxData::QueryResponse {
+                            query_res: QueryResponseType::SessionStatus {
+                                status,
+                                time: duration,
+                            },
+                        },
+                    )
+                }
             }
 
             QueryType::Sessions => self.tx_queue.send_to_addr(

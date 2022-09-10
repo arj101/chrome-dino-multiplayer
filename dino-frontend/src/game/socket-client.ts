@@ -38,6 +38,7 @@ class SocketClient {
 
         this.socket.onmessage = (msg) => {
             let msgDeserialized = deserialize(msg.data);
+
             for (const caller of this.onMessageCallers) {
                 caller(msgDeserialized);
             }
@@ -49,6 +50,7 @@ class SocketClient {
 
         this.socket.onclose = (event) => {
             console.log(`${this.socket.url} just closed connection`);
+            if (this.socketOpen) this.socket = new WebSocket(this.socket.url);
             this.socketOpen = false;
             if (typeof this.onCloseCaller !== "undefined")
                 this.onCloseCaller(event);
@@ -78,6 +80,11 @@ class SocketClient {
 
     onClose(f: (event: Event) => void) {
         this.onCloseCaller = f;
+    }
+
+    close() {
+        this.socketOpen = false;
+        this.socket.close();
     }
 
     onNextMsg(f: (msg: RxData) => void) {
@@ -137,6 +144,7 @@ class ServerBridge {
     socketOpenCallers: Array<(event: Event) => void>;
 
     gameData: GameData;
+    broadcastBuffer: Array<RxData>;
 
     constructor(serverAddr: string) {
         this.socketClient = null;
@@ -156,6 +164,7 @@ class ServerBridge {
             },
             state: GameState.Uninit,
         };
+        this.broadcastBuffer = [];
     }
 
     getSessionList(): Promise<Array<[string, string, string, Array<string>]>> {
@@ -385,6 +394,16 @@ class ServerBridge {
         });
     }
 
+    broadcastAvailable(): boolean {
+        return this.broadcastBuffer.length > 0;
+    }
+
+    getBroadcast(): Array<RxData> {
+        const data = [...this.broadcastBuffer];
+        this.broadcastBuffer = [];
+        return data;
+    }
+
     broadcastGameOver() {
         //TODO: Listen for UserGameOver return message
         this.gameData.state = GameState.Ended;
@@ -441,15 +460,38 @@ class ServerBridge {
         this.socketClient?.socket.close(code, reason);
     }
 
-    initClient() {
-        this.socketClient = new SocketClient(this.serverAddr, (evt) => {
-            try {
-                for (const openCaller of this.socketOpenCallers) {
-                    openCaller(evt);
+    initClient(): Promise<void> {
+        return new Promise((resolve, _) => {
+            this.socketClient = new SocketClient(this.serverAddr, (evt) => {
+                try {
+                    for (const openCaller of this.socketOpenCallers) {
+                        openCaller(evt);
+                    }
+                } catch (e) {
+                    console.error(e);
                 }
-            } catch (e) {
-                console.error(e);
-            }
+
+                this.socketClient?.onMessage((data) => {
+                    if (data.type == "PlayerDataBroadcast")
+                        this.broadcastBuffer.push(data);
+                });
+
+                if (
+                    this.gameData.userId &&
+                    this.gameData.sessionId &&
+                    this.gameData.userName
+                ) {
+                    this.login(
+                        this.gameData.sessionId,
+                        this.gameData.userId,
+                        this.gameData.userName
+                    )
+                        .catch((_) => alert("Login failed :("))
+                        .then((_) => resolve());
+                } else {
+                    resolve();
+                }
+            });
         });
     }
 }

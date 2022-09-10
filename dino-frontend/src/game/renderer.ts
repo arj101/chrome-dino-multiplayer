@@ -19,7 +19,8 @@ class Renderer {
     textureMap: TextureMap;
     bgColor: string;
     renderList: Array<[Sprite, { x: number; y: number }]>;
-    animatedSprites: Array<
+    animatedSprites: Map<
+        number,
         [
             Array<[Sprite, { swapDelay: number }]>,
             {
@@ -28,6 +29,7 @@ class Renderer {
                 align: SpriteAlign;
                 relY: boolean;
                 gamePos: boolean;
+                opacity?: number;
             },
             { lastSwap: number; currIdx: number }
         ]
@@ -58,7 +60,7 @@ class Renderer {
         this.canvas.height = window.innerHeight;
         this.textureMap = new TextureMap();
         this.renderList = [];
-        this.animatedSprites = [];
+        this.animatedSprites = new Map();
         this.screenOffset = { x: 0, y: 0 };
         this.relUnitLen = unitLength;
         this.groundPos = this.canvas.height * 0.6;
@@ -170,12 +172,12 @@ class Renderer {
             x = this.xFromRelUnit(x);
             y = this.yFromRelUnit(y);
         }
-        this.animatedSprites.push([
+        this.animatedSprites.set(this.animatedSprites.size,[
             sprites,
             { x, y, align, gamePos: false, relY: false },
             { lastSwap: new Date().getTime(), currIdx: 0 },
         ]);
-        return this.animatedSprites.length - 1;
+        return this.animatedSprites.size - 1;
     }
 
     registerAnimatedSpriteAtPos(
@@ -187,12 +189,12 @@ class Renderer {
         let y = pos.y;
         x = this.xFromRelUnit(x);
         y = this.yFromRelUnit(y);
-        this.animatedSprites.push([
+        this.animatedSprites.set(this.animatedSprites.size,[
             sprites,
             { x, y, align, gamePos: true, relY: false },
             { lastSwap: new Date().getTime(), currIdx: 0 },
         ]);
-        return this.animatedSprites.length - 1;
+        return this.animatedSprites.size - 1;
     }
 
     drawSpriteAtPos(
@@ -294,16 +296,15 @@ class Renderer {
             x: 0 * groundLength - groundX,
             y: this.groundPos - 20 * this.scalingFactor,
         });
-
-        for (let i = this.animatedSprites.length - 1; i >= 0; i--) {
-            const sprite = this.animatedSprites[i];
+        
+        for (const [i, sprite] of this.animatedSprites.entries()) {
             if (sprite[1].gamePos && sprite[1].x - xPos > this.canvas.width)
                 continue;
             if (
                 sprite[1].gamePos &&
                 sprite[1].x - xPos < -this.canvas.width * 0.2
             ) {
-                this.animatedSprites.splice(i, 1);
+                this.animatedSprites.delete(i);
                 continue;
             } //FIXME
             if (
@@ -326,10 +327,13 @@ class Renderer {
             const spriteName = sprite[0][sprite[2].currIdx][0];
             const { w, h } = this.getSpriteDimensions(spriteName);
             predrawFn(spriteName, { x, y, w, h }, gameData.vel);
+            this.ctx.save()
+            this.ctx.globalAlpha = sprite[1].opacity || 1;
             this.drawSprite(sprite[0][sprite[2].currIdx][0], {
                 x,
                 y,
             });
+            this.ctx.restore()
             if (!this.boundingBox) continue;
             this.ctx.strokeStyle = "rgb(200, 80, 30)";
             this.ctx.strokeRect(x, y, w, h);
@@ -365,5 +369,69 @@ class Renderer {
     }
 }
 
-export { Renderer, SpriteAlign };
+class MultiplayerRenderer {
+    players: Map<string, { x: number; y: number; t: number }>;
+    playerSprites: Map<string, number>;
+    constructor() {
+        this.players = new Map();
+        this.playerSprites = new Map();
+    }
+
+    onBrodcastRecv(
+        renderer: Renderer,
+        name: string,
+        pos: { x: number; y: number },
+        gamePos: number,
+        textureSwapT: number
+    ) {
+        const currT = new Date().getTime();
+
+        if (!this.players.has(name)) {
+            this.playerSprites.set(
+                name,
+                renderer.registerAnimatedSprite(
+                    [
+                        ["dinoRun1", { swapDelay: textureSwapT }],
+                        ["dinoRun2", { swapDelay: textureSwapT }],
+                    ],
+                    { x: 2, y: pos.y },
+                    SpriteAlign.BottomLeft,
+                    true
+                )
+            );
+            renderer.animatedSprites.get(this.playerSprites.get(name)!)![1].opacity = 0.5;
+        }
+
+        const spriteIdx = this.playerSprites.get(name)!;
+        const prevPlayerData = this.players.get(name)!;
+        this.players.set(name, { x: 2, y: pos.y, t: currT });
+        //console.log(this.playerSprites.get(name));
+
+        renderer.animatedSprites.get(spriteIdx)![1].x =
+            renderer.xFromRelUnit( 2 );
+        renderer.animatedSprites.get(spriteIdx)![1].y = renderer.yFromRelUnit(pos.y);
+
+        if (pos.y > 0 && prevPlayerData.y <= 0) {
+            renderer.animatedSprites.get(spriteIdx)![0] = [
+                ["dinoJump", { swapDelay: 10000 }],
+                ["dinoJump", { swapDelay: 10000 }],
+            ];
+        } else if (pos.y <= 0 && prevPlayerData.y > 0) {
+            renderer.animatedSprites.get(spriteIdx)![0] = [
+                ["dinoRun1", { swapDelay: textureSwapT }],
+                ["dinoRun2", { swapDelay: textureSwapT }],
+            ];
+        }
+
+        if (pos.y <= 0 && prevPlayerData) {
+            // const vel =
+            //     (pos.x - prevPlayerData.x) / (currT - prevPlayerData.t);
+            for (const sprite of renderer.animatedSprites.get(spriteIdx)![0]) {
+                sprite[1].swapDelay = textureSwapT;
+            }
+        }
+    }
+}
+
+export { Renderer, MultiplayerRenderer, SpriteAlign };
 export type { GameRenderData };
