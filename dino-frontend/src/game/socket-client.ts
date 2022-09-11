@@ -1,5 +1,6 @@
 import { serialize, deserialize } from "./ws-de-serialize";
 import type { TxData, RxData } from "./ws-de-serialize";
+import Game from "../components/Game.svelte";
 
 class SocketClient {
     socket: WebSocket;
@@ -129,6 +130,7 @@ interface GameData {
     countdownDuration?: number;
 
     state: GameState;
+    stateTimer?: number;
 
     userId?: string;
     sessionId?: string;
@@ -448,6 +450,35 @@ class ServerBridge {
         });
     }
 
+    sessionStatus(
+        sessionId: string,
+        timeout: number = 10_000
+    ): Promise<{ status: string; t: number }> {
+        const sessionStatus = (
+            onRecv: (status: { status: string; t: number }) => void
+        ) => {
+            this.socketClient?.send({
+                type: "Query",
+                query: {
+                    type: "SessionStatus",
+                    sessionId,
+                },
+            });
+
+            const callerIdx = this.socketClient?.onMessage((msg) => {
+                if (msg.type !== "QueryResponse") return;
+                if (msg.queryRes.type !== "SessionStatus") return;
+                this.socketClient?.deleteMsgCaller(callerIdx as number);
+                onRecv({ status: msg.queryRes.status, t: msg.queryRes.time });
+            });
+        };
+
+        return new Promise((resolve, reject) => {
+            setTimeout(() => reject("Request timed out"), timeout);
+            this.callOnOpenSocket(() => sessionStatus(resolve));
+        });
+    }
+
     onConnect(fn: (event: Event) => void) {
         this.socketOpenCallers.push(fn);
     }
@@ -458,6 +489,28 @@ class ServerBridge {
 
     closeConnection(code?: number, reason?: string) {
         this.socketClient?.socket.close(code, reason);
+    }
+
+    syncState() {
+        if (!this.gameData?.sessionId) return;
+
+        this.sessionStatus(this.gameData.sessionId).then(({ status, t }) => {
+            this.gameData.state = (() => {
+                switch (status) {
+                    case "Active":
+                        return GameState.Active;
+                    case "Countdown":
+                        return GameState.Countdown;
+                    case "Ended":
+                        return GameState.Ended;
+                    case "Waiting":
+                        return GameState.Waiting;
+                    default:
+                        return GameState.Uninit;
+                }
+            })();
+            this.gameData.stateTimer = t;
+        });
     }
 
     initClient(): Promise<void> {
@@ -475,6 +528,9 @@ class ServerBridge {
                     if (data.type == "PlayerDataBroadcast")
                         this.broadcastBuffer.push(data);
                 });
+
+                this.syncState();
+                setInterval(this.syncState, 800);
 
                 if (
                     this.gameData.userId &&

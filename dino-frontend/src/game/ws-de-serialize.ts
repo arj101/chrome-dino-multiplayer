@@ -164,7 +164,7 @@ function parseQueryResponse(json: any): QueryResponse {
                 scores: json["scores"],
             };
         case "SessionStatus":
-            if (!validateKeys(json, { state: "", time: 0 }))
+            if (!validateKeys(json, { status: "", time: 0 }))
                 return { type: "None" };
             return {
                 type: "SessionStatus",

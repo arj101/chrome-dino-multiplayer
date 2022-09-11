@@ -77,7 +77,7 @@ const main = async () => {
             console.log(currCount);
             const int = setInterval(() => {
                 currCount -= 1;
-                console.log(currCount);
+                console.log(currCount, server.gameData.stateTimer);
                 if (currCount <= 0) clearInterval(int);
             }, 1000);
         })
@@ -123,7 +123,6 @@ const main = async () => {
 
     const textureSwap = {
         dinoRunTexture: () => {
-            
             renderer.animatedSprites.get(dinoIdx)![0][0][0] = "dinoRun1";
             renderer.animatedSprites.get(dinoIdx)![0][1][0] = "dinoRun2";
         },
@@ -169,11 +168,11 @@ const main = async () => {
         state: false,
         onPress: () => {
             textureSwap.dinoDuckTexture();
-            speed += 50 + Math.random() * 5;
+            speed *= 1.3;
         },
         onRelease: () => {
             textureSwap.dinoRunTexture();
-            speed -= 10 - Math.random() * 5;
+            speed *= 1 / 1.3;
         },
     });
 
@@ -197,17 +196,6 @@ const main = async () => {
 
     const multiplayerRenderer = new MultiplayerRenderer();
 
-    // server.onRecvBroadcast((username, posX, posY) => {
-    //     console.log("here");
-    //     multiplayerRenderer.onBrodcastRecv(
-    //         renderer,
-    //         username,
-    //         { x: posX, y: posY },
-    //         renderData.xPos,
-    //         dinoTextureSwap
-    //     );
-    // });
-
     const loop = () => {
         requestAnimationFrame(loop);
         if (server.gameData.state !== GameState.Active) return;
@@ -218,7 +206,8 @@ const main = async () => {
             dino.yPos += (dino.yVel * dt) / 1000;
             dino.yVel -= (config.gravity * dt) / 1000;
             if (
-                renderer.animatedSprites.get(dinoIdx)![1].y <= renderer.groundPos &&
+                renderer.animatedSprites.get(dinoIdx)![1].y <=
+                    renderer.groundPos &&
                 dino.yPos >= renderer.groundPos
             ) {
                 dino.yPos = renderer.groundPos;
@@ -228,17 +217,15 @@ const main = async () => {
             }
         }
 
-        if (server.broadcastAvailable()) {
-            for (const broadcast of server.getBroadcast()) {
-                if (broadcast.type !== "PlayerDataBroadcast") continue;
-                multiplayerRenderer.onBrodcastRecv(
-                    renderer,
-                    broadcast.username,
-                    { x: broadcast.posX, y: broadcast.posY },
-                    renderData.xPos,
-                    dinoTextureSwap
-                );
-            }
+        for (const broadcast of server.getBroadcast()) {
+            if (broadcast.type !== "PlayerDataBroadcast") continue;
+            multiplayerRenderer.onBrodcastRecv(
+                renderer,
+                broadcast.username,
+                { x: broadcast.posX, y: broadcast.posY },
+                renderData.xPos,
+                dinoTextureSwap
+            );
         }
 
         renderer.animatedSprites.get(dinoIdx)![1].y = dino.yPos;
@@ -321,8 +308,10 @@ const main = async () => {
         renderData.xPos += (speed * dt) / 1000;
         renderData.vel = speed;
         dinoTextureSwap = ((350 / speed) * 1000) / dt;
-        renderer.animatedSprites.get(dinoIdx)![0][0][1].swapDelay = dinoTextureSwap;
-        renderer.animatedSprites.get(dinoIdx)![0][1][1].swapDelay = dinoTextureSwap;
+        renderer.animatedSprites.get(dinoIdx)![0][0][1].swapDelay =
+            dinoTextureSwap;
+        renderer.animatedSprites.get(dinoIdx)![0][1][1].swapDelay =
+            dinoTextureSwap;
         speed += (config.acc * dt) / 1000;
 
         xoff += Math.min(0.15, speed * Math.pow(10, -5.5));
@@ -344,7 +333,7 @@ const main = async () => {
         const pressFn = keys.get(evt.key)?.onPress || (() => {});
         if (!keys.get(evt.key)?.state) pressFn();
 
-        (keys.get(evt.key) || { state: true }).state = true; //FIXME: Better way to convince typescript
+        keys.get(evt.key)!.state = true;
     });
     window.addEventListener("keyup", (evt) => {
         if (!keys.has(evt.key)) return;

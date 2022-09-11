@@ -173,13 +173,11 @@ impl Session {
         id: Uuid,
         data: TxData,
     ) {
-        self.player_data
-            .values()
-            //.filter(|p| p.id != id && p.addr != rx_addr)
-            .for_each(|p| {
-                println!("Sending broadcast to {}", p.addr);
-                tx.send_to_addr(p.addr, data.clone());
-            })
+        //FIXME: Not works for no reason :(
+        self.player_data.values().for_each(|p| {
+            println!("Sending broadcast to {}", p.addr);
+            tx.send_to_addr(p.addr, data.clone());
+        })
     }
 
     fn emit(&mut self, tx: &mut TransmissionQueue, data: TxData) {

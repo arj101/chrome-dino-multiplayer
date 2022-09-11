@@ -504,15 +504,6 @@ impl SessionExecutor {
                 }
             }
             QueryType::SessionStatus { session_id } => {
-                todo!();
-                // if let Some(s) = self.sessions.get(session_id) {
-                //self.tx_queue.send_to_addr(
-                //  addr, TxData::QueryResponse { query_res: QueryResponseType::SessionStatus {
-                //                            status: s.status(),
-
-                //}}
-                //)
-                // }
                 if let Some(s) = self.sessions.get(session_id) {
                     let (status, duration) = s.get_status();
                     self.tx_queue.send_to_addr(

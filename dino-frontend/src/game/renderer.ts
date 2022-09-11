@@ -394,7 +394,7 @@ class MultiplayerRenderer {
                         ["dinoRun1", { swapDelay: textureSwapT }],
                         ["dinoRun2", { swapDelay: textureSwapT }],
                     ],
-                    { x: 2, y: pos.y },
+                    { x: 2 + pos.x, y: pos.y },
                     SpriteAlign.BottomLeft,
                     true
                 )
@@ -404,11 +404,11 @@ class MultiplayerRenderer {
 
         const spriteIdx = this.playerSprites.get(name)!;
         const prevPlayerData = this.players.get(name)!;
-        this.players.set(name, { x: 2, y: pos.y, t: currT });
+        this.players.set(name, { x: 2 + pos.x, y: pos.y, t: currT });
         //console.log(this.playerSprites.get(name));
 
         renderer.animatedSprites.get(spriteIdx)![1].x =
-            renderer.xFromRelUnit( 2 );
+            renderer.xFromRelUnit( 2 + pos.x ) - gamePos;
         renderer.animatedSprites.get(spriteIdx)![1].y = renderer.yFromRelUnit(pos.y);
 
         if (pos.y > 0 && prevPlayerData.y <= 0) {
