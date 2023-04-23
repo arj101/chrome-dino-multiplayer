@@ -7,8 +7,10 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use rustc_hash::FxHashMap;
+
+use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
-use std::{collections::HashMap, net::SocketAddr};
 
 use crate::config_options::{ConfigOptions, SessionConfig, SessionExecConfig};
 use crate::obstacles::Obstacle;
@@ -85,6 +87,7 @@ pub enum TxData {
         pos_y: f32,
         #[serde(rename = "posX")]
         pos_x: f32,
+        tick: u64,
     },
 
     GameCountdownStart {
@@ -108,7 +111,20 @@ pub enum TxData {
         user_id: Uuid,
     },
 
+    GameEvent {
+        username: String,
+        event: GameEvent,
+    },
+
     InvalidationNotice,
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+#[serde(tag = "type")]
+pub enum GameEvent {
+    Jump { pos: f32 },
+    DuckStart { pos: f32 },
+    DuckEnd { pos: f32 }
 }
 
 // parsed data from ChannelData::Message
@@ -154,6 +170,7 @@ pub enum RxData {
         pos_y: f32,
         #[serde(rename = "posX")]
         pos_x: f32,
+        tick: u64,
     },
 
     ValidationData {
@@ -175,6 +192,12 @@ pub enum RxData {
         #[serde(rename = "userId")]
         user_id: Uuid,
         index: u32,
+    },
+
+    GameEvent {
+        #[serde(rename = "userId")]
+        user_id: Uuid,
+        event: GameEvent,
     },
 
     GameOver {
@@ -234,12 +257,12 @@ impl TransmissionQueue {
     }
 }
 
-pub type PeerMap = Arc<Mutex<HashMap<SocketAddr, UnboundedSender<WsMessage>>>>;
-pub type UserSessionMap = HashMap<SocketAddr, Option<Uuid>>;
+pub type PeerMap = Arc<Mutex<FxHashMap<SocketAddr, UnboundedSender<WsMessage>>>>;
+pub type UserSessionMap = FxHashMap<SocketAddr, Option<Uuid>>;
 
 pub struct SessionExecutor {
-    sessions: HashMap<Uuid, Session>,
-    session_hosts: HashMap<SocketAddr, Uuid>, //key: host address, value: session id
+    sessions: FxHashMap<Uuid, Session>,
+    session_hosts: FxHashMap<SocketAddr, Uuid>, //key: host address, value: session id
     channel_rx: mpsc::Receiver<ChannelData>,
     channel_tx: mpsc::Sender<ChannelData>, //used to create new Sender<>s
     peer_map: PeerMap,
@@ -254,7 +277,7 @@ impl SessionExecutor {
         //FIXME: not sure what the buffer size should be
         let (channel_tx, channel_rx) = mpsc::channel(1024);
 
-        let mut sessions = HashMap::new();
+        let mut sessions = FxHashMap::default();
 
         if config.session_exec.dummy_sessions {
             sessions.insert(
@@ -280,11 +303,11 @@ impl SessionExecutor {
         }
         Self {
             sessions,
-            session_hosts: HashMap::new(),
+            session_hosts: FxHashMap::default(),
             channel_rx,
             channel_tx,
-            peer_map: PeerMap::new(Mutex::new(HashMap::new())),
-            user_session_map: UserSessionMap::new(),
+            peer_map: PeerMap::new(Mutex::new(FxHashMap::default())),
+            user_session_map: UserSessionMap::default(),
             tx_queue: TransmissionQueue::new(),
             closable_sessions: vec![],
             config,
@@ -295,7 +318,7 @@ impl SessionExecutor {
         (tx, rx): (mpsc::Sender<ChannelData>, mpsc::Receiver<ChannelData>),
         config: ConfigOptions,
     ) -> Self {
-        let mut sessions = HashMap::new();
+        let mut sessions = FxHashMap::default();
 
         if config.session_exec.dummy_sessions {
             sessions.insert(
@@ -322,11 +345,11 @@ impl SessionExecutor {
 
         Self {
             sessions,
-            session_hosts: HashMap::new(),
+            session_hosts: FxHashMap::default(),
             channel_rx: rx,
             channel_tx: tx,
-            peer_map: PeerMap::new(Mutex::new(HashMap::new())),
-            user_session_map: UserSessionMap::new(),
+            peer_map: PeerMap::new(Mutex::new(FxHashMap::default())),
+            user_session_map: UserSessionMap::default(),
             tx_queue: TransmissionQueue::new(),
             closable_sessions: vec![],
             config,
@@ -337,6 +360,7 @@ impl SessionExecutor {
         self.channel_tx.clone()
     }
 
+    #[inline(always)]
     pub fn poll_channel(&mut self) {
         let mut recv_count = 0;
         while let Ok(msg) = self.channel_rx.try_recv() {
@@ -349,6 +373,7 @@ impl SessionExecutor {
         }
     }
 
+    #[inline(always)]
     fn process_channel_msg(&mut self, msg: ChannelData) {
         match msg {
             ChannelData::Connect { addr, tx } => {
@@ -377,6 +402,7 @@ impl SessionExecutor {
         }
     }
 
+    #[inline(always)]
     fn process_text_msg(&mut self, addr: SocketAddr, msg: &str) {
         let rx_data: RxData = match serde_json::from_str(msg) {
             Ok(rx_data) => rx_data,
@@ -390,6 +416,37 @@ impl SessionExecutor {
         };
 
         match &rx_data {
+            RxData::GameEvent { user_id, event } => {
+                if let Some(Some(session_id)) = self.user_session_map.get(&addr) {
+                    if let Some(s) = self.sessions.get_mut(session_id) {
+                        s.on_game_event(&mut self.tx_queue, addr, user_id,event.clone());
+                    }
+                }
+            }
+            RxData::BroadcastRequest {
+                user_id,
+                pos_y,
+                pos_x,
+                tick,
+            } => {
+                if let Some(Some(session_id)) = self.user_session_map.get(&addr) {
+                    if let Some(s) = self.sessions.get_mut(session_id) {
+                        s.on_broadcast_req(
+                            &mut self.tx_queue,
+                            addr,
+                            *user_id,
+                            *pos_y,
+                            *pos_x,
+                            *tick,
+                        )
+                    }
+                } else {
+                    println!(
+                        "[session_exec] `{}` requested broadcast while not being in any session.",
+                        addr,
+                    )
+                }
+            }
             RxData::Query { query } => self.handle_query(addr, query),
             RxData::CreateSession {
                 // wait_time,
@@ -462,22 +519,6 @@ impl SessionExecutor {
                         "[session_exec] `{}` sent game over message to invalid session: `{}`",
                         addr, session_id
                     );
-                }
-            }
-            RxData::BroadcastRequest {
-                user_id,
-                pos_y,
-                pos_x,
-            } => {
-                if let Some(Some(session_id)) = self.user_session_map.get(&addr) {
-                    if let Some(s) = self.sessions.get_mut(session_id) {
-                        s.on_broadcast_req(&mut self.tx_queue, addr, *user_id, *pos_y, *pos_x)
-                    }
-                } else {
-                    println!(
-                        "[session_exec] `{}` requested broadcast while not being in any session.",
-                        addr,
-                    )
                 }
             }
         }
@@ -621,11 +662,13 @@ impl SessionExecutor {
             }
         });
 
-        // I forgor this at first and it sent the same message over and over :skull:
         self.tx_queue.clear_queue();
     }
 
     fn close_abandoned_cons(&mut self) {
+        if self.tx_queue.closable.is_empty() {
+            return;
+        };
         let mut senders = self.peer_map.lock().unwrap();
         self.tx_queue.closable.iter().for_each(|addr| {
             if let Some(sender) = senders.get_mut(addr) {
@@ -642,8 +685,8 @@ impl SessionExecutor {
         self.tx_queue.clear_closable();
     }
 
-    fn close_session(&mut self, s_id: Uuid) {
-        if let Some(session) = self.sessions.get(&s_id) {
+    fn close_session(&mut self, s_id: &Uuid) {
+        if let Some(session) = self.sessions.get(s_id) {
             if let Some(host_addr) = session.get_host_addr() {
                 self.session_hosts.remove(&host_addr);
             }
@@ -652,6 +695,7 @@ impl SessionExecutor {
         }
     }
 
+    #[inline(always)]
     pub fn run(&mut self) {
         for (s_id, s) in &mut self.sessions {
             let game_finished = s.game_loop(&mut self.tx_queue);
@@ -666,7 +710,7 @@ impl SessionExecutor {
             return;
         }
 
-        for s in self.closable_sessions.clone() {
+        for s in &self.closable_sessions.clone() {
             self.close_session(s);
         }
         self.closable_sessions.clear();

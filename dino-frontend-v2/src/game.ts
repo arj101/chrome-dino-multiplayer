@@ -2,6 +2,7 @@ import { GameState, ServerBridge } from "./socket-client";
 import { GameRenderData, Renderer, SpriteAlign } from "./renderer";
 import { Sprite, spriteUrl } from "./sprites";
 import { createNoise2D } from "simplex-noise";
+import type { PhysicsConfig } from "./physics";
 
 const main = async () => {
     const dinoImg = new Image();
@@ -22,7 +23,7 @@ const main = async () => {
     const server = new ServerBridge("ws://127.0.0.1:8080");
     server.initClient();
 
-    await server.getSessionList().then((list) => {
+      await server.getSessionList().then((list) => {
         console.log(list);
     });
     await server.createSession("ahehhu", "kjsghietiuet").catch((_) => {
@@ -83,12 +84,20 @@ const main = async () => {
         xPos: 0,
         vel: 0,
     };
-    const config = {
-        initialSpeed: renderer.xFromRelUnit(8),
-        acc: renderer.xFromRelUnit(0.3),
-        jumpVel: renderer.xFromRelUnit(15),
-        gravity: renderer.xFromRelUnit(-60),
+    const physics: PhysicsConfig = {
+        xAccel: 0.3,
+        initialXVel: 8.0,
+        gravity: -60.0,
+        jumpYVel: 15.0,
     };
+
+    const config = {
+        initialSpeed: renderer.xFromRelUnit(physics.initialXVel),
+        acc: renderer.xFromRelUnit(physics.xAccel),
+        jumpVel: renderer.xFromRelUnit(physics.jumpYVel),
+        gravity: renderer.xFromRelUnit(physics.gravity),
+    };
+
     let speed = config.initialSpeed;
     let prevTimestamp = new Date().getTime();
     const dinoIdx = renderer.registerAnimatedSprite(

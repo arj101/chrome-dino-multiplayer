@@ -26,6 +26,7 @@ type RxData =
     | { type: "UserGameOverBroadcast"; username: string; score: number }
     | { type: "UserGameOver"; score: number; userId: string }
     | { type: "InvalidationNotice" }
+    | { type: "GameEvent"; username: string, event: GameEvent }
     | { type: "None" };
 
 type QueryType =
@@ -33,6 +34,12 @@ type QueryType =
     | { type: "LeaderBoard"; sessionId: string };
 
 type MoveDir = "None" | "Up" | "Down";
+
+type GameEvent = 
+    | { type: "StatusUpdate", pos: number, score: number}
+    | { type: "Jump", pos: number }
+    | { type: "DuckStart", pos: number }
+    | { type: "DuckEnd", pos: number }
 
 type TxData =
     | { type: "Query"; query: QueryType }
@@ -49,7 +56,9 @@ type TxData =
           timestamp: number;
           moveDir: MoveDir;
       }
+    | { type: "GameEvent"; userId: string; event: GameEvent}
     | { type: "Map"; sessionId: string; userId: string; index: number }
+    | { type: "GameEvent"; userId: string, event: GameEvent }
     | { type: "GameOver"; sessionId: string; userId: string };
 
 function deserialize(jsonStr: string): RxData {
@@ -57,6 +66,10 @@ function deserialize(jsonStr: string): RxData {
 
     // hopefully theres a less verbose way...
     switch (json["type"]) {
+        case "GameEvent": {
+            if (!validateKeys(json, {username: '', event: {}})) return { type: "None" };
+            return { type: "GameEvent", username: json["username"], event: json["event"] } as RxData
+        }
         case "QueryResponse":
             if (!validateKeys(json, { queryRes: {} })) return { type: "None" };
             return {
@@ -175,5 +188,5 @@ function validateKeys(msg: any, ref: any): boolean {
     return validated;
 }
 
-export type { RxData, TxData };
+export type { RxData, TxData, GameEvent };
 export { serialize, deserialize };

@@ -1,4 +1,5 @@
-import { serialize, deserialize } from "./ws-de-serialize";
+import { serialize, deserialize, GameEvent } from "./ws-de-serialize";
+
 import type { TxData, RxData } from "./ws-de-serialize";
 
 class SocketClient {
@@ -344,6 +345,27 @@ class ServerBridge {
             if (msg.type !== "PlayerDataBroadcast") return;
             fn(msg.username, msg.posX, msg.posY);
         });
+    }
+
+    broadcastUpdateEvt(relXPos: number, score: number) {
+        this.socketClient!.send({
+            type: "GameEvent",
+            userId: this.gameData.userId!,
+            event: { type: "StatusUpdate", pos: relXPos, score }
+        });
+    }
+
+    broadcastGameEvt(event: GameEvent) {
+        this.socketClient!.send({ type: "GameEvent", userId: this.gameData.userId!, event });
+    }
+
+    onRecvGameEvent(
+        fn: (username: string, event: GameEvent) => void
+    ) {
+        this.socketClient!.onMessage((msg) => {
+            if (msg.type !== "GameEvent") return;
+            fn (msg.username, msg.event)
+        })
     }
 
     broadcastGameOver() {

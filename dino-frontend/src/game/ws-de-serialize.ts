@@ -5,8 +5,8 @@ type QueryResponse =
           sessionId: string;
           scores: Array<[string, number]>;
       }
-    | { type: "SessionStatus"; status: string; time: number }
-    | { type: "None" };
+    | { type: "None" }
+    | { type: "SessionStatus"; status: string; time: number };
 
 type RxData =
     | { type: "QueryResponse"; queryRes: QueryResponse }
@@ -21,21 +21,20 @@ type RxData =
           userId?: string;
       }
     | {
-          type: "LoginResponse";
-          succeeded: boolean;
-      }
-    | {
           type: "PlayerDataBroadcast";
           username: string;
           posY: number;
           posX: number;
+          tick: number;
       }
+    | { type: "LoginResponse"; succeeded: boolean }
     | { type: "GameCountdownStart"; duration: number }
     | { type: "GameStart" }
     | { type: "Map"; map: [[[number, number], [any]]] }
     | { type: "UserGameOverBroadcast"; username: string; score: number }
     | { type: "UserGameOver"; score: number; userId: string }
     | { type: "InvalidationNotice" }
+    | { type: "GameEvent"; username: string; event: GameEvent }
     | { type: "None" };
 
 type QueryType =
@@ -45,17 +44,24 @@ type QueryType =
 
 type MoveDir = "None" | "Up" | "Down";
 
+type GameEvent =
+    | { type: "StatusUpdate"; pos: number; score: number }
+    | { type: "Jump"; pos: number }
+    | { type: "DuckStart"; pos: number }
+    | { type: "DuckEnd"; pos: number };
+
 type TxData =
     | { type: "Query"; query: QueryType }
-    | {
-          type: "CreateSession";
-          username: string;
-          sessionName: string;
-          waitTime: number;
-      }
+    | { type: "CreateSession"; username: string; sessionName: string }
     | { type: "CreateUser"; sessionId: string; username: string }
     | { type: "LaunchGame"; sessionId: string; userId: string }
-    | { type: "BroadcastRequest"; userId: string; posY: number; posX: number }
+    | {
+          type: "BroadcastRequest";
+          userId: string;
+          posY: number;
+          posX: number;
+          tick: number;
+      }
     | {
           type: "ValidationData";
           sessionId: string;
@@ -65,8 +71,10 @@ type TxData =
           timestamp: number;
           moveDir: MoveDir;
       }
-    | { type: "Login"; sessionId: string; userId: string }
+    | { type: "GameEvent"; userId: string; event: GameEvent }
     | { type: "Map"; sessionId: string; userId: string; index: number }
+    | { type: "Login"; sessionId: string; userId: string }
+    | { type: "GameEvent"; userId: string; event: GameEvent }
     | { type: "GameOver"; sessionId: string; userId: string };
 
 function deserialize(jsonStr: string): RxData {
@@ -74,6 +82,15 @@ function deserialize(jsonStr: string): RxData {
 
     // hopefully theres a less verbose way...
     switch (json["type"]) {
+        case "GameEvent": {
+            if (!validateKeys(json, { username: "", event: {} }))
+                return { type: "None" };
+            return {
+                type: "GameEvent",
+                username: json["username"],
+                event: json["event"],
+            } as RxData;
+        }
         case "QueryResponse":
             if (!validateKeys(json, { queryRes: {} })) return { type: "None" };
             return {
@@ -103,7 +120,7 @@ function deserialize(jsonStr: string): RxData {
                 if (dezerd.creationSucceeded) dezerd.userId = json["userId"];
                 return dezerd;
             }
-        case "PlayerDataBroadcast":
+        case "PlayDataBroadcast":
             if (!validateKeys(json, { username: "", posY: 0, posX: 0 }))
                 return { type: "None" };
             return {
@@ -111,6 +128,7 @@ function deserialize(jsonStr: string): RxData {
                 username: json["username"],
                 posY: json["posY"],
                 posX: json["posX"],
+                tick: json["tick"],
             };
         case "GameCountdownStart":
             if (!validateKeys(json, { duration: 0 })) return { type: "None" };
@@ -128,6 +146,13 @@ function deserialize(jsonStr: string): RxData {
                 username: json["username"],
                 score: json["score"],
             };
+        case "LoginResponse":
+            if (!validateKeys(json, { succeeded: true }))
+                return { type: "None" };
+            return {
+                type: "LoginResponse",
+                succeeded: json["succeeded"],
+            };
         case "UserGameOver":
             if (!validateKeys(json, { score: 0, userId: "" }))
                 return { type: "None" };
@@ -135,13 +160,6 @@ function deserialize(jsonStr: string): RxData {
                 type: "UserGameOver",
                 score: json["score"],
                 userId: json["userId"],
-            };
-        case "LoginResponse":
-            if (!validateKeys(json, { succeeded: true }))
-                return { type: "None" };
-            return {
-                type: "LoginResponse",
-                succeeded: json["succeeded"],
             };
         case "InvalidationNotice":
             return { type: "InvalidationNotice" };
@@ -162,14 +180,6 @@ function parseQueryResponse(json: any): QueryResponse {
                 type: "LeaderBoard",
                 sessionId: json["sessionId"],
                 scores: json["scores"],
-            };
-        case "SessionStatus":
-            if (!validateKeys(json, { status: "", time: 0 }))
-                return { type: "None" };
-            return {
-                type: "SessionStatus",
-                status: json["status"],
-                time: json["time"],
             };
         default:
             return { type: "None" };
@@ -207,5 +217,5 @@ function validateKeys(msg: any, ref: any): boolean {
     return validated;
 }
 
-export type { RxData, TxData };
+export type { RxData, TxData, GameEvent };
 export { serialize, deserialize };

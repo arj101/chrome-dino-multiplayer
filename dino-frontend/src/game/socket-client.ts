@@ -1,4 +1,4 @@
-import { serialize, deserialize } from "./ws-de-serialize";
+import { serialize, deserialize, GameEvent } from "./ws-de-serialize";
 import type { TxData, RxData } from "./ws-de-serialize";
 import Game from "../components/Game.svelte";
 
@@ -115,11 +115,11 @@ interface PhysicsConfig {
 }
 
 enum GameState {
-    Uninit,
-    Waiting,
-    Countdown,
-    Active,
-    Ended,
+    Initial = "Initial",
+    Waiting = "Waiting",
+    Countdown = "Countdown",
+    Active = "Active",
+    Ended = "Ended",
 }
 
 interface GameData {
@@ -147,6 +147,7 @@ class ServerBridge {
 
     gameData: GameData;
     broadcastBuffer: Array<RxData>;
+    tick: number = 0;
 
     constructor(serverAddr: string) {
         this.socketClient = null;
@@ -164,7 +165,7 @@ class ServerBridge {
                 gravity: 0,
                 jumpSpeed: 0,
             },
-            state: GameState.Uninit,
+            state: GameState.Initial,
         };
         this.broadcastBuffer = [];
     }
@@ -309,7 +310,7 @@ class ServerBridge {
                 if (msg.type !== "LoginResponse") return;
                 this.socketClient?.deleteMsgCaller(callerIdx as number);
                 if (msg.succeeded === true) {
-                    if (this.gameData.state == GameState.Uninit)
+                    if (this.gameData.state == GameState.Initial)
                         this.gameData.state = GameState.Waiting;
                     this.gameData.userName = username;
                     this.gameData.userId = userId;
@@ -384,6 +385,31 @@ class ServerBridge {
             userId: this.gameData.userId as string,
             posY: relYPos,
             posX: relXPos,
+            tick: this.tick,
+        });
+        this.tick++;
+    }
+
+    onRecvGameEvet(fn: (username: string, event: GameEvent) => void) {
+        this.socketClient!.onMessage((msg) => {
+            if (msg.type != "GameEvent") return;
+            fn(msg.username, msg.event);
+        });
+    }
+
+    broadcastUpdateEvt(relXPos: number, score: number) {
+        this.socketClient!.send({
+            type: "GameEvent",
+            userId: this.gameData.userId!,
+            event: { type: "StatusUpdate", pos: relXPos, score },
+        });
+    }
+
+    broadcastGameEvt(event: GameEvent) {
+        this.socketClient!.send({
+            type: "GameEvent",
+            userId: this.gameData.userId!,
+            event,
         });
     }
 
@@ -506,7 +532,7 @@ class ServerBridge {
                     case "Waiting":
                         return GameState.Waiting;
                     default:
-                        return GameState.Uninit;
+                        return GameState.Initial;
                 }
             })();
             this.gameData.stateTimer = t;

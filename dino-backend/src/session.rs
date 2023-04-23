@@ -1,6 +1,6 @@
 use crate::config_options::SessionConfig;
 use crate::map_generator::GameMap;
-use crate::session_exec::{RxData, TransmissionQueue, TxData};
+use crate::session_exec::{RxData, TransmissionQueue, TxData, GameEvent};
 
 use futures_channel::mpsc::UnboundedSender;
 use tokio_tungstenite::tungstenite::protocol::Message;
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use uuid::Uuid;
 
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 use std::net::SocketAddr;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
@@ -43,10 +43,10 @@ pub struct Session {
     session_id: Uuid,
     session_name: String,
     host_id: Uuid,
-    player_data: HashMap<Uuid, PlayerData>,
+    player_data: FxHashMap<Uuid, PlayerData>,
     game_data: GameData,
     status: SessionStatus,
-    timers: HashMap<Uuid, Rc<(SystemTime, fn(&mut Self, &mut TransmissionQueue), bool)>>,
+    timers: FxHashMap<Uuid, Rc<(SystemTime, fn(&mut Self, &mut TransmissionQueue), bool)>>,
     has_finished: bool,
     config: SessionConfig,
 }
@@ -57,13 +57,13 @@ impl Session {
             session_id: Uuid::new_v4(),
             session_name,
             host_id: Uuid::nil(),
-            player_data: HashMap::new(),
+            player_data: FxHashMap::default(),
             game_data: GameData {
                 map: GameMap::new(INITIAL_X_VEL, X_ACC, GRAVITY, JUMP_VEL),
                 sync_score: 0,
             },
             status: SessionStatus::Uninit,
-            timers: HashMap::new(),
+            timers: FxHashMap::default(),
             has_finished: false,
             config,
         }
@@ -175,7 +175,10 @@ impl Session {
     ) {
         //FIXME: Not works for no reason :(
         self.player_data.values().for_each(|p| {
-            println!("Sending broadcast to {}", p.addr);
+            // println!("Sending broadcast to {}", p.addr);
+            // if p.id == id {
+            //     return;
+            // }
             tx.send_to_addr(p.addr, data.clone());
         })
     }
@@ -190,6 +193,18 @@ impl Session {
         &self.player_data.get(&self.host_id).unwrap().addr
     }
 
+
+    pub fn on_game_event(&mut self, tx: &mut TransmissionQueue, addr: SocketAddr, id: &Uuid, event: GameEvent) {
+        let username = if let Some(player) = self.player_data.get_mut(&id) {
+            player.username.clone()
+        } else {
+            return;
+        };
+
+        self.broadcast(tx, addr, *id, TxData::GameEvent { username, event});
+    }
+
+    #[inline(always)]
     pub fn on_broadcast_req(
         &mut self,
         tx: &mut TransmissionQueue,
@@ -197,12 +212,14 @@ impl Session {
         id: Uuid,
         pos_y: f32,
         pos_x: f32,
+        tick: u64,
     ) {
-        let username = if let Some(player) = self.player_data.get(&id) {
-            if addr != player.addr {
+        let (username, tick) = if let Some(player) = self.player_data.get_mut(&id) {
+            if addr != player.addr || tick < player.curr_tick {
                 return;
             }
-            player.username.clone()
+            player.curr_tick += 1;
+            (player.username.clone(), player.curr_tick)
         } else {
             return;
         };
@@ -215,6 +232,7 @@ impl Session {
                 username,
                 pos_y,
                 pos_x,
+                tick,
             },
         )
     }
@@ -399,6 +417,7 @@ impl Session {
                 score: 0,
                 addr,
                 status: PlayerStatus::Connected,
+                curr_tick: 0,
             },
         );
         tx.send_to_addr(
@@ -598,6 +617,7 @@ pub struct PlayerData {
     score: u64, //when the player loses, this score gets out of sync w/ sync_score
     addr: SocketAddr,
     status: PlayerStatus,
+    curr_tick: u64, //a monotonic counter (counted by client and server separately) to keep chronological order of broadcast requests
 }
 
 impl PlayerData {
@@ -608,6 +628,7 @@ impl PlayerData {
             addr,
             score: 0,
             status: PlayerStatus::Connected,
+            curr_tick: 0,
         }
     }
     pub fn disconnect(&mut self) {

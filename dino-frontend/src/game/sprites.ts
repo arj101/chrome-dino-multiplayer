@@ -63,7 +63,8 @@ type Sprite =
     | "dinoJump"
     | "dinoRun1"
     | "dinoRun2"
-    | "ground";
+    | "ground"
+    | "none";
 
 export type { Sprite };
 export { spriteUrl };

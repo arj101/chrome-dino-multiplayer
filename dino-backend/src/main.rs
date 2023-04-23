@@ -60,6 +60,7 @@ async fn handle_connection(
     let (outgoing, incoming) = ws_stream.split();
 
     let broadcast_incoming = incoming.try_for_each(|msg| {
+        #[cfg(debug)]
         println!(
             "Received a message from {}: {}",
             addr,
@@ -94,9 +95,11 @@ async fn handle_connection(
 
 #[tokio::main]
 async fn main() -> Result<(), IoError> {
-    let port = std::env::var("PORT").unwrap_or("8080".to_string()).parse::<usize>();
+    let port = std::env::var("PORT")
+        .unwrap_or("8080".to_string())
+        .parse::<usize>();
     let ip = std::env::var("IP_ADDR").unwrap_or("127.0.0.1".to_string());
-    let addr = &format!("{}:{}",ip, port.unwrap_or(8080));
+    let addr = &format!("{}:{}", ip, port.unwrap_or(8080));
     let config = ConfigOptions {
         session: SessionConfig {
             max_users: 20,
@@ -105,7 +108,7 @@ async fn main() -> Result<(), IoError> {
         session_exec: SessionExecConfig {
             max_sessions: 10,
             allow_multiple_inactive_sessions: true,
-            dummy_sessions: true,
+            dummy_sessions: false,
         },
     };
 

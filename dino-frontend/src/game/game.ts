@@ -4,11 +4,244 @@ import {
     Renderer,
     MultiplayerRenderer,
     SpriteAlign,
+    FullScreenRenderer,
 } from "./renderer";
 import { Sprite, spriteUrl } from "./sprites";
 import { createNoise2D } from "simplex-noise";
+import type { PhysicsConfig } from "./physics";
+import Game from "../components/Game.svelte";
+import { initialGameState } from "./states/initial-state";
+import { countdownGameState } from "./states/countdown-state";
 
-const main = async () => {
+// enum GameState {
+//     Uninitialised,
+//     Countdown,
+//     Playing,
+//     Over,
+// }
+
+type GlobalGameResources = {
+    deltaTime: number;
+    switchState: (newState: GameState) => void;
+    pushState: (newState: GameState) => void;
+    popState: () => void;
+    renderer: FullScreenRenderer;
+    isRunning: boolean;
+    server: ServerBridge;
+    // startRunning: () => boolean;
+    endRunning: () => void;
+};
+
+type GameStateResources = any;
+
+interface GameStateData {
+    state: GameState;
+    res: GameStateResources;
+    onEnter: (res: GameStateResources, globalRes: GlobalGameResources) => void;
+    preRender: (
+        res: GameStateResources,
+        globalRes: GlobalGameResources
+    ) => void;
+    postRender: (
+        res: GameStateResources,
+        globalRes: GlobalGameResources
+    ) => void;
+    onLeave: (res: GameStateResources, globalRes: GlobalGameResources) => void;
+}
+
+interface GameStateBuilderData {
+    state: GameState;
+    res?: Object;
+    onEnter?: (res: GameStateResources, globalRes: GlobalGameResources) => void;
+    preRender?: (
+        res: GameStateResources,
+        globalRes: GlobalGameResources
+    ) => void;
+    postRender?: (
+        res: GameStateResources,
+        globalRes: GlobalGameResources
+    ) => void;
+    onLeave?: (res: GameStateResources, globalRes: GlobalGameResources) => void;
+}
+
+class GameStateManager {
+    res: GlobalGameResources;
+    stateData: Map<GameState, GameStateData> = new Map();
+    state: GameState = GameState.Initial;
+    stateResourceRef: GameStateData;
+    stateStack: Array<GameState> = [];
+
+    constructor(renderer: FullScreenRenderer, server: ServerBridge) {
+        //<populate with a default inital state>----------------------------
+        this.stateData.set(GameState.Initial, {
+            state: GameState.Initial,
+            res: {},
+            onEnter() {},
+            preRender() {},
+            postRender() {},
+            onLeave() {},
+        });
+        this.stateResourceRef = this.stateData.get(GameState.Initial)!;
+        this.stateStack.push(GameState.Initial);
+        //</populate with a default inital state>----------------------------
+
+        this.res = {
+            deltaTime: 0,
+            renderer,
+            server,
+            isRunning: false,
+
+            endRunning: () => this.end(),
+            pushState: (state) => this.pushState(state),
+            popState: () => this.popState(),
+            switchState: (state) => this.setState(state),
+        };
+    }
+
+    setState(state: GameState): boolean {
+        this.popState();
+        return this.pushState(state);
+    }
+
+    buildState(data: GameStateBuilderData) {
+        if (this.stateData.has(data.state)) {
+            console.warn(`Overwriting state data: ${data.state}`);
+        }
+
+        const stateData: GameStateData = {
+            state: data.state,
+            res: data.res ?? {},
+            onEnter: data.onEnter ?? function () {},
+            preRender: data.preRender ?? function () {},
+            postRender: data.postRender ?? function () {},
+            onLeave: data.onLeave ?? function () {},
+        };
+
+        this.stateData.set(data.state, stateData);
+    }
+
+    pushState(state: GameState): boolean {
+        if (!this.stateData.has(state)) {
+            console.error(`No state data for ${state}`);
+            return false;
+        }
+
+        this.stateStack.push(this.state);
+        this.state = state;
+        this.stateResourceRef = this.stateData.get(this.state)!;
+
+        this.stateResourceRef.onEnter(this.stateResourceRef.res, this.res);
+
+        return true;
+    }
+
+    popState(): GameState | undefined {
+        if (this.stateStack.length <= 0) {
+            console.error("No state to pop out of!");
+            return;
+        }
+
+        this.stateResourceRef.onLeave(this.stateResourceRef.res, this.res);
+
+        const prevState = this.stateStack.pop()!;
+        this.state = prevState;
+        this.stateResourceRef = this.stateData.get(this.state)!;
+
+        return prevState;
+    }
+
+    start(initialState: GameState): boolean {
+        this.res.isRunning = true;
+        if (!this.setState(initialState)) return false;
+        document.dispatchEvent(new Event("game-manager-start"));
+        return true;
+    }
+
+    run(deltaTime: number) {
+        this.res.deltaTime = deltaTime;
+        if (!this.res.isRunning) return;
+
+        this.stateResourceRef.preRender(this.stateResourceRef.res, this.res);
+        this.res.renderer.render(deltaTime);
+        this.stateResourceRef.postRender(this.stateResourceRef.res, this.res);
+    }
+
+    end() {
+        this.res.isRunning = false;
+        this.stateResourceRef.onLeave(this.stateResourceRef.res, this.res);
+        document.dispatchEvent(new Event("game-manager-end"));
+    }
+}
+
+async function main() {
+    console.log("Hi :)");
+
+    const serverAddr = window.localStorage.getItem("server-addr");
+    const sessionId = window.localStorage.getItem("session-id");
+    const userId = window.localStorage.getItem("user-id");
+    const username = window.localStorage.getItem("username");
+
+    if (!serverAddr || !sessionId || !userId || !username) {
+        console.log("Credentials not found :(");
+        return;
+    }
+
+    const renderer = new FullScreenRenderer(
+        document.getElementsByTagName("canvas")[0]
+    );
+
+    const server = new ServerBridge(serverAddr);
+    {
+        let initSuccesfull = true;
+        await server.initClient().catch(() => (initSuccesfull = false));
+        if (!initSuccesfull) {
+            console.error("Failed to initialise server-client bridge");
+            alert("Something went wrong while establishing connection :(");
+            return;
+        }
+    }
+    // if (!(await server.login(sessionId, userId, username))) {
+    //     alert(`Login to ${sessionId} as ${userId} failed`);
+    //     return;
+    // }
+
+    // console.log(`Succesfully logged in as '${username}'.`);
+
+    const stateManager = new GameStateManager(renderer, server);
+    stateManager.buildState(initialGameState);
+    stateManager.buildState(countdownGameState);
+
+    let prevTimestamp = -1;
+    let deltaTime = 0;
+    function renderLoop(timestamp: number) {
+        if (prevTimestamp == -1) prevTimestamp = timestamp; //to avoid accidentally passing in really large timestamps
+        deltaTime = timestamp - prevTimestamp;
+
+        prevTimestamp = timestamp;
+
+        if (stateManager.res.isRunning) {
+            requestAnimationFrame(renderLoop);
+        } else {
+            console.log(
+                "stateManager.res.isRunning is set to false. Ending render loop..."
+            );
+            return;
+        }
+        stateManager.run(deltaTime);
+    }
+
+    document.addEventListener("game-manager-start", function () {
+        console.log(
+            "Received game-manager-start event. Starting render loop..."
+        );
+        requestAnimationFrame(renderLoop);
+    });
+
+    console.log("Starting game state manager...");
+    stateManager.start(GameState.Initial);
+}
+
+const main_ = async () => {
     const serverAddr = window.localStorage.getItem("server-addr");
     const sessionId = window.localStorage.getItem("session-id");
     const userId = window.localStorage.getItem("user-id");
@@ -102,6 +335,14 @@ const main = async () => {
         jumpVel: renderer.xFromRelUnit(15),
         gravity: renderer.xFromRelUnit(-60),
     };
+
+    const physics: PhysicsConfig = {
+        initialXVel: 0,
+        xAccel: 0.3,
+        jumpYVel: 15,
+        gravity: -60,
+    };
+
     let speed = config.initialSpeed;
     let prevTimestamp = new Date().getTime();
     let dinoTextureSwap = 500;
@@ -150,6 +391,11 @@ const main = async () => {
         textureSwap.dinoJumpTexture();
         dino.yVel = -config.jumpVel;
         queuedJump = false;
+
+        server.broadcastGameEvt({
+            type: "Jump",
+            pos: renderer.xToRelUnit(renderData.xPos),
+        });
     };
 
     keys.set("ArrowUp", {
@@ -169,10 +415,28 @@ const main = async () => {
         onPress: () => {
             textureSwap.dinoDuckTexture();
             speed *= 1.3;
+            server.broadcastGameEvt({
+                type: "DuckStart",
+                pos: renderer.xToRelUnit(renderData.xPos),
+            });
         },
         onRelease: () => {
             textureSwap.dinoRunTexture();
             speed *= 1 / 1.3;
+            server.broadcastGameEvt({
+                type: "DuckEnd",
+                pos: renderer.xToRelUnit(renderData.xPos),
+            });
+        },
+    });
+
+    keys.set("ArrowRight", {
+        state: false,
+        onPress: () => {
+            speed *= 1.5;
+        },
+        onRelease: () => {
+            speed *= 1 / 1.5;
         },
     });
 
@@ -189,6 +453,10 @@ const main = async () => {
         );
     }, 100);
 
+    setInterval(() => {
+        server.broadcastUpdateEvt(renderer.xToRelUnit(renderData.xPos), 0.0);
+    }, 30 * 1000);
+
     let offDir = Math.random() * 2 * Math.PI;
 
     const testCanvas = document.createElement("canvas");
@@ -196,6 +464,16 @@ const main = async () => {
 
     const multiplayerRenderer = new MultiplayerRenderer();
 
+    server.onRecvGameEvet(function (username, event) {
+        multiplayerRenderer.onBrodcastRecv(
+            renderer,
+            username,
+            event,
+            renderData.xPos,
+            physics,
+            dinoTextureSwap
+        );
+    });
     const loop = () => {
         requestAnimationFrame(loop);
         if (server.gameData.state !== GameState.Active) return;
@@ -216,17 +494,18 @@ const main = async () => {
                 if (queuedJump) jump();
             }
         }
-
-        for (const broadcast of server.getBroadcast()) {
-            if (broadcast.type !== "PlayerDataBroadcast") continue;
-            multiplayerRenderer.onBrodcastRecv(
-                renderer,
-                broadcast.username,
-                { x: broadcast.posX, y: broadcast.posY },
-                renderData.xPos,
-                dinoTextureSwap
-            );
-        }
+        // multiplayerRenderer.onBrodcastRecv(
+        //         renderer,
+        //         broadcast.username,
+        //         { x: broadcast.posX, y: broadcast.posY },
+        //         broadcast.tick,
+        //         renderData.xPos,
+        //         dinoTextureSwap
+        //     );
+        // }
+        //
+        //
+        //
 
         renderer.animatedSprites.get(dinoIdx)![1].y = dino.yPos;
 
@@ -312,6 +591,15 @@ const main = async () => {
             dinoTextureSwap;
         renderer.animatedSprites.get(dinoIdx)![0][1][1].swapDelay =
             dinoTextureSwap;
+
+        multiplayerRenderer.update(
+            renderer,
+            physics,
+            dt,
+            renderData.xPos,
+            dinoTextureSwap
+        );
+
         speed += (config.acc * dt) / 1000;
 
         xoff += Math.min(0.15, speed * Math.pow(10, -5.5));
@@ -478,4 +766,9 @@ function isPixelOverlap(
     return checkPixels(ctx, aw, ah);
 }
 export { main };
-export type { RectBox2D };
+export type {
+    RectBox2D,
+    GameStateBuilderData,
+    GlobalGameResources,
+    GameStateResources,
+};
