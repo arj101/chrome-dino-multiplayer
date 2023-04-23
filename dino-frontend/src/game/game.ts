@@ -176,30 +176,30 @@ class GameStateManager {
 async function main() {
     console.log("Hi :)");
 
-    const serverAddr = window.localStorage.getItem("server-addr");
-    const sessionId = window.localStorage.getItem("session-id");
-    const userId = window.localStorage.getItem("user-id");
-    const username = window.localStorage.getItem("username");
+    const serverAddr = window.localStorage.getItem("server-addr") || "e";
+    // const sessionId = window.localStorage.getItem("session-id");
+    // const userId = window.localStorage.getItem("user-id");
+    // const username = window.localStorage.getItem("username");
 
-    if (!serverAddr || !sessionId || !userId || !username) {
-        console.log("Credentials not found :(");
-        return;
-    }
+    // if (!serverAddr || !sessionId || !userId || !username) {
+    //     console.log("Credentials not found :(");
+    //     return;
+    // }
 
     const renderer = new FullScreenRenderer(
         document.getElementsByTagName("canvas")[0]
     );
 
     const server = new ServerBridge(serverAddr);
-    {
-        let initSuccesfull = true;
-        await server.initClient().catch(() => (initSuccesfull = false));
-        if (!initSuccesfull) {
-            console.error("Failed to initialise server-client bridge");
-            alert("Something went wrong while establishing connection :(");
-            return;
-        }
-    }
+    // {
+    //     let initSuccesfull = true;
+    //     await server.initClient().catch(() => (initSuccesfull = false));
+    //     if (!initSuccesfull) {
+    //         console.error("Failed to initialise server-client bridge");
+    //         alert("Something went wrong while establishing connection :(");
+    //         return;
+    //     }
+    // }
     // if (!(await server.login(sessionId, userId, username))) {
     //     alert(`Login to ${sessionId} as ${userId} failed`);
     //     return;
