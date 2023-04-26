@@ -22,6 +22,8 @@ interface SpriteResources {
     id: SpriteId;
     x: number;
     y: number;
+    width: number;
+    height: number;
     className: string;
     parallaxCoeff: number; // is this really necessary?
     scalingFactor: number;
@@ -63,9 +65,6 @@ class RendererResources {
 
 class FullScreenRenderer {
     res: RendererResources;
-
-    preRender: (renderer: RendererResources) => void = function () {};
-    postRender: (renderer: RendererResources) => void = function () {};
 
     constructor(canvas: HTMLCanvasElement) {
         this.res = new RendererResources(canvas);
@@ -125,19 +124,20 @@ class FullScreenRenderer {
         this.res.zIndices.sort();
     }
 
-    removeRenderObject({ zIndex, name }: SpriteId): SpriteData | undefined {
-        const sprite = this.res.renderList.get(zIndex)?.get(name);
-        if (this.res.renderList.get(zIndex)?.delete(name)) {
+    removeRenderObject(idName: string, zIndex: number): SpriteData | undefined {
+        const sprite = this.res.renderList.get(zIndex)?.get(idName);
+        if (this.res.renderList.get(zIndex)?.delete(idName)) {
             this.updateZIndices();
         }
         return sprite;
     }
 
     withRenderObject(
-        { zIndex, name }: SpriteId,
+        idName: string,
+        zIndex: number,
         fn: (sprite: SpriteData) => void
     ) {
-        const sprite = this.res.renderList.get(zIndex)?.get(name);
+        const sprite = this.res.renderList.get(zIndex)?.get(idName);
         if (sprite) fn(sprite);
     }
 
@@ -151,11 +151,15 @@ class FullScreenRenderer {
     ): boolean {
         if (this.res.renderList.get(zIndex)?.has(idName)) return false;
 
+        const dimensions = this.res.textureMap.getTexureDimensions(sprite);
+
         const spriteData: SpriteData = {
             res: {
                 id: { name: idName, zIndex },
                 x: position.x,
                 y: position.y,
+                width: (dimensions?.w ?? 0) * scalingFactor,
+                height: (dimensions?.h ?? 0) * scalingFactor,
                 sprite,
                 className,
                 isPrimitive: false,
@@ -189,6 +193,7 @@ class FullScreenRenderer {
             deltaTime: number
         ) => void = () => {},
         position: { x: number; y: number } = { x: 0, y: 0 },
+        size: { width: number; height: number } = { width: 0, height: 0 },
         className: string = "",
         scalingFactor: number = 1
     ): boolean {
@@ -199,6 +204,8 @@ class FullScreenRenderer {
                 id: { name: idName, zIndex },
                 x: position.x,
                 y: position.y,
+                width: size.width * scalingFactor,
+                height: size.height * scalingFactor,
                 sprite: "none",
                 className,
                 isPrimitive: true,
@@ -218,20 +225,29 @@ class FullScreenRenderer {
     }
 
     render(deltaTime: number) {
+        let renderConfirmation = true;
         this.res.deltaTime = deltaTime;
-        this.preRender(this.res); //FIXME: this copies the renderer
         for (const zIndex of this.res.zIndices) {
             const layer = this.res.renderList.get(zIndex)!;
-            for (const [_id, sprite] of layer) {
-                sprite.preRender(sprite.res, this.res.ctx, deltaTime); //FIXME: this copied 'sprite'
+
+            sprite_loop: for (const [_id, sprite] of layer) {
+                renderConfirmation = sprite.preRender(
+                    sprite.res,
+                    this.res.ctx,
+                    deltaTime
+                ); //FIXME: this copied 'sprite'
+                if (!renderConfirmation) continue sprite_loop;
                 if (!sprite.res.isPrimitive) {
-                    const spriteImage = this.res.textureMap.getTexture(
-                        sprite.res.sprite
-                    )!;
                     const { w, h } = this.res.textureMap.getTexureDimensions(
                         sprite.res.sprite,
                         sprite.res.scalingFactor
+                    ) !;
+                    sprite.res.width = w;
+                    sprite.res.height = h;
+                    const spriteImage = this.res.textureMap.getTexture(
+                        sprite.res.sprite
                     )!;
+
                     this.res.ctx.drawImage(
                         spriteImage,
                         sprite.res.x,
@@ -243,8 +259,6 @@ class FullScreenRenderer {
                 sprite.postRender(sprite.res, this.res.ctx, deltaTime); //FIXME: this copied 'sprite'
             }
         }
-
-        this.postRender(this.res); //FIXME: this copies the renderer
     }
 }
 
@@ -753,4 +767,10 @@ class MultiplayerRenderer {
 }
 
 export { Renderer, MultiplayerRenderer, SpriteAlign, FullScreenRenderer };
-export type { GameRenderData, SpriteData, SpriteId, SpriteResources, RendererResources };
+export type {
+    GameRenderData,
+    SpriteData,
+    SpriteId,
+    SpriteResources,
+    RendererResources,
+};

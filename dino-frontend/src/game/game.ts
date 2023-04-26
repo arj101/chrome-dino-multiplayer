@@ -12,6 +12,7 @@ import type { PhysicsConfig } from "./physics";
 import Game from "../components/Game.svelte";
 import { initialGameState } from "./states/initial-state";
 import { countdownGameState } from "./states/countdown-state";
+import { activeGameState } from "./states/active-state";
 
 // enum GameState {
 //     Uninitialised,
@@ -30,6 +31,11 @@ type GlobalGameResources = {
     server: ServerBridge;
     // startRunning: () => boolean;
     endRunning: () => void;
+
+    dinoImageHeight: number;
+    unitLength: number;
+    spriteScalingFactor: number;
+    groundHeight: number;
 };
 
 type GameStateResources = any;
@@ -87,6 +93,11 @@ class GameStateManager {
 
         this.res = {
             deltaTime: 0,
+            dinoImageHeight: 0, //these are global since they are shared by multiple states
+            unitLength: 0,
+            spriteScalingFactor: 0,
+            groundHeight: 0,
+
             renderer,
             server,
             isRunning: false,
@@ -176,7 +187,8 @@ class GameStateManager {
 async function main() {
     console.log("Hi :)");
 
-    const serverAddr = window.localStorage.getItem("server-addr") || "e";
+    const serverAddr =
+        window.localStorage.getItem("server-addr") || "ws://localhost:8080";
     // const sessionId = window.localStorage.getItem("session-id");
     // const userId = window.localStorage.getItem("user-id");
     // const username = window.localStorage.getItem("username");
@@ -210,6 +222,7 @@ async function main() {
     const stateManager = new GameStateManager(renderer, server);
     stateManager.buildState(initialGameState);
     stateManager.buildState(countdownGameState);
+    stateManager.buildState(activeGameState);
 
     let prevTimestamp = -1;
     let deltaTime = 0;

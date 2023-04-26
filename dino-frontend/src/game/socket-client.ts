@@ -125,6 +125,7 @@ enum GameState {
 interface GameData {
     map: MapData;
     physics: PhysicsConfig;
+    
 
     startTime?: Date;
     countdownDuration?: number;

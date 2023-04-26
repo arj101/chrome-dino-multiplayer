@@ -1,59 +1,148 @@
 import type { GameStateBuilderData, GlobalGameResources } from "../game";
 import { GameState } from "../socket-client";
+import { spriteUrl } from "../sprites";
 
-type StateResourceType = { offset: number; dir: number };
+type StateResourceType = {
+    infoText: string;
+    progressIndicatorAngle: number;
+    progressIndicatorSize: number;
+    desiredProgressIndicatorSize: number;
+};
 
 export const initialGameState: GameStateBuilderData = {
     state: GameState.Initial,
 
-    res: { offset: 0, dir: 1 },
+    res: {
+        infoText: "",
+        progressIndicatorAngle: 0,
+        progressIndicatorSize: 0,
+        desiredProgressIndicatorSize: 0,
+    },
 
     onEnter: function (sres: StateResourceType, gres: GlobalGameResources) {
+        //executed when enterin the state, ie just once when the game starts
         console.log(`Entering ${this.state} state`);
-        setTimeout(() => {
-            gres.switchState(GameState.Countdown);
-        }, 2000);
+
         gres.renderer.pushRenderList();
-        gres.renderer.addPrimitiveRenderer(
-            "sick-background",
-            -1,
-            (spriteRes, ctx) => {
-                ctx.clearRect(
-                    0,
-                    0,
-                    gres.renderer.res.canvas.width,
-                    gres.renderer.res.canvas.height
-                );
-                ctx.beginPath();
 
-                ctx.fillStyle = "rgb(50, 100, 155)";
-                ctx.fillRect(
-                    30 + sres.offset / 3,
-                    30 + sres.offset / 2,
-                    50 + sres.offset,
-                    50 + sres.offset
-                );
-                ctx.fill();
+        sres.desiredProgressIndicatorSize = window.innerWidth / 4;
+        sres.progressIndicatorSize = window.innerWidth / 4;
 
-                ctx.font = "20px monospace";
-                ctx.fillStyle = "white";
-                ctx.fillText(
-                    `${this.state} state. Offset: ${Math.round(sres.offset)}`,
-                    60 + sres.offset / 3,
-                    80 + sres.offset / 2
-                );
-                ctx.fill();
-                ctx.closePath();
+        gres.renderer.addPrimitiveRenderer("bg", -1, function (_, ctx) {
+            //executed every frame (draws background)
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            return true;
+        });
 
-                sres.offset += sres.dir * gres.deltaTime * 0.1;
-                if (sres.offset >= 100) sres.dir *= -1;
-                if (sres.offset < 0) sres.dir *= -1;
-                return true;
+        sres.infoText = "Establishing connection...";
+        gres.renderer.addPrimitiveRenderer("info-text", 5, function (_, ctx) {
+            //executed every frame (draws the text)
+
+            ctx.fillStyle = "white";
+            ctx.font = "20px monospace";
+            const textSize = ctx.measureText(sres.infoText);
+
+            ctx.save();
+            ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+            ctx.rotate(sres.progressIndicatorAngle);
+
+            ctx.fill();
+            ctx.fillStyle = "rgba(50, 100, 155, 0.10)";
+
+            sres.desiredProgressIndicatorSize = textSize.width * 1.5;
+
+            const boxSize =
+                sres.progressIndicatorSize * 1.2 +
+                sres.progressIndicatorSize *
+                    0.4 *
+                    Math.sin(sres.progressIndicatorAngle * 2);
+            ctx.fillRect(-boxSize / 2, -boxSize / 2, boxSize, boxSize);
+
+            const animationFactor = gres.deltaTime * 0.8;
+            const sizeDiff =
+                sres.desiredProgressIndicatorSize - sres.progressIndicatorSize;
+            if (Math.abs(sizeDiff) > animationFactor) {
+                if (sizeDiff > 0) sres.progressIndicatorSize += animationFactor;
+                else sres.progressIndicatorSize -= animationFactor;
             }
+
+            sres.progressIndicatorAngle += gres.deltaTime * 0.001;
+            ctx.fill();
+            ctx.restore();
+
+            ctx.beginPath();
+
+            ctx.textAlign = "center";
+            ctx.textBaseline = "ideographic";
+            ctx.fillText(
+                sres.infoText,
+                ctx.canvas.width / 2,
+                ctx.canvas.height / 2
+            ); //the displayed text changes when the code below changes `infoText`
+            ctx.closePath();
+            return true;
+        });
+
+        let afterConnectingRan = false;
+
+        const afterConnecting = async function () {
+            if (afterConnectingRan) return;
+            //executed once
+            sres.infoText = "Checking credentials..."; //the rendered text also gets updated!
+
+            // const serverAddr = window.localStorage.getItem("server-addr");
+            // const sessionId = window.localStorage.getItem("session-id");
+            // const userId = window.localStorage.getItem("user-id");
+            // const username = window.localStorage.getItem("username");
+
+            // if (!serverAddr || !sessionId || !userId || !username) {
+            //     sres.infoText = "Credentials not found :(";
+            //     return;
+            // }
+
+            //======setup global state==========
+            gres.unitLength = gres.renderer.res.canvas.height * 0.13;
+            gres.groundHeight = gres.renderer.res.canvas.height * 0.6;
+
+            sres.infoText = "Using a dino for scale ;)";
+            await gres.renderer.res.textureMap.loadTexture(
+                "dinoRun1",
+                spriteUrl.get("dinoRun1")!
+            );
+            gres.dinoImageHeight =
+                gres.renderer.res.textureMap.getTexureDimensions("dinoRun1")!.h;
+            gres.spriteScalingFactor = gres.unitLength / gres.dinoImageHeight;
+
+            window.addEventListener("resize", function () {
+                console.log("h");
+                gres.unitLength = gres.renderer.res.canvas.height * 0.13;
+                gres.groundHeight = gres.renderer.res.canvas.height * 0.6;
+
+                gres.dinoImageHeight =
+                    gres.renderer.res.textureMap.getTexureDimensions(
+                        "dinoRun1"
+                    )!.h;
+                gres.spriteScalingFactor =
+                    gres.unitLength / gres.dinoImageHeight;
+                window.dispatchEvent(new Event("recalc-responsive"));
+            });
+
+            sres.infoText = "Done!";
+
+            //==================================
+
+            gres.switchState(GameState.Countdown);
+        };
+        gres.server.initClient().then(afterConnecting);
+
+        setTimeout(
+            () => (sres.infoText = "Continuing without a connection..."),
+            5000
         );
+        setTimeout(() => afterConnecting(), 6000);
     },
     onLeave: function (sres: StateResourceType, gres: GlobalGameResources) {
-        gres.renderer.popRenderList();
+        // gres.renderer.popRenderList();
         console.log(`Leaving ${this.state} state`);
     },
 };
