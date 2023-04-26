@@ -275,7 +275,8 @@ export const activeGameState: GameStateBuilderData = {
             return false;
         });
 
-        window.addEventListener("click", () => {
+        window.addEventListener("click", (event) => {
+            event.stopPropagation();
             sres.vel.y = sres.jumpVel;
         });
 
