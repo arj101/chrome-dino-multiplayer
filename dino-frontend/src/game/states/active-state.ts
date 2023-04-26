@@ -275,8 +275,12 @@ export const activeGameState: GameStateBuilderData = {
             return false;
         });
 
+  
+
+
         window.addEventListener("click", (event) => {
             event.stopPropagation();
+            event.preventDefault();
             sres.vel.y = sres.jumpVel;
         });
 
