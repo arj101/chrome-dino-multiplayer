@@ -124,7 +124,7 @@ pub enum TxData {
 pub enum GameEvent {
     Jump { pos: f32 },
     DuckStart { pos: f32 },
-    DuckEnd { pos: f32 }
+    DuckEnd { pos: f32 },
 }
 
 // parsed data from ChannelData::Message
@@ -419,7 +419,7 @@ impl SessionExecutor {
             RxData::GameEvent { user_id, event } => {
                 if let Some(Some(session_id)) = self.user_session_map.get(&addr) {
                     if let Some(s) = self.sessions.get_mut(session_id) {
-                        s.on_game_event(&mut self.tx_queue, addr, user_id,event.clone());
+                        s.on_game_event(&mut self.tx_queue, addr, user_id, event.clone());
                     }
                 }
             }
@@ -477,14 +477,20 @@ impl SessionExecutor {
                 session_id,
                 user_id,
             } => {
+                let mut succeeded = false;
                 if let Some(s) = self.sessions.get_mut(&session_id) {
                     if let Some(s_id) = self.user_session_map.get(&addr).unwrap() {
                         println!("[session_exec] `{}` requested login to `{}` but was already in session `{}`", addr, session_id, s_id)
                     } else {
                         if let Ok(_) = s.login_user(&mut self.tx_queue, addr, *user_id) {
                             self.user_session_map.insert(addr, Some(*s.id()));
+                            succeeded = true;
                         }
                     }
+                }
+                if !succeeded {
+                    self.tx_queue
+                        .send_to_addr(addr, TxData::LoginResponse { succeeded: false })
                 }
             }
             RxData::ValidationData { session_id, .. }

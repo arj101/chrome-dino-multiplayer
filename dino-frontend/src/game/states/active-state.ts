@@ -1,5 +1,5 @@
 import type { GameStateBuilderData, GlobalGameResources } from "../game";
-import { GameState } from "../socket-client";
+import type { GameState } from "../socket-client";
 import { NoiseFunction2D, createNoise2D } from "simplex-noise";
 
 type Vec2 = { x: number; y: number };
@@ -23,10 +23,10 @@ type StateResourceType = {
 };
 
 export const activeGameState: GameStateBuilderData = {
-    state: GameState.Active,
+    state: "Active",
 
     res: {
-        isFinalCountdown: true,
+        isFinalCountdown: false,
         countdownVal: 1,
         isRunning: false,
         countdownTextSize: 200,
@@ -70,24 +70,38 @@ export const activeGameState: GameStateBuilderData = {
             // sres.vel.x = gres.unitLength * 8
         });
 
-        const countdownTimer = setInterval(function () {
-            sres.countdownVal -= 1;
+        function startCountdown(duration: number) {
+            sres.isFinalCountdown = true;
+            sres.countdownVal = duration;
             sres.countdownTextSize = 200;
-            if (sres.countdownVal <= 0) {
-                sres.countdownVal = 0;
-                sres.isFinalCountdown = false;
-                sres.isRunning = true;
-                clearInterval(countdownTimer);
-                window.dispatchEvent(new Event("game-start"));
-                setTimeout(
-                    () =>
-                        gres.renderer.removeRenderObject("countdown-timer", 5),
-                    1000
-                );
-            }
-        }, 1000);
+            const countdownTimer = setInterval(function () {
+                sres.countdownVal -= 1;
+                sres.countdownTextSize = 200;
+                if (sres.countdownVal <= 0) {
+                    sres.countdownVal = 0;
 
-        gres.renderer.pushRenderList();
+                    clearInterval(countdownTimer);
+                }
+            }, 1000);
+        }
+
+        gres.server.onCountdownStart(function (duration) {
+            gres.renderer.removeRenderObject("info-text", 5);
+
+            startCountdown(duration - 1);
+        });
+        gres.server.onGameStart(function () {
+            sres.isFinalCountdown = false;
+            sres.isRunning = true;
+            window.dispatchEvent(new Event("game-start"));
+            sres.countdownVal = 0;
+            setTimeout(
+                () => gres.renderer.removeRenderObject("countdown-timer", 5),
+                700
+            );
+        });
+
+        gres.renderer.removeRenderObject("bg", -1);
 
         gres.renderer.addPrimitiveRenderer("bg", -1, function (_, ctx) {
             ctx.restore();
@@ -171,6 +185,8 @@ export const activeGameState: GameStateBuilderData = {
             "countdown-timer",
             5,
             function (_, ctx) {
+                if (!sres.isFinalCountdown) return false;
+
                 ctx.font = `${sres.countdownTextSize}px monospace`;
                 ctx.fillStyle = "white";
                 ctx.textAlign = "center";
@@ -275,9 +291,6 @@ export const activeGameState: GameStateBuilderData = {
             return false;
         });
 
-  
-
-
         window.addEventListener("click", (event) => {
             event.stopPropagation();
             event.preventDefault();
@@ -347,6 +360,5 @@ export const activeGameState: GameStateBuilderData = {
 
     onLeave: function (sres: StateResourceType, gres: GlobalGameResources) {
         console.log(`Leaving ${this.state} state`);
-        gres.renderer.popRenderList();
     },
 };

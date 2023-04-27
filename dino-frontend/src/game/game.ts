@@ -1,4 +1,5 @@
-import { GameState, ServerBridge } from "./socket-client";
+import { ServerBridge } from "./socket-client";
+import type { GameState } from "./socket-client";
 import {
     GameRenderData,
     Renderer,
@@ -73,22 +74,22 @@ interface GameStateBuilderData {
 class GameStateManager {
     res: GlobalGameResources;
     stateData: Map<GameState, GameStateData> = new Map();
-    state: GameState = GameState.Initial;
+    state: GameState = "Initial";
     stateResourceRef: GameStateData;
     stateStack: Array<GameState> = [];
 
     constructor(renderer: FullScreenRenderer, server: ServerBridge) {
         //<populate with a default inital state>----------------------------
-        this.stateData.set(GameState.Initial, {
-            state: GameState.Initial,
+        this.stateData.set("Initial", {
+            state: "Initial",
             res: {},
             onEnter() {},
             preRender() {},
             postRender() {},
             onLeave() {},
         });
-        this.stateResourceRef = this.stateData.get(GameState.Initial)!;
-        this.stateStack.push(GameState.Initial);
+        this.stateResourceRef = this.stateData.get("Initial")!;
+        this.stateStack.push("Initial");
         //</populate with a default inital state>----------------------------
 
         this.res = {
@@ -251,7 +252,7 @@ async function main() {
     });
 
     console.log("Starting game state manager...");
-    stateManager.start(GameState.Initial);
+    stateManager.start("Initial");
 }
 
 const main_ = async () => {
@@ -489,7 +490,7 @@ const main_ = async () => {
     });
     const loop = () => {
         requestAnimationFrame(loop);
-        if (server.gameData.state !== GameState.Active) return;
+        if (server.gameData.state !== "Active") return;
         const currTimestamp = new Date().getTime();
         const dt = currTimestamp - prevTimestamp;
 

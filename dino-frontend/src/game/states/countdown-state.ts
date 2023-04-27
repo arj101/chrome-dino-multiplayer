@@ -4,7 +4,7 @@ import { GameState } from "../socket-client";
 type StateResourceType = { offset: number; dir: number };
 
 export const countdownGameState: GameStateBuilderData = {
-    state: GameState.Countdown,
+    state: "Countdown",
 
     res: { offset: 280, dir: -1 },
 
@@ -12,8 +12,8 @@ export const countdownGameState: GameStateBuilderData = {
         console.log(`Entering ${this.state} state`);
 
         //on countdown begin:
-        console.log("Forwarding to active state")
-        gres.switchState(GameState.Active)
+        console.log("Forwarding to active state");
+        gres.switchState("Active");
         // gres.renderer.removeRenderObject("info-text", 5);
     },
     onLeave: function (sres: StateResourceType, gres: GlobalGameResources) {

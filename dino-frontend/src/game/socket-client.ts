@@ -114,18 +114,19 @@ interface PhysicsConfig {
     jumpSpeed: number;
 }
 
-enum GameState {
-    Initial = "Initial",
-    Waiting = "Waiting",
-    Countdown = "Countdown",
-    Active = "Active",
-    Ended = "Ended",
-}
+// enum GameState {
+//     Initial = "Initial",
+//     Waiting = "Waiting",
+//     Countdown = "Countdown",
+//     Active = "Active",
+//     Ended = "Ended",
+// }
+
+type GameState = "Initial" | "Waiting" | "Countdown" | "Active" | "Ended";
 
 interface GameData {
     map: MapData;
     physics: PhysicsConfig;
-    
 
     startTime?: Date;
     countdownDuration?: number;
@@ -166,7 +167,7 @@ class ServerBridge {
                 gravity: 0,
                 jumpSpeed: 0,
             },
-            state: GameState.Initial,
+            state: "Initial",
         };
         this.broadcastBuffer = [];
     }
@@ -246,7 +247,7 @@ class ServerBridge {
 
                 if (this.gameData.sessionId && this.gameData.userId) {
                     this.socketClient?.deleteMsgCaller(callerIdx as number);
-                    this.gameData.state = GameState.Waiting;
+                    this.gameData.state = "Waiting";
                     onSuccess(
                         sessionName,
                         username,
@@ -280,7 +281,7 @@ class ServerBridge {
                 if (msg.type !== "UserCreationResponse") return;
                 this.socketClient?.deleteMsgCaller(callerIdx as number);
                 if (msg.creationSucceeded === true) {
-                    this.gameData.state = GameState.Waiting;
+                    this.gameData.state = "Waiting";
                     onJoin(username, msg.userId as string, sessionId);
                 } else onUnable();
             });
@@ -311,8 +312,8 @@ class ServerBridge {
                 if (msg.type !== "LoginResponse") return;
                 this.socketClient?.deleteMsgCaller(callerIdx as number);
                 if (msg.succeeded === true) {
-                    if (this.gameData.state == GameState.Initial)
-                        this.gameData.state = GameState.Waiting;
+                    if (this.gameData.state == "Initial")
+                        this.gameData.state = "Waiting";
                     this.gameData.userName = username;
                     this.gameData.userId = userId;
                     this.gameData.sessionId = sessionId;
@@ -336,7 +337,7 @@ class ServerBridge {
                 if (msg.type !== "GameCountdownStart") return;
                 this.socketClient?.deleteMsgCaller(callerIdx as number);
                 this.gameData.countdownDuration = msg.duration;
-                this.gameData.state = GameState.Countdown;
+                this.gameData.state = "Countdown";
                 onRecv(msg.duration);
             });
         };
@@ -354,7 +355,7 @@ class ServerBridge {
             const callerIdx = this.socketClient?.onMessage((msg) => {
                 if (msg.type !== "GameStart") return;
                 this.socketClient?.deleteMsgCaller(callerIdx as number);
-                this.gameData.state = GameState.Active;
+                this.gameData.state = "Active";
                 onRecv();
             });
         };
@@ -435,7 +436,7 @@ class ServerBridge {
 
     broadcastGameOver() {
         //TODO: Listen for UserGameOver return message
-        this.gameData.state = GameState.Ended;
+        this.gameData.state = "Ended";
         (this.socketClient as SocketClient).send({
             type: "GameOver",
             sessionId: this.gameData.sessionId as string,
@@ -525,15 +526,15 @@ class ServerBridge {
             this.gameData.state = (() => {
                 switch (status) {
                     case "Active":
-                        return GameState.Active;
+                        return "Active";
                     case "Countdown":
-                        return GameState.Countdown;
+                        return "Countdown";
                     case "Ended":
-                        return GameState.Ended;
+                        return "Ended";
                     case "Waiting":
-                        return GameState.Waiting;
+                        return "Waiting";
                     default:
-                        return GameState.Initial;
+                        return "Initial";
                 }
             })();
             this.gameData.stateTimer = t;
@@ -579,4 +580,5 @@ class ServerBridge {
     }
 }
 
-export { SocketClient, ServerBridge, GameState };
+export { SocketClient, ServerBridge };
+export type { GameState };

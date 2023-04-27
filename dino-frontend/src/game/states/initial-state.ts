@@ -1,21 +1,27 @@
 import type { GameStateBuilderData, GlobalGameResources } from "../game";
-import { GameState } from "../socket-client";
+import type { GameState } from "../socket-client";
 import { spriteUrl } from "../sprites";
+
+type ProgressIndicatorStatus = "active" | "finished" | "failed";
 
 type StateResourceType = {
     infoText: string;
+    progressIndicatorSpeed: number;
     progressIndicatorAngle: number;
     progressIndicatorSize: number;
+    progressIndicatorStatus: ProgressIndicatorStatus;
     desiredProgressIndicatorSize: number;
 };
 
 export const initialGameState: GameStateBuilderData = {
-    state: GameState.Initial,
+    state: "Initial",
 
     res: {
         infoText: "",
+        progressIndicatorSpeed: 1,
         progressIndicatorAngle: 0,
         progressIndicatorSize: 0,
+        progressIndicatorStatus: "active",
         desiredProgressIndicatorSize: 0,
     },
 
@@ -47,8 +53,20 @@ export const initialGameState: GameStateBuilderData = {
             ctx.rotate(sres.progressIndicatorAngle);
 
             ctx.fill();
-            ctx.fillStyle = "rgba(50, 100, 155, 0.10)";
 
+            switch (sres.progressIndicatorStatus) {
+                case "active":
+                    ctx.fillStyle = "rgba(50, 100, 155, 0.10)";
+                    break;
+                case "failed":
+                    ctx.fillStyle = "rgba(155, 100, 50, 0.10)";
+                    sres.progressIndicatorSpeed = 0;
+
+                    break;
+                case "finished":
+                    ctx.fillStyle = "rgba(50, 155, 100, 0.10)";
+                    break;
+            }
             sres.desiredProgressIndicatorSize = textSize.width * 1.5;
 
             const boxSize =
@@ -66,7 +84,8 @@ export const initialGameState: GameStateBuilderData = {
                 else sres.progressIndicatorSize -= animationFactor;
             }
 
-            sres.progressIndicatorAngle += gres.deltaTime * 0.001;
+            sres.progressIndicatorAngle +=
+                gres.deltaTime * 0.001 * sres.progressIndicatorSpeed;
             ctx.fill();
             ctx.restore();
 
@@ -83,38 +102,38 @@ export const initialGameState: GameStateBuilderData = {
             return true;
         });
 
-        let afterConnectingRan = false;
+        sres.infoText = "Checking credentials..."; //the rendered text also gets updated!
 
+        const serverAddr = window.localStorage.getItem("server-addr");
+        const sessionId = window.localStorage.getItem("session-id");
+        const userId = window.localStorage.getItem("user-id");
+        const username = window.localStorage.getItem("username");
+
+        if (!serverAddr || !sessionId || !userId || !username) {
+            sres.infoText = "Credentials not found :(";
+            sres.progressIndicatorStatus = "failed";
+            return;
+        }
+        let afterConnectingRan = false;
         const afterConnecting = async function () {
             if (afterConnectingRan) return;
             //executed once
-            sres.infoText = "Checking credentials..."; //the rendered text also gets updated!
 
-            // const serverAddr = window.localStorage.getItem("server-addr");
-            // const sessionId = window.localStorage.getItem("session-id");
-            // const userId = window.localStorage.getItem("user-id");
-            // const username = window.localStorage.getItem("username");
-
-            // if (!serverAddr || !sessionId || !userId || !username) {
-            //     sres.infoText = "Credentials not found :(";
-            //     return;
-            // }
+            const loginPromise = gres.server.login(sessionId, userId, username);
+            sres.infoText = "Logging in...";
 
             //======setup global state==========
             gres.unitLength = gres.renderer.res.canvas.height * 0.13;
             gres.groundHeight = gres.renderer.res.canvas.height * 0.6;
 
-            sres.infoText = "Using a dino for scale ;)";
-            await gres.renderer.res.textureMap.loadTexture(
+            const texturePromise = gres.renderer.res.textureMap.loadTexture(
                 "dinoRun1",
                 spriteUrl.get("dinoRun1")!
             );
-            gres.dinoImageHeight =
-                gres.renderer.res.textureMap.getTexureDimensions("dinoRun1")!.h;
-            gres.spriteScalingFactor = gres.unitLength / gres.dinoImageHeight;
 
-            window.addEventListener("resize", function () {
-                console.log("h");
+            window.addEventListener("resize", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
                 gres.unitLength = gres.renderer.res.canvas.height * 0.13;
                 gres.groundHeight = gres.renderer.res.canvas.height * 0.6;
 
@@ -127,19 +146,30 @@ export const initialGameState: GameStateBuilderData = {
                 window.dispatchEvent(new Event("recalc-responsive"));
             });
 
-            sres.infoText = "Done!";
+            let loginSucceeded = true;
+            await loginPromise.catch(() => {
+                loginSucceeded = false;
+                sres.infoText = "Login failed :(";
+                sres.progressIndicatorStatus = "failed";
+            });
+            if (!loginSucceeded) return;
+
+            sres.infoText = "Loading a dino for scale..";
+            await texturePromise;
+            gres.dinoImageHeight =
+                gres.renderer.res.textureMap.getTexureDimensions("dinoRun1")!.h;
+            gres.spriteScalingFactor = gres.unitLength / gres.dinoImageHeight;
+
+            sres.infoText = "Waiting for countdown...";
+            sres.progressIndicatorStatus = "finished";
 
             //==================================
 
-            gres.switchState(GameState.Countdown);
+            if (loginSucceeded) gres.switchState("Countdown");
         };
-        gres.server.initClient().then(afterConnecting);
+        sres.infoText = "Establishing connection...";
 
-        setTimeout(
-            () => (sres.infoText = "Continuing without a connection..."),
-            5000
-        );
-        setTimeout(() => afterConnecting(), 6000);
+        gres.server.initClient().then(afterConnecting);
     },
     onLeave: function (sres: StateResourceType, gres: GlobalGameResources) {
         // gres.renderer.popRenderList();

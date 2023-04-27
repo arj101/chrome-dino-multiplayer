@@ -1,6 +1,6 @@
 use crate::config_options::SessionConfig;
 use crate::map_generator::GameMap;
-use crate::session_exec::{RxData, TransmissionQueue, TxData, GameEvent};
+use crate::session_exec::{GameEvent, RxData, TransmissionQueue, TxData};
 
 use futures_channel::mpsc::UnboundedSender;
 use tokio_tungstenite::tungstenite::protocol::Message;
@@ -193,15 +193,20 @@ impl Session {
         &self.player_data.get(&self.host_id).unwrap().addr
     }
 
-
-    pub fn on_game_event(&mut self, tx: &mut TransmissionQueue, addr: SocketAddr, id: &Uuid, event: GameEvent) {
+    pub fn on_game_event(
+        &mut self,
+        tx: &mut TransmissionQueue,
+        addr: SocketAddr,
+        id: &Uuid,
+        event: GameEvent,
+    ) {
         let username = if let Some(player) = self.player_data.get_mut(&id) {
             player.username.clone()
         } else {
             return;
         };
 
-        self.broadcast(tx, addr, *id, TxData::GameEvent { username, event});
+        self.broadcast(tx, addr, *id, TxData::GameEvent { username, event });
     }
 
     #[inline(always)]
