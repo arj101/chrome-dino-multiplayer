@@ -141,7 +141,9 @@ export const activeGameState: GameStateBuilderData = {
                             xOffset,
                         gres.groundHeight -
                             spriteSize.h -
-                            obstacles[0][1] * gres.unitLength
+                            obstacles[0][1] * gres.unitLength,
+                        spriteSize.w,
+                        spriteSize.h
                     );
                     xOffset += spriteSize.w;
                 }
