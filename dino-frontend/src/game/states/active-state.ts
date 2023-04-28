@@ -117,7 +117,10 @@ export const activeGameState: GameStateBuilderData = {
         gres.renderer.addPrimitiveRenderer("obstacles", 1, function (_, ctx) {
             for (let i = sres.map.obstacles.length - 1; i >= 0; i--) {
                 const obstacles = sres.map.obstacles[i];
-                if (obstacles[0][0] === null) continue; //FIXME: figure out why its null (backend)
+                if (obstacles[0][0] === null) {
+                    sres.map.obstacles.splice(i, 1);
+                    continue;
+                } //FIXME: figure out why its null (backend)
                 let xOffset = 0;
 
                 sprite_loop: for (const obstacleSprite of obstacles[1]) {
