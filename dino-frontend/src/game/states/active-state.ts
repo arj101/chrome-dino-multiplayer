@@ -1,10 +1,22 @@
 import type { GameStateBuilderData, GlobalGameResources } from "../game";
 import type { GameState } from "../socket-client";
 import { NoiseFunction2D, createNoise2D } from "simplex-noise";
+import type { Sprite } from "../sprites";
 
 type Vec2 = { x: number; y: number };
 
 type Cloud = { pos: Vec2; size: number };
+
+type Obstacle = {
+    pos: Vec2;
+    bodies: string[];
+
+    res: any;
+};
+
+type BirdObstacleResource = {
+    lastSpriteSwitch: number;
+};
 
 type StateResourceType = {
     isFinalCountdown: boolean;
@@ -19,7 +31,7 @@ type StateResourceType = {
     gravity: number;
 
     map: {
-        obstacles: Array<[[number, number], Array<string>]>; //Array<[[x, y], [obstacles]]
+        obstacles: Array<Obstacle>; //Array<[[x, y], [obstacles]]
     };
 
     clouds: Array<Cloud>;
@@ -107,23 +119,38 @@ export const activeGameState: GameStateBuilderData = {
             );
         });
 
+        function appendMap(map: [[number, number], string[]][]) {
+            for (const obstaclePack of map) {
+                if (obstaclePack[0][0] === null || obstaclePack[0][1] === null)
+                    continue;
+
+                const parsedObstaclePack: string[] = [];
+
+                for (const obstacle of obstaclePack[1]) {
+                    parsedObstaclePack.push(
+                        obstacle.charAt(0).toLowerCase() + obstacle.substring(1)
+                    );
+                }
+                sres.map.obstacles.push({
+                    pos: { x: obstaclePack[0][0], y: obstaclePack[0][1] },
+                    bodies: parsedObstaclePack,
+                    res: parsedObstaclePack[0].startsWith("bird")
+                        ? { lastSpriteSwitch: 0 }
+                        : -1,
+                });
+            }
+        }
+
         gres.server.requestMap().then((map) => {
-            console.log(map);
-            sres.map.obstacles = sres.map.obstacles.concat(
-                map as Array<[[number, number], Array<string>]>
-            );
+            appendMap(map);
         });
 
         gres.renderer.addPrimitiveRenderer("obstacles", 1, function (_, ctx) {
             for (let i = sres.map.obstacles.length - 1; i >= 0; i--) {
                 const obstacles = sres.map.obstacles[i];
-                if (obstacles[0][0] === null) {
-                    sres.map.obstacles.splice(i, 1);
-                    continue;
-                } //FIXME: figure out why its null (backend)
                 let xOffset = 0;
 
-                sprite_loop: for (const obstacleSprite of obstacles[1]) {
+                sprite_loop: for (const obstacleSprite of obstacles.bodies) {
                     const spriteName =
                         obstacleSprite.charAt(0).toLowerCase() +
                         obstacleSprite.substring(1);
@@ -134,17 +161,30 @@ export const activeGameState: GameStateBuilderData = {
                             gres.spriteScalingFactor
                         );
                     if (spriteSize == null) continue sprite_loop;
+
+                    if (obstacleSprite.startsWith("bird")) {
+                        const res = obstacles.res as BirdObstacleResource;
+                        res.lastSpriteSwitch += gres.deltaTime;
+
+                        if (res.lastSpriteSwitch > 250) {
+                            if (obstacles.bodies[0] == "bird1")
+                                obstacles.bodies[0] = "bird2";
+                            else obstacles.bodies[0] = "bird1";
+                            res.lastSpriteSwitch = 0;
+                        }
+                    }
+
                     const image =
                         gres.renderer.res.textureMap.getTexture(spriteName)!;
 
                     ctx.drawImage(
                         image,
-                        obstacles[0][0] * gres.unitLength -
+                        obstacles.pos.x * gres.unitLength -
                             sres.pos.x +
                             xOffset,
                         gres.groundHeight -
                             spriteSize.h -
-                            obstacles[0][1] * gres.unitLength,
+                            obstacles.pos.y * gres.unitLength,
                         spriteSize.w,
                         spriteSize.h
                     );
@@ -152,7 +192,7 @@ export const activeGameState: GameStateBuilderData = {
                 }
 
                 if (
-                    obstacles[0][0] * gres.unitLength - sres.pos.x <=
+                    obstacles.pos.x * gres.unitLength - sres.pos.x <=
                     -xOffset
                 ) {
                     sres.map.obstacles.splice(i, 1);
@@ -164,14 +204,7 @@ export const activeGameState: GameStateBuilderData = {
                 !gres.server.gameData.map.mapRequestSent
             ) {
                 console.log("Requesting map...");
-                gres.server
-                    .requestMap()
-                    .then(
-                        (map) =>
-                            (sres.map.obstacles = sres.map.obstacles.concat(
-                                map as Array<[[number, number], Array<string>]>
-                            ))
-                    );
+                gres.server.requestMap().then((map) => appendMap(map));
             }
 
             return false;
@@ -367,7 +400,7 @@ export const activeGameState: GameStateBuilderData = {
             return false;
         });
 
-        window.addEventListener("click", (event) => {
+        window.addEventListener("mousedown", (event) => {
             event.stopPropagation();
             event.preventDefault();
             sres.vel.y = sres.jumpVel;
