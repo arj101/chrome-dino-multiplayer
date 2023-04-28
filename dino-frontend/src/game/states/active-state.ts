@@ -18,6 +18,10 @@ type StateResourceType = {
     jumpVel: number;
     gravity: number;
 
+    map: {
+        obstacles: Array<[[number, number], Array<string>]>; //Array<[[x, y], [obstacles]]
+    };
+
     clouds: Array<Cloud>;
     noise: NoiseFunction2D;
 };
@@ -52,6 +56,8 @@ export const activeGameState: GameStateBuilderData = {
 
         clouds: [],
         noise: createNoise2D(),
+
+        map: { obstacles: [] },
     },
 
     onEnter: function (sres: StateResourceType, gres: GlobalGameResources) {
@@ -99,6 +105,70 @@ export const activeGameState: GameStateBuilderData = {
                 () => gres.renderer.removeRenderObject("countdown-timer", 5),
                 700
             );
+        });
+
+        gres.server.requestMap().then((map) => {
+            console.log(map);
+            sres.map.obstacles = sres.map.obstacles.concat(
+                map as Array<[[number, number], Array<string>]>
+            );
+        });
+
+        gres.renderer.addPrimitiveRenderer("obstacles", 1, function (_, ctx) {
+            for (let i = sres.map.obstacles.length - 1; i >= 0; i--) {
+                const obstacles = sres.map.obstacles[i];
+                let xOffset = 0;
+
+                sprite_loop: for (const obstacleSprite of obstacles[1]) {
+                    const spriteName =
+                        obstacleSprite.charAt(0).toLowerCase() +
+                        obstacleSprite.substring(1);
+
+                    const spriteSize =
+                        gres.renderer.res.textureMap.getTexureDimensions(
+                            spriteName,
+                            gres.spriteScalingFactor
+                        );
+                    if (spriteSize == null) continue sprite_loop;
+                    const image =
+                        gres.renderer.res.textureMap.getTexture(spriteName)!;
+
+                    ctx.drawImage(
+                        image,
+                        obstacles[0][0] * gres.unitLength -
+                            sres.pos.x +
+                            xOffset,
+                        gres.groundHeight -
+                            spriteSize.h -
+                            obstacles[0][1] * gres.unitLength
+                    );
+                    xOffset += spriteSize.w;
+                }
+
+                if (
+                    obstacles[0][0] * gres.unitLength - sres.pos.x <=
+                    -xOffset
+                ) {
+                    sres.map.obstacles.splice(i, 1);
+                }
+            }
+
+            if (
+                sres.map.obstacles.length <= 5 &&
+                !gres.server.gameData.map.mapRequestSent
+            ) {
+                console.log("Requesting map...");
+                gres.server
+                    .requestMap()
+                    .then(
+                        (map) =>
+                            (sres.map.obstacles = sres.map.obstacles.concat(
+                                map as Array<[[number, number], Array<string>]>
+                            ))
+                    );
+            }
+
+            return false;
         });
 
         gres.renderer.removeRenderObject("bg", -1);

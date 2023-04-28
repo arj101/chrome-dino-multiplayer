@@ -17,8 +17,9 @@
 
     onMount(() => {
         serverAddr = window.localStorage.getItem("server-addr") || serverAddr;
-        username = window.localStorage.getItem("username") || username;
-        waitTime = window.localStorage.getItem("wait-time") || username;
+        username = window.localStorage.getItem("username") || "";
+        waitTime = parseInt(window.localStorage.getItem("wait-time") || "4");
+        if (isNaN(waitTime)) waitTime = 4;
     });
 
     let login;
@@ -283,6 +284,8 @@
                 <label for="wait-time">Wait Time</label>
                 <input
                     type="number"
+                    min="4"
+                    max="180"
                     name="wait-time"
                     spellcheck="false"
                     bind:value={waitTime}
