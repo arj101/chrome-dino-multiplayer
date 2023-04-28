@@ -348,7 +348,7 @@ export const activeGameState: GameStateBuilderData = {
         });
 
         gres.renderer.addPrimitiveRenderer("score", 10, function (sprite, ctx) {
-            ctx.font = "28px 'Fira Code'";
+            ctx.font = "28px monospace";
             ctx.textAlign = "right";
             ctx.fillStyle = "white";
             ctx.fillText(
