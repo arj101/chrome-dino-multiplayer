@@ -164,6 +164,9 @@ export const initialGameState: GameStateBuilderData = {
             sres.progressIndicatorStatus = "finished";
 
             //==================================
+            //
+            sres.infoText = "Syncing game state..."
+            await gres.server.syncState();
 
             if (loginSucceeded) gres.switchState("Countdown");
         };

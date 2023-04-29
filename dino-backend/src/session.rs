@@ -220,7 +220,7 @@ impl Session {
         tick: u64,
     ) {
         let (username, tick) = if let Some(player) = self.player_data.get_mut(&id) {
-            if addr != player.addr || tick < player.curr_tick {
+            if addr != player.addr  { //|| tick < player.curr_tick
                 return;
             }
             player.curr_tick += 1;

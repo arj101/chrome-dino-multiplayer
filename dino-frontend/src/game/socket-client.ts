@@ -519,10 +519,12 @@ class ServerBridge {
         this.socketClient?.socket.close(code, reason);
     }
 
-    syncState() {
-        if (!this.gameData?.sessionId) return;
+    syncState(): Promise<void> {
+        return new Promise((resolve, reject) => {
 
-        this.sessionStatus(this.gameData.sessionId).then(({ status, t }) => {
+            if (!this.gameData?.sessionId) { reject();  }
+
+        if (this.gameData?.sessionId) this.sessionStatus(this.gameData.sessionId).then(({ status, t }) => {
             this.gameData.state = (() => {
                 switch (status) {
                     case "Active":
@@ -538,6 +540,8 @@ class ServerBridge {
                 }
             })();
             this.gameData.stateTimer = t;
+            resolve();
+        });
         });
     }
 
@@ -551,14 +555,14 @@ class ServerBridge {
                 } catch (e) {
                     console.error(e);
                 }
-
-                this.socketClient?.onMessage((data) => {
-                    if (data.type == "PlayerDataBroadcast")
-                        this.broadcastBuffer.push(data);
-                });
-
+                //
+                // this.socketClient?.onMessage((data) => {
+                //     if (data.type == "PlayerDataBroadcast")
+                //         this.broadcastBuffer.push(data);
+                // });
+                //
                 this.syncState();
-                setInterval(this.syncState, 800);
+                // setInterval(() => this.syncState(), 1000);
 
                 if (
                     this.gameData.userId &&

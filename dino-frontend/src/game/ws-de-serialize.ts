@@ -120,7 +120,7 @@ function deserialize(jsonStr: string): RxData {
                 if (dezerd.creationSucceeded) dezerd.userId = json["userId"];
                 return dezerd;
             }
-        case "PlayDataBroadcast":
+        case "PlayerDataBroadcast":
             if (!validateKeys(json, { username: "", posY: 0, posX: 0 }))
                 return { type: "None" };
             return {
@@ -170,6 +170,9 @@ function deserialize(jsonStr: string): RxData {
 
 function parseQueryResponse(json: any): QueryResponse {
     switch (json["type"]) {
+        case "SessionStatus":
+            if(!validateKeys(json, {status: '', time: 0})) return { type: "None" };
+            return { type: "SessionStatus", status: json["status"], time: json["t"]}
         case "Sessions":
             if (!validateKeys(json, { sessions: [] })) return { type: "None" };
             return { type: "Sessions", sessions: json["sessions"] };
