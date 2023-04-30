@@ -57,7 +57,6 @@ type TxData =
     | { type: "LaunchGame"; sessionId: string; userId: string }
     | {
           type: "BroadcastRequest";
-          userId: string;
           posY: number;
           posX: number;
           tick: number;

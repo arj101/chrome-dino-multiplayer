@@ -384,7 +384,6 @@ class ServerBridge {
     broadcastData(relYPos: number, relXPos: number) {
         (this.socketClient as SocketClient).send({
             type: "BroadcastRequest",
-            userId: this.gameData.userId as string,
             posY: relYPos,
             posX: relXPos,
             tick: this.tick,
@@ -521,27 +520,31 @@ class ServerBridge {
 
     syncState(): Promise<void> {
         return new Promise((resolve, reject) => {
+            if (!this.gameData?.sessionId) {
+                reject();
+            }
 
-            if (!this.gameData?.sessionId) { reject();  }
-
-        if (this.gameData?.sessionId) this.sessionStatus(this.gameData.sessionId).then(({ status, t }) => {
-            this.gameData.state = (() => {
-                switch (status) {
-                    case "Active":
-                        return "Active";
-                    case "Countdown":
-                        return "Countdown";
-                    case "Ended":
-                        return "Ended";
-                    case "Waiting":
-                        return "Waiting";
-                    default:
-                        return "Initial";
-                }
-            })();
-            this.gameData.stateTimer = t;
-            resolve();
-        });
+            if (this.gameData?.sessionId)
+                this.sessionStatus(this.gameData.sessionId).then(
+                    ({ status, t }) => {
+                        this.gameData.state = (() => {
+                            switch (status) {
+                                case "Active":
+                                    return "Active";
+                                case "Countdown":
+                                    return "Countdown";
+                                case "Ended":
+                                    return "Ended";
+                                case "Waiting":
+                                    return "Waiting";
+                                default:
+                                    return "Initial";
+                            }
+                        })();
+                        this.gameData.stateTimer = t;
+                        resolve();
+                    }
+                );
         });
     }
 

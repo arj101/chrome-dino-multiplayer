@@ -164,8 +164,6 @@ pub enum RxData {
     },
 
     BroadcastRequest {
-        #[serde(rename = "userId")]
-        user_id: Uuid,
         #[serde(rename = "posY")]
         pos_y: f32,
         #[serde(rename = "posX")]
@@ -360,31 +358,29 @@ impl SessionExecutor {
         self.channel_tx.clone()
     }
 
-    #[inline(always)]
     pub fn poll_channel(&mut self) {
         let mut recv_count = 0;
         while let Ok(msg) = self.channel_rx.try_recv() {
             self.process_channel_msg(msg);
             recv_count += 1;
-            if recv_count >= 50 {
-                //only receive maximum of 50 messages per call
+            if recv_count >= 512 {
+                //only receive maximum of 512 messages per call
                 break;
             }
         }
     }
 
-    #[inline(always)]
     fn process_channel_msg(&mut self, msg: ChannelData) {
         match msg {
-            ChannelData::Connect { addr, tx } => {
-                println!("[session exec] `{}` just connected.", &addr);
-                self.peer_map.lock().unwrap().insert(addr, tx);
-                self.user_session_map.insert(addr, None);
-            }
             ChannelData::Message { addr, msg } => {
                 if let Ok(msg) = msg.to_text() {
                     self.process_text_msg(addr, msg);
                 }
+            }
+            ChannelData::Connect { addr, tx } => {
+                println!("[session exec] `{}` just connected.", &addr);
+                self.peer_map.lock().unwrap().insert(addr, tx);
+                self.user_session_map.insert(addr, None);
             }
             ChannelData::Disconnect(addr) => {
                 println!("[session exec] `{}` closed connection :(", addr);
@@ -402,7 +398,6 @@ impl SessionExecutor {
         }
     }
 
-    #[inline(always)]
     fn process_text_msg(&mut self, addr: SocketAddr, msg: &str) {
         let rx_data: RxData = match serde_json::from_str(msg) {
             Ok(rx_data) => rx_data,
@@ -416,35 +411,23 @@ impl SessionExecutor {
         };
 
         match &rx_data {
-            RxData::GameEvent { user_id, event } => {
+            RxData::BroadcastRequest { pos_y, pos_x, tick } => {
                 if let Some(Some(session_id)) = self.user_session_map.get(&addr) {
                     if let Some(s) = self.sessions.get_mut(session_id) {
-                        s.on_game_event(&mut self.tx_queue, addr, user_id, event.clone());
-                    }
-                }
-            }
-            RxData::BroadcastRequest {
-                user_id,
-                pos_y,
-                pos_x,
-                tick,
-            } => {
-                if let Some(Some(session_id)) = self.user_session_map.get(&addr) {
-                    if let Some(s) = self.sessions.get_mut(session_id) {
-                        s.on_broadcast_req(
-                            &mut self.tx_queue,
-                            addr,
-                            *user_id,
-                            *pos_y,
-                            *pos_x,
-                            *tick,
-                        )
+                        s.on_broadcast_req(&mut self.tx_queue, addr, *pos_y, *pos_x, *tick)
                     }
                 } else {
                     println!(
                         "[session_exec] `{}` requested broadcast while not being in any session.",
                         addr,
                     )
+                }
+            }
+            RxData::GameEvent { user_id, event } => {
+                if let Some(Some(session_id)) = self.user_session_map.get(&addr) {
+                    if let Some(s) = self.sessions.get_mut(session_id) {
+                        s.on_game_event(&mut self.tx_queue, addr, user_id, event.clone());
+                    }
                 }
             }
             RxData::Query { query } => self.handle_query(addr, query),

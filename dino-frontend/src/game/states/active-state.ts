@@ -34,13 +34,11 @@ type StateResourceType = {
         obstacles: Array<Obstacle>; //Array<[[x, y], [obstacles]]
     };
 
-    otherPlayers: Map<string, { pos: Vec2, tick: number}>;
+    otherPlayers: Map<string, { pos: Vec2; tick: number }>;
 
     clouds: Array<Cloud>;
     noise: NoiseFunction2D;
 };
-
-
 
 export const activeGameState: GameStateBuilderData = {
     state: "Active",
@@ -110,7 +108,7 @@ export const activeGameState: GameStateBuilderData = {
         }
 
         function onGameStart() {
-            console.log('here');
+            console.log("here");
             sres.isFinalCountdown = false;
             sres.isRunning = true;
             window.dispatchEvent(new Event("game-start"));
@@ -121,14 +119,13 @@ export const activeGameState: GameStateBuilderData = {
             );
         }
 
- 
         gres.server.onCountdownStart(function (duration) {
             gres.renderer.removeRenderObject("info-text", 5);
 
             startCountdown(duration - 1);
         });
         gres.server.onGameStart(function () {
-          onGameStart();
+            onGameStart();
         });
 
         function appendMap(map: [[number, number], string[]][]) {
@@ -473,54 +470,70 @@ export const activeGameState: GameStateBuilderData = {
         //
         gres.server.socketClient?.onMessage(() => {});
 
-        gres.server.socketClient?.onMessage(function(m) { 
-            
-            if (m.type !== 'PlayerDataBroadcast') return;
-//             if (!sres.otherPlayers.has(m.username)) {
-// console.log('here2');
-//             sres.otherPlayers.set(m.username, {pos: {x: m.posX, y: m.posY}, tick: m.tick});
-//                 return;
-//             } ;
-//             if (sres.otherPlayers.get(m.username)!.tick >= m.tick) return;
-            sres.otherPlayers.set(m.username, {pos: {x: m.posX, y: m.posY}, tick: m.tick});
+        gres.server.socketClient?.onMessage(function (m) {
+            if (m.type !== "PlayerDataBroadcast") return;
+            //             if (!sres.otherPlayers.has(m.username)) {
+            // console.log('here2');
+            //             sres.otherPlayers.set(m.username, {pos: {x: m.posX, y: m.posY}, tick: m.tick});
+            //                 return;
+            //             } ;
+            //             if (sres.otherPlayers.get(m.username)!.tick >= m.tick) return;
+            sres.otherPlayers.set(m.username, {
+                pos: { x: m.posX, y: m.posY },
+                tick: m.tick,
+            });
         });
 
-        gres.renderer.addPrimitiveRenderer("other-players", 4, function(_, ctx) {
-            for (const [username, player] of sres.otherPlayers) {
-                ctx.font = "20px monospace";
-                ctx.fillStyle = "rgb(200, 200, 255)"
-                ctx.textAlign = "left"
+        gres.renderer.addPrimitiveRenderer(
+            "other-players",
+            4,
+            function (_, ctx) {
+                for (const [username, player] of sres.otherPlayers) {
+                    ctx.font = "20px monospace";
+                    ctx.fillStyle = "rgb(200, 200, 255)";
+                    ctx.textAlign = "left";
 
-                const x = player.pos.x * gres.unitLength - sres.pos.x + 1.5*gres.unitLength;
-                const y =  gres.groundHeight - gres.unitLength - player.pos.y*gres.unitLength;
+                    const x =
+                        player.pos.x * gres.unitLength -
+                        sres.pos.x +
+                        1.5 * gres.unitLength;
+                    const y =
+                        gres.groundHeight -
+                        gres.unitLength -
+                        player.pos.y * gres.unitLength;
 
-                const spriteSize = gres.renderer.res.textureMap.getTexureDimensions("dinoJump", gres.spriteScalingFactor)!;
-                const sprite = gres.renderer.res.textureMap.getTexture("dinoJump")!;
+                    const spriteSize =
+                        gres.renderer.res.textureMap.getTexureDimensions(
+                            "dinoJump",
+                            gres.spriteScalingFactor
+                        )!;
+                    const sprite =
+                        gres.renderer.res.textureMap.getTexture("dinoJump")!;
 
-                ctx.textBaseline = "bottom"
-                ctx.fillText(username, x, y - 5);
-                ctx.fill()
+                    ctx.textBaseline = "bottom";
+                    ctx.fillText(username, x, y - 5);
+                    ctx.fill();
 
-                ctx.fillStyle = "rgba(100, 100, 255, 0.2)"
-                ctx.fillRect(x, y, spriteSize.w, spriteSize.h);
-                ctx.fill();
-                ctx.globalAlpha = 0.5;
-                ctx.drawImage(sprite, x, y, spriteSize.w, spriteSize.h);
-                ctx.globalAlpha = 1.0;
+                    ctx.fillStyle = "rgba(100, 100, 255, 0.2)";
+                    ctx.fillRect(x, y, spriteSize.w, spriteSize.h);
+                    ctx.fill();
+                    ctx.globalAlpha = 0.5;
+                    ctx.drawImage(sprite, x, y, spriteSize.w, spriteSize.h);
+                    ctx.globalAlpha = 1.0;
+                }
+                return false;
             }
-            return false;
-        });
+        );
 
         gres.renderer.res.canvas.addEventListener("game-start", function () {});
 
         //on countdown begin:
         // gres.renderer.removeRenderObject("info-text", 5);       console.log(gres.server.gameData.state);
         if (gres.server.gameData.state == "Countdown") startCountdown(3);
-        if (gres.server.gameData.state == "Active")  {
+        if (gres.server.gameData.state == "Active") {
             gres.renderer.removeRenderObject("info-text", 5);
-        onGameStart()
+            onGameStart();
         }
-
     },
 
     preRender: function (sres: StateResourceType, gres: GlobalGameResources) {
@@ -530,14 +543,13 @@ export const activeGameState: GameStateBuilderData = {
         sres.pos.x += sres.vel.x * gres.deltaTime * 0.001;
     },
 
-    postRender: function(sres: StateResourceType, gres: GlobalGameResources) {
+    postRender: function (sres: StateResourceType, gres: GlobalGameResources) {
         if (!sres.isRunning) return;
 
         gres.server.socketClient?.send({
-        type: "BroadcastRequest",
-        userId: gres.server.gameData.userId as string,
-        posX: sres.pos.x / gres.unitLength,
-        posY: sres.pos.y / gres.unitLength,
+            type: "BroadcastRequest",
+            posX: sres.pos.x / gres.unitLength,
+            posY: sres.pos.y / gres.unitLength,
             tick: gres.server.tick,
         });
         gres.server.tick++;

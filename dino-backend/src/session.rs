@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use rustc_hash::FxHashMap;
+use std::f32::consts::E;
 use std::net::SocketAddr;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
@@ -49,6 +50,7 @@ pub struct Session {
     timers: FxHashMap<Uuid, Rc<(SystemTime, fn(&mut Self, &mut TransmissionQueue), bool)>>,
     has_finished: bool,
     config: SessionConfig,
+    addr_map: FxHashMap<SocketAddr, Uuid>,
 }
 
 impl Session {
@@ -66,6 +68,7 @@ impl Session {
             timers: FxHashMap::default(),
             has_finished: false,
             config,
+            addr_map: FxHashMap::default(),
         }
     }
 
@@ -214,13 +217,18 @@ impl Session {
         &mut self,
         tx: &mut TransmissionQueue,
         addr: SocketAddr,
-        id: Uuid,
         pos_y: f32,
         pos_x: f32,
         tick: u64,
     ) {
+        let id = if let Some(id) = self.addr_map.get(&addr) {
+            id
+        } else {
+            return;
+        };
         let (username, tick) = if let Some(player) = self.player_data.get_mut(&id) {
-            if addr != player.addr  { //|| tick < player.curr_tick
+            if addr != player.addr {
+                //|| tick < player.curr_tick
                 return;
             }
             player.curr_tick += 1;
@@ -232,7 +240,7 @@ impl Session {
         self.broadcast(
             tx,
             addr,
-            id,
+            *id,
             TxData::PlayerDataBroadcast {
                 username,
                 pos_y,
@@ -425,6 +433,7 @@ impl Session {
                 curr_tick: 0,
             },
         );
+        self.addr_map.insert(addr, id);
         tx.send_to_addr(
             addr,
             TxData::UserCreationResponse {
@@ -539,6 +548,7 @@ impl Session {
         if let Some(player) = self.player_data.get_mut(&user_id) {
             player.connect();
             player.addr = addr;
+            self.addr_map.insert(addr, user_id);
             tx.send_to_addr(addr, TxData::LoginResponse { succeeded: true });
             return Ok(());
         }
@@ -558,6 +568,8 @@ impl Session {
         } else {
             return false;
         };
+
+        self.addr_map.remove(&addr);
 
         let start_time = match self.status {
             SessionStatus::Active { start_time, .. } => start_time,
