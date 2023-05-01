@@ -39,12 +39,21 @@ async fn handle_connection(
         .expect("Error during the websocket handshake occurred");
     println!("WebSocket connection established: {}", addr);
 
+    //the main channel (session_channel) is used to send channels over to the individual sessions
+    //so they can directly communicate with connection handlers without SessionExecutor being in
+    //the middle
+
     // Insert the write part of this peer to the peer map.
-    let (tx, rx) = unbounded();
+    let (transmitter_tx, transmitter_rx) = unbounded(); //from the perspective of `Session`
+    let (receiver_tx, receiver_rx) = unbounded();
     // peer_map.lock().unwrap().insert(addr, tx);
 
     match session_channel
-        .send(ChannelData::Connect { addr, tx })
+        .send(ChannelData::Connect {
+            addr,
+            tx: transmitter_tx,
+            rx: receiver_rx,
+        })
         .await
     {
         Err(err) => panic!(
@@ -67,14 +76,14 @@ async fn handle_connection(
             msg.to_text().unwrap()
         );
         // session_channel.send(ChannelData::Message(msg));
-        match session_channel.try_send(ChannelData::Message { addr, msg }) {
+        match receiver_tx.unbounded_send(msg) {
             Err(err) => println!("Failed sending message to session executor: {}", err),
             _ => (),
         }
         future::ok(())
     });
 
-    let recv_from_session_exec = rx.map(Ok).forward(outgoing);
+    let recv_from_session_exec = transmitter_rx.map(Ok).forward(outgoing);
 
     pin_mut!(broadcast_incoming, recv_from_session_exec);
     future::select(broadcast_incoming, recv_from_session_exec).await;
@@ -126,7 +135,8 @@ async fn main() -> Result<(), IoError> {
         let mut session_exec =
             SessionExecutor::new_with_channel((session_tx_tmp, session_rx), config);
         loop {
-            session_exec.poll_channel();
+            session_exec.poll_main_channel();
+            session_exec.poll_sub_channels();
             session_exec.run();
         }
     });

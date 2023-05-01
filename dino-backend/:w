@@ -1,22 +1,21 @@
 use crate::config_options::SessionConfig;
 use crate::map_generator::GameMap;
-use crate::session_exec::{
-    GameEvent, QueryResponseType, QueryType, RxData, TransmissionQueue, TxData,
-};
+use crate::session_exec::{GameEvent, RxData, TransmissionQueue, TxData};
 
-use futures_channel::mpsc::{UnboundedReceiver, UnboundedSender};
+use futures_channel::mpsc::{UnboundedSender, UnboundedReceiver};
 use tokio_tungstenite::tungstenite::protocol::Message;
 
 use serde::{Deserialize, Serialize};
 
+use serde::serialize;
+
 use uuid::Uuid;
 
 use rustc_hash::FxHashMap;
-use std::cell::Cell;
+use std::f32::consts::E;
 use std::net::SocketAddr;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-
 use std::time::{self, Duration, Instant, SystemTime};
 
 pub const X_ACC: f32 = 0.3;
@@ -43,45 +42,6 @@ pub enum SessionStatus {
     Ended,
 }
 
-#[macro_export]
-macro_rules! send_msg {
-    ($channel:expr, $msg:expr) => {{
-        #[cfg(debug_assertions)]
-        let parsed = serde_json::to_string_pretty($msg).unwrap();
-        #[cfg(not(debug_assertions))]
-        let parsed = serde_json::to_string($msg).unwrap();
-
-        $channel.unbounded_send(tokio_tungstenite::tungstenite::protocol::Message::Text(
-            parsed,
-        ))
-    }};
-}
-
-pub enum MessageParseResult {
-    ToTextError,
-    SerdeError(serde_json::Error),
-    Parsed(RxData),
-}
-
-#[macro_export]
-macro_rules! parse_msg {
-    ($message:expr) => {
-        match $message.to_text() {
-            Ok(message) => match serde_json::from_str::<RxData>(message) {
-                Ok(data) => MessageParseResult::Parsed(data),
-                Err(e) => MessageParseResult::SerdeError(e),
-            },
-            Err(_) => MessageParseResult::ToTextError,
-        }
-    };
-}
-
-pub struct PlayerChannel {
-    pub tx: UnboundedSender<Message>,
-    pub rx: UnboundedReceiver<Message>,
-    pub addr: SocketAddr,
-}
-
 pub struct Session {
     session_id: Uuid,
     session_name: String,
@@ -93,9 +53,6 @@ pub struct Session {
     has_finished: bool,
     config: SessionConfig,
     addr_map: FxHashMap<SocketAddr, Uuid>,
-    // channels: Rc<FxHashMap<Uuid, Rc<PlayerChannel>>>,
-    receivers: Cell<FxHashMap<Uuid, UnboundedReceiver<Message>>>,
-    senders: FxHashMap<Uuid, UnboundedSender<Message>>,
 }
 
 impl Session {
@@ -114,22 +71,19 @@ impl Session {
             has_finished: false,
             config,
             addr_map: FxHashMap::default(),
-            // channels: Rc::new(FxHashMap::default()),
-            receivers: Cell::new(FxHashMap::default()),
-            senders: FxHashMap::default(),
         }
     }
 
     /// Returns `Err` if the username is invalidated
     pub fn with_host(
         mut self,
-        channel: PlayerChannel,
+        tx: &mut TransmissionQueue,
         username: String,
         addr: SocketAddr,
         wait_time: u64,
-    ) -> Result<Self, PlayerChannel> {
+    ) -> Result<Self, ()> {
         if username.len() > self.config.max_username_len {
-            return Err(channel);
+            return Err(());
         }
 
         let host_id = Uuid::new_v4();
@@ -138,26 +92,26 @@ impl Session {
         self.player_data
             .insert(host_id, PlayerData::new(host_id, username, addr));
 
-        send_msg!(
-            channel.tx,
-            &TxData::SessionCreationResponse {
+        tx.send_to_addr(
+            addr,
+            TxData::SessionCreationResponse {
                 creation_succeeded: true,
                 session_id: Some(self.session_id),
-            }
+            },
         );
 
-        send_msg!(
-            channel.tx,
-            &TxData::UserCreationResponse {
+        tx.send_to_addr(
+            addr,
+            TxData::UserCreationResponse {
                 creation_succeeded: true,
                 user_id: Some(host_id),
-            }
+            },
         );
 
         //5 minutes max wait time
         let id = self.set_timeout(
             |s, tx| {
-                s.launch_game();
+                s.launch_game(tx);
                 let _ = s.game_data.map.get_map(0, 99);
             },
             Duration::from_secs(wait_time), //TODO: change wait time back to 5 minutes
@@ -206,7 +160,8 @@ impl Session {
     }
 
     fn exec_timers(&mut self, tx: &mut TransmissionQueue) {
-        for (id, rc) in self.timers.clone() {
+        let timers = self.timers.clone();
+        for (id, rc) in timers {
             if SystemTime::now() > rc.0 {
                 rc.1(self, tx);
                 if !rc.2 {
@@ -216,28 +171,27 @@ impl Session {
         }
     }
 
-    fn broadcast(&mut self, id: &Uuid, data: TxData) {
+    fn broadcast(
+        &mut self,
+        tx: &mut TransmissionQueue,
+        rx_addr: SocketAddr,
+        id: Uuid,
+        data: TxData,
+    ) {
         //FIXME: Not works for no reason :(
-        // self.player_data.values().for_each(|p| {
-        //     // println!("Sending broadcast to {}", p.addr);
-        //     // if p.id == id {
-        //     //     return;
-        //     // }
-        //     tx.send_to_addr(p.addr, data.clone());
-        // })
-        self.senders.values().for_each(|sender| {
-            send_msg!(sender, &data);
-        });
+        self.player_data.values().for_each(|p| {
+            // println!("Sending broadcast to {}", p.addr);
+            // if p.id == id {
+            //     return;
+            // }
+            tx.send_to_addr(p.addr, data.clone());
+        })
     }
 
-    fn emit(&mut self, data: TxData) {
-        self.senders.values().for_each(|sender| {
-            send_msg!(sender, &data);
-        });
-
-        // self.player_data
-        //     .values()
-        //     .for_each(|p| tx.send_to_addr(p.addr, data.clone()))
+    fn emit(&mut self, tx: &mut TransmissionQueue, data: TxData) {
+        self.player_data
+            .values()
+            .for_each(|p| tx.send_to_addr(p.addr, data.clone()))
     }
 
     pub fn host_addr(&self) -> &SocketAddr {
@@ -257,12 +211,28 @@ impl Session {
             return;
         };
 
-        self.broadcast(id, TxData::GameEvent { username, event });
+        self.broadcast(tx, addr, *id, TxData::GameEvent { username, event });
     }
 
     #[inline(always)]
-    pub fn on_broadcast_req(&mut self, id: &Uuid, pos_y: f32, pos_x: f32, tick: u64) {
+    pub fn on_broadcast_req(
+        &mut self,
+        tx: &mut TransmissionQueue,
+        addr: SocketAddr,
+        pos_y: f32,
+        pos_x: f32,
+        tick: u64,
+    ) {
+        let id = if let Some(id) = self.addr_map.get(&addr) {
+            id
+        } else {
+            return;
+        };
         let (username, tick) = if let Some(player) = self.player_data.get_mut(&id) {
+            if addr != player.addr {
+                //|| tick < player.curr_tick
+                return;
+            }
             player.curr_tick += 1;
             (player.username.clone(), player.curr_tick)
         } else {
@@ -270,7 +240,9 @@ impl Session {
         };
 
         self.broadcast(
-            id,
+            tx,
+            addr,
+            *id,
             TxData::PlayerDataBroadcast {
                 username,
                 pos_y,
@@ -280,11 +252,8 @@ impl Session {
         )
     }
 
-    pub fn on_recv(&mut self, player_id: &Uuid, rx_data: RxData) {
+    pub fn on_recv(&mut self, tx: &mut TransmissionQueue, addr: SocketAddr, rx_data: RxData) {
         match rx_data {
-            RxData::BroadcastRequest { pos_y, pos_x, tick } => {
-                self.on_broadcast_req(player_id, pos_y, pos_x, tick)
-            }
             RxData::ValidationData {
                 session_id,
                 user_id,
@@ -298,16 +267,11 @@ impl Session {
                 };
                 //TODO: validation code
             }
-            RxData::LaunchGame { user_id, .. } => self.launch_game_req(&user_id),
-            RxData::Map { user_id, index, .. } => self.map_req(&user_id, index),
+            RxData::LaunchGame { user_id, .. } => self.launch_game_req(tx, addr, user_id),
+            RxData::Map { user_id, index, .. } => self.map_req(tx, addr, user_id, index),
             // RxData::GameOver { user_id, .. } => self.user_game_over(tx, user_id, addr),
-            RxData::Query { query: QueryType::SessionStatus { session_id } } => {
-                if session_id == self.session_id {
-                    send_msg!(self.senders.get_mut(player_id).unwrap(), &TxData::QueryResponse { query_res: QueryResponseType::SessionStatus { status: self.get_status().0, time: self.get_status().1 } });
-                }
-            }
-            _ => println!(
-                "[session] WARNING: Every other conditions should be already handled in `SessionExecutor`"
+            _ => unreachable!(
+                "[session] Every other conditions should be already handled in `SessionExecutor`"
             ),
         }
     }
@@ -315,7 +279,7 @@ impl Session {
     pub fn user_game_over(
         &mut self,
         tx: &mut TransmissionQueue,
-        user_id: &Uuid,
+        user_id: Uuid,
         addr: SocketAddr,
     ) -> Result<usize, ()> {
         let score = if let SessionStatus::Active { start_time, .. } = self.status {
@@ -334,55 +298,66 @@ impl Session {
             return Err(());
         };
 
-        send_msg!(
-            self.senders.get(user_id).unwrap(),
-            &TxData::UserGameOver {
-                score,
-                user_id: *user_id
-            }
+        tx.send_to_addr(
+            addr,
+            TxData::UserGameOver {
+                score: score,
+                user_id,
+            },
         );
-        self.broadcast(user_id, TxData::UserGameOverBroadcast { username, score });
+        self.broadcast(
+            tx,
+            addr,
+            user_id,
+            TxData::UserGameOverBroadcast { username, score },
+        );
 
         let active_players = self.player_data.values().filter(|v| v.score == 0).count();
         Ok(active_players)
     }
 
-    fn map_req(&mut self, player_id: &Uuid, idx: u32) {
-        // if let None = self.player_data.get(&user_id) {
-        //     println!(
-        //         "[sesson] map requested by unknown user `{}` (addr: `{}`)",
-        //         user_id, addr
-        //     );
-        //     println!("[session] still sending map bc idc")
-        //     // return;
-        // }
-        //
+    fn map_req(&mut self, tx: &mut TransmissionQueue, addr: SocketAddr, user_id: Uuid, idx: u32) {
+        if let None = self.player_data.get(&user_id) {
+            println!(
+                "[sesson] map requested by unknown user `{}` (addr: `{}`)",
+                user_id, addr
+            );
+            println!("[session] still sending map bc idc")
+            // return;
+        }
+
         match self.status {
             _ => {
                 let idx = idx as usize;
                 let (from, to) = (idx as usize * 100, (idx as usize + 1) * 100 - 1); //0-99, 100-199, ..
 
                 let map = self.game_data.map.get_map(from, to).to_vec();
-                // tx.send_to_addr(addr, TxData::Map { map })
-                send_msg!(self.senders.get(player_id).unwrap(), &TxData::Map { map });
+                tx.send_to_addr(addr, TxData::Map { map })
+            }
+            _ => {
+                println!(
+                    "[session] map requested by `{}`(username: `{}`, addr: {}) while session is not active.",
+                    user_id, self.player_data.get(&user_id).unwrap().username, addr
+                )
             }
         }
     }
 
-    fn launch_game_req(&mut self, user_id: &Uuid) {
-        let id_mismatch = user_id != &self.host_id;
-        if id_mismatch {
+    fn launch_game_req(&mut self, tx: &mut TransmissionQueue, addr: SocketAddr, user_id: Uuid) {
+        let id_mismatch = user_id != self.host_id;
+        let addr_mismatch = addr != self.player_data.get(&self.host_id).unwrap().addr;
+        if id_mismatch || addr_mismatch {
             println!(
-                "[session] Unauthorized game launch request from  user id: `{}`.\nID mismatch: {}",
-                user_id, id_mismatch,
+                "[session] Unauthorized game launch request from `{}` (user id: `{}`).\nID mismatch: {}, address mismatch: {}",
+                addr, user_id, id_mismatch, addr_mismatch,
             );
             return;
         }
 
-        self.launch_game();
+        self.launch_game(tx);
     }
 
-    fn launch_game(&mut self) {
+    fn launch_game(&mut self, tx: &mut TransmissionQueue) {
         if let SessionStatus::Waiting { timeout, .. } = self.status {
             self.timers.remove(&timeout);
             let duration = Duration::from_secs(4);
@@ -392,13 +367,16 @@ impl Session {
                 duration,
             };
 
-            self.emit(TxData::GameCountdownStart {
-                duration: duration.as_secs() as u32,
-            });
+            self.emit(
+                tx,
+                TxData::GameCountdownStart {
+                    duration: duration.as_secs() as u32,
+                },
+            );
 
             self.set_timeout(
                 |s, tx| {
-                    s.emit(TxData::GameStart);
+                    s.emit(tx, TxData::GameStart);
                     s.status = SessionStatus::Active {
                         start_time: Instant::now(),
                         max_duration: Duration::from_secs(30 * 60),
@@ -412,14 +390,14 @@ impl Session {
 
     pub fn create_user(
         &mut self,
+        tx: &mut TransmissionQueue,
         addr: SocketAddr,
-        channel: PlayerChannel,
         username: String,
-    ) -> Result<(), PlayerChannel> {
+    ) -> Result<(), ()> {
         if !self.host_id.is_nil() {
             match self.status {
                 SessionStatus::Waiting { .. } => (),
-                _ => return Err(channel),
+                _ => return Err(()),
             }
         }
 
@@ -427,14 +405,14 @@ impl Session {
             || username.len() > self.config.max_username_len
             || self.username_exists(&username)
         {
-            send_msg!(
-                channel.tx,
-                &TxData::UserCreationResponse {
+            tx.send_to_addr(
+                addr,
+                TxData::UserCreationResponse {
                     creation_succeeded: false,
                     user_id: None,
-                }
+                },
             );
-            return Err(channel);
+            return Err(());
         }
 
         let id = Uuid::new_v4();
@@ -458,17 +436,13 @@ impl Session {
             },
         );
         self.addr_map.insert(addr, id);
-
-        send_msg!(
-            channel.tx,
-            &TxData::UserCreationResponse {
+        tx.send_to_addr(
+            addr,
+            TxData::UserCreationResponse {
                 creation_succeeded: true,
                 user_id: Some(id),
-            }
+            },
         );
-
-        self.receivers.get_mut().insert(id, channel.rx);
-        self.senders.insert(id, channel.tx);
 
         Ok(())
     }
@@ -490,7 +464,7 @@ impl Session {
 
                 (
                     player_data.username.clone(),
-                    if player_data.score > 0 {
+                    if (player_data.score > 0) {
                         player_data.score
                     } else {
                         self.game_data.sync_score
@@ -541,19 +515,6 @@ impl Session {
         }
     }
 
-    fn process_messages(&mut self) {
-        let mut receivers = self.receivers.take();
-        for (id, rx) in &mut receivers {
-            while let Ok(Some(msg)) = rx.try_next() {
-                let msg = parse_msg!(msg);
-                if let MessageParseResult::Parsed(msg) = msg {
-                    self.on_recv(&id, msg);
-                }
-            }
-        }
-        self.receivers.set(receivers);
-    }
-
     fn curr_score(&self, start_time: Instant) -> u64 {
         let elapsed = start_time.elapsed().as_secs_f64();
         ((INITIAL_X_VEL as f64 * elapsed) + (0.5 * X_ACC as f64 * elapsed.powi(2))).round() as u64
@@ -561,8 +522,6 @@ impl Session {
 
     pub fn game_loop(&mut self, tx: &mut TransmissionQueue) -> bool {
         self.exec_timers(tx);
-        self.process_messages();
-
         if self.has_finished {
             return true;
         }
@@ -584,22 +543,19 @@ impl Session {
 
     pub fn login_user(
         &mut self,
+        tx: &mut TransmissionQueue,
         addr: SocketAddr,
         user_id: Uuid,
-        channel: PlayerChannel,
-    ) -> Result<(), PlayerChannel> {
+    ) -> Result<(), ()> {
         if let Some(player) = self.player_data.get_mut(&user_id) {
             player.connect();
             player.addr = addr;
             self.addr_map.insert(addr, user_id);
-            let result = send_msg!(channel.tx, &TxData::LoginResponse { succeeded: true });
-            // tx.send_to_addr(addr, TxData::LoginResponse { succeeded: true });
-            self.receivers.get_mut().insert(user_id, channel.rx);
-            self.senders.insert(user_id, channel.tx);
+            tx.send_to_addr(addr, TxData::LoginResponse { succeeded: true });
             return Ok(());
         }
-        // tx.send_to_addr(addr, TxData::LoginResponse { succeeded: false });
-        Err(channel)
+        tx.send_to_addr(addr, TxData::LoginResponse { succeeded: false });
+        Err(())
     }
 
     pub fn on_user_con_close(&mut self, addr: SocketAddr) -> bool {
@@ -616,8 +572,6 @@ impl Session {
         };
 
         self.addr_map.remove(&addr);
-        self.receivers.get_mut().remove(&user_id);
-        self.senders.remove(&user_id);
 
         let start_time = match self.status {
             SessionStatus::Active { start_time, .. } => start_time,
@@ -683,11 +637,13 @@ pub struct PlayerData {
     addr: SocketAddr,
     status: PlayerStatus,
     curr_tick: u64, //a monotonic counter (counted by client and server separately) to keep chronological order of broadcast requests
-                    //
+    //
+    tx: UnboundedSender<Message>,
+    rx: UnboundedReceiver<Message>,
 }
 
 impl PlayerData {
-    fn new(id: Uuid, username: String, addr: SocketAddr) -> Self {
+    fn new(id: Uuid, username: String, addr: SocketAddr, tx: UnboundedSender<Message>, rx: UnboundedReceiver<Message>) -> Self {
         Self {
             id,
             username,
@@ -695,6 +651,7 @@ impl PlayerData {
             score: 0,
             status: PlayerStatus::Connected,
             curr_tick: 0,
+            tx,rx
         }
     }
     pub fn disconnect(&mut self) {
@@ -702,5 +659,11 @@ impl PlayerData {
     }
     pub fn connect(&mut self) {
         self.status = PlayerStatus::Connected
+    }
+
+
+    pub fn send(&mut self, message: TxData) {
+
+        self.tx.unbounded_send(serde_json::to_string_pretty(message));
     }
 }

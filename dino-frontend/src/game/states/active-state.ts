@@ -541,11 +541,6 @@ export const activeGameState: GameStateBuilderData = {
 
         sres.vel.x += sres.acc.x * gres.deltaTime * 0.001;
         sres.pos.x += sres.vel.x * gres.deltaTime * 0.001;
-    },
-
-    postRender: function (sres: StateResourceType, gres: GlobalGameResources) {
-        if (!sres.isRunning) return;
-
         gres.server.socketClient?.send({
             type: "BroadcastRequest",
             posX: sres.pos.x / gres.unitLength,
@@ -553,6 +548,11 @@ export const activeGameState: GameStateBuilderData = {
             tick: gres.server.tick,
         });
         gres.server.tick++;
+    },
+
+    postRender: function (sres: StateResourceType, gres: GlobalGameResources) {
+        if (!sres.isRunning) return;
+
     },
 
     onLeave: function (sres: StateResourceType, gres: GlobalGameResources) {

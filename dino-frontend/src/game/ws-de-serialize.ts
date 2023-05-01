@@ -79,6 +79,17 @@ type TxData =
 function deserialize(jsonStr: string): RxData {
     let json = JSON.parse(jsonStr);
 
+    if (json["type"] ==  "PlayerDataBroadcast") {
+            // if (!validateKeys(json, { username: "", posY: 0, posX: 0 }))
+            //     return { type: "None" };
+            return {
+                type: "PlayerDataBroadcast",
+                username: json["username"],
+                posY: json["posY"],
+                posX: json["posX"],
+                tick: json["tick"],
+            };
+    }
     // hopefully theres a less verbose way...
     switch (json["type"]) {
         case "GameEvent": {
@@ -119,16 +130,7 @@ function deserialize(jsonStr: string): RxData {
                 if (dezerd.creationSucceeded) dezerd.userId = json["userId"];
                 return dezerd;
             }
-        case "PlayerDataBroadcast":
-            if (!validateKeys(json, { username: "", posY: 0, posX: 0 }))
-                return { type: "None" };
-            return {
-                type: "PlayerDataBroadcast",
-                username: json["username"],
-                posY: json["posY"],
-                posX: json["posX"],
-                tick: json["tick"],
-            };
+     
         case "GameCountdownStart":
             if (!validateKeys(json, { duration: 0 })) return { type: "None" };
             return { type: "GameCountdownStart", duration: json["duration"] };
