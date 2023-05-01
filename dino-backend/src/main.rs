@@ -27,6 +27,9 @@ use crate::session_exec::SessionExecutor;
 type Tx = mpsc::Sender<Message>;
 type SessionExecSync = Arc<Mutex<SessionExecutor>>;
 
+
+const MESSAGE_CHANNEL_CAPACITY:usize = 2048;
+
 async fn handle_connection(
     session_channel: mpsc::Sender<ChannelData>,
     raw_stream: TcpStream,
@@ -45,7 +48,7 @@ async fn handle_connection(
 
     // Insert the write part of this peer to the peer map.
     let (transmitter_tx, transmitter_rx) = unbounded(); //from the perspective of `Session`
-    let (receiver_tx, receiver_rx) = unbounded();
+    let (receiver_tx, receiver_rx) =unbounded();
     // peer_map.lock().unwrap().insert(addr, tx);
 
     match session_channel

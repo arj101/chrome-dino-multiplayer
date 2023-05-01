@@ -89,7 +89,7 @@ pub struct Session {
     player_data: FxHashMap<Uuid, PlayerData>,
     game_data: GameData,
     status: SessionStatus,
-    timers: FxHashMap<Uuid, Rc<(SystemTime, fn(&mut Self, &mut TransmissionQueue), bool)>>,
+    timers: FxHashMap<Uuid, Rc<(SystemTime, fn(&mut Self), bool)>>,
     has_finished: bool,
     config: SessionConfig,
     addr_map: FxHashMap<SocketAddr, Uuid>,
@@ -156,7 +156,7 @@ impl Session {
 
         //5 minutes max wait time
         let id = self.set_timeout(
-            |s, tx| {
+            |s| {
                 s.launch_game();
                 let _ = s.game_data.map.get_map(0, 99);
             },
@@ -185,7 +185,7 @@ impl Session {
 
     fn set_timeout(
         &mut self,
-        f: fn(&mut Self, &mut TransmissionQueue),
+        f: fn(&mut Self),
         duration: Duration,
     ) -> Uuid {
         let id = Uuid::new_v4();
@@ -196,7 +196,7 @@ impl Session {
 
     fn set_interval(
         &mut self,
-        f: fn(&mut Self, &mut TransmissionQueue),
+        f: fn(&mut Self),
         duration: Duration,
     ) -> Uuid {
         let id = Uuid::new_v4();
@@ -205,15 +205,21 @@ impl Session {
         id
     }
 
-    fn exec_timers(&mut self, tx: &mut TransmissionQueue) {
-        for (id, rc) in self.timers.clone() {
+    fn exec_timers(&mut self,) {
+        let mut exec_list = vec!{};
+        let mut remove_list = vec!{};
+        for (id, rc) in &self.timers {
             if SystemTime::now() > rc.0 {
-                rc.1(self, tx);
+                // rc.1(self, tx);
+                exec_list.push(rc.1);
                 if !rc.2 {
-                    self.timers.remove(&id);
+                remove_list.push(id.clone());
                 }
             }
         }
+
+        for f in exec_list { f(self); }
+        for id in remove_list { self.timers.remove(&id); }
     }
 
     fn broadcast(&mut self, id: &Uuid, data: TxData) {
@@ -271,10 +277,10 @@ impl Session {
 
         self.broadcast(
             id,
-            TxData::PlayerDataBroadcast {
+            TxData::Broadcast {
                 username,
-                pos_y,
-                pos_x,
+                pos: [pos_x,
+                pos_y],
                 tick,
             },
         )
@@ -282,7 +288,7 @@ impl Session {
 
     pub fn on_recv(&mut self, player_id: &Uuid, rx_data: RxData) {
         match rx_data {
-            RxData::BroadcastRequest { pos_y, pos_x, tick } => {
+            RxData::BroadcastReq { pos: [pos_x, pos_y], tick } => {
                 self.on_broadcast_req(player_id, pos_y, pos_x, tick)
             }
             RxData::ValidationData {
@@ -397,7 +403,7 @@ impl Session {
             });
 
             self.set_timeout(
-                |s, tx| {
+                |s| {
                     s.emit(TxData::GameStart);
                     s.status = SessionStatus::Active {
                         start_time: Instant::now(),
@@ -559,8 +565,8 @@ impl Session {
         ((INITIAL_X_VEL as f64 * elapsed) + (0.5 * X_ACC as f64 * elapsed.powi(2))).round() as u64
     }
 
-    pub fn game_loop(&mut self, tx: &mut TransmissionQueue) -> bool {
-        self.exec_timers(tx);
+    pub fn game_loop(&mut self,) -> bool {
+        self.exec_timers();
         self.process_messages();
 
         if self.has_finished {
@@ -571,7 +577,7 @@ impl Session {
             max_duration,
         } = self.status
         {
-            self.game_data.sync_score = self.curr_score(start_time);
+            // self.game_data.sync_score = self.curr_score(start_time);
             if start_time.elapsed() > max_duration {
                 true
             } else {

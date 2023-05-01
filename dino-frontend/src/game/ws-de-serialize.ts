@@ -21,10 +21,9 @@ type RxData =
           userId?: string;
       }
     | {
-          type: "PlayerDataBroadcast";
+          type: "Broadcast";
           username: string;
-          posY: number;
-          posX: number;
+          pos: [number, number],
           tick: number;
       }
     | { type: "LoginResponse"; succeeded: boolean }
@@ -56,9 +55,8 @@ type TxData =
     | { type: "CreateUser"; sessionId: string; username: string }
     | { type: "LaunchGame"; sessionId: string; userId: string }
     | {
-          type: "BroadcastRequest";
-          posY: number;
-          posX: number;
+          type: "BroadcastReq";
+          pos: [number, number],
           tick: number;
       }
     | {
@@ -79,14 +77,13 @@ type TxData =
 function deserialize(jsonStr: string): RxData {
     let json = JSON.parse(jsonStr);
 
-    if (json["type"] ==  "PlayerDataBroadcast") {
+    if (json["type"] ==  "Broadcast") {
             // if (!validateKeys(json, { username: "", posY: 0, posX: 0 }))
             //     return { type: "None" };
             return {
-                type: "PlayerDataBroadcast",
+                type: "Broadcast",
                 username: json["username"],
-                posY: json["posY"],
-                posX: json["posX"],
+                pos: json["pos"],
                 tick: json["tick"],
             };
     }

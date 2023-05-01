@@ -35,6 +35,7 @@ type GlobalGameResources = {
 
     dinoImageHeight: number;
     unitLength: number;
+    unitLengthInv:number;
     spriteScalingFactor: number;
     groundHeight: number;
 };
@@ -96,6 +97,7 @@ class GameStateManager {
             deltaTime: 0,
             dinoImageHeight: 0, //these are global since they are shared by multiple states
             unitLength: 0,
+            unitLengthInv: 0,
             spriteScalingFactor: 0,
             groundHeight: 0,
 

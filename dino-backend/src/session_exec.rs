@@ -1,4 +1,4 @@
-use futures_channel::mpsc::{UnboundedReceiver, UnboundedSender};
+use futures_channel::mpsc::{UnboundedReceiver, UnboundedSender, Sender, Receiver};
 use futures_util::Stream;
 // use tokio::sync::mpsc::{self, UnboundedReceiver};
 use rayon::prelude::*;
@@ -85,12 +85,9 @@ pub enum TxData {
         succeeded: bool,
     },
 
-    PlayerDataBroadcast {
+    Broadcast {
         username: String,
-        #[serde(rename = "posY")]
-        pos_y: f32,
-        #[serde(rename = "posX")]
-        pos_x: f32,
+        pos: [f32; 2],
         tick: u64,
     },
 
@@ -167,11 +164,8 @@ pub enum RxData {
         user_id: Uuid,
     },
 
-    BroadcastRequest {
-        #[serde(rename = "posY")]
-        pos_y: f32,
-        #[serde(rename = "posX")]
-        pos_x: f32,
+    BroadcastReq {
+        pos: [f32; 2],
         tick: u64,
     },
 
@@ -728,7 +722,7 @@ impl SessionExecutor {
     #[inline(always)]
     pub fn run(&mut self) {
         for (s_id, s) in &mut self.sessions {
-            let game_finished = s.game_loop(&mut self.tx_queue);
+            let game_finished = s.game_loop();
             if game_finished {
                 s.shutdown(&mut self.tx_queue);
                 self.closable_sessions.push(*s_id);

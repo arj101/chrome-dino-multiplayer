@@ -124,6 +124,7 @@ export const initialGameState: GameStateBuilderData = {
 
             //======setup global state==========
             gres.unitLength = gres.renderer.res.canvas.height * 0.13;
+            gres.unitLengthInv = 1/gres.unitLength;
             gres.groundHeight = gres.renderer.res.canvas.height * 0.6;
 
             const texturePromise = gres.renderer.res.textureMap.loadTexture(
@@ -135,6 +136,7 @@ export const initialGameState: GameStateBuilderData = {
                 event.preventDefault();
                 event.stopPropagation();
                 gres.unitLength = gres.renderer.res.canvas.height * 0.13;
+                gres.unitLengthInv = 1/gres.unitLength;
                 gres.groundHeight = gres.renderer.res.canvas.height * 0.6;
 
                 gres.dinoImageHeight =

@@ -471,7 +471,7 @@ export const activeGameState: GameStateBuilderData = {
         gres.server.socketClient?.onMessage(() => {});
 
         gres.server.socketClient?.onMessage(function (m) {
-            if (m.type !== "PlayerDataBroadcast") return;
+            if (m.type !== "Broadcast") return;
             //             if (!sres.otherPlayers.has(m.username)) {
             // console.log('here2');
             //             sres.otherPlayers.set(m.username, {pos: {x: m.posX, y: m.posY}, tick: m.tick});
@@ -479,7 +479,7 @@ export const activeGameState: GameStateBuilderData = {
             //             } ;
             //             if (sres.otherPlayers.get(m.username)!.tick >= m.tick) return;
             sres.otherPlayers.set(m.username, {
-                pos: { x: m.posX, y: m.posY },
+                pos: { x: m.pos[0], y: m.pos[1] },
                 tick: m.tick,
             });
         });
@@ -541,12 +541,13 @@ export const activeGameState: GameStateBuilderData = {
 
         sres.vel.x += sres.acc.x * gres.deltaTime * 0.001;
         sres.pos.x += sres.vel.x * gres.deltaTime * 0.001;
-        gres.server.socketClient?.send({
-            type: "BroadcastRequest",
-            posX: sres.pos.x / gres.unitLength,
-            posY: sres.pos.y / gres.unitLength,
-            tick: gres.server.tick,
-        });
+        // gres.server.socketClient?.send({
+        //     type: "BroadcastReq",
+        //     pos: [sres.pos.x / gres.unitLength,
+        //     sres.pos.y / gres.unitLength],
+        //     tick: gres.server.tick,
+        // });
+        gres.server.socketClient?.socket.send(`{"type":"BroadcastReq","pos":[${sres.pos.x * gres.unitLengthInv},${sres.pos.y * gres.unitLengthInv}],"tick":${gres.server.tick}}`);
         gres.server.tick++;
     },
 
