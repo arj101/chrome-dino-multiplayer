@@ -183,43 +183,39 @@ impl Session {
         &self.status
     }
 
-    fn set_timeout(
-        &mut self,
-        f: fn(&mut Self),
-        duration: Duration,
-    ) -> Uuid {
+    fn set_timeout(&mut self, f: fn(&mut Self), duration: Duration) -> Uuid {
         let id = Uuid::new_v4();
         self.timers
             .insert(id, Rc::new((SystemTime::now() + duration, f, false)));
         id
     }
 
-    fn set_interval(
-        &mut self,
-        f: fn(&mut Self),
-        duration: Duration,
-    ) -> Uuid {
+    fn set_interval(&mut self, f: fn(&mut Self), duration: Duration) -> Uuid {
         let id = Uuid::new_v4();
         self.timers
             .insert(id, Rc::new((SystemTime::now() + duration, f, true)));
         id
     }
 
-    fn exec_timers(&mut self,) {
-        let mut exec_list = vec!{};
-        let mut remove_list = vec!{};
+    fn exec_timers(&mut self) {
+        let mut exec_list = vec![];
+        let mut remove_list = vec![];
         for (id, rc) in &self.timers {
             if SystemTime::now() > rc.0 {
                 // rc.1(self, tx);
                 exec_list.push(rc.1);
                 if !rc.2 {
-                remove_list.push(id.clone());
+                    remove_list.push(id.clone());
                 }
             }
         }
 
-        for f in exec_list { f(self); }
-        for id in remove_list { self.timers.remove(&id); }
+        for f in exec_list {
+            f(self);
+        }
+        for id in remove_list {
+            self.timers.remove(&id);
+        }
     }
 
     fn broadcast(&mut self, id: &Uuid, data: TxData) {
@@ -279,8 +275,7 @@ impl Session {
             id,
             TxData::Broadcast {
                 username,
-                pos: [pos_x,
-                pos_y],
+                pos: [pos_x, pos_y],
                 tick,
             },
         )
@@ -565,7 +560,7 @@ impl Session {
         ((INITIAL_X_VEL as f64 * elapsed) + (0.5 * X_ACC as f64 * elapsed.powi(2))).round() as u64
     }
 
-    pub fn game_loop(&mut self,) -> bool {
+    pub fn game_loop(&mut self) -> bool {
         self.exec_timers();
         self.process_messages();
 

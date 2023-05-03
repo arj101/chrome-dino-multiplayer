@@ -1,4 +1,4 @@
-use futures_channel::mpsc::{UnboundedReceiver, UnboundedSender, Sender, Receiver};
+use futures_channel::mpsc::{Receiver, Sender, UnboundedReceiver, UnboundedSender};
 use futures_util::Stream;
 // use tokio::sync::mpsc::{self, UnboundedReceiver};
 use rayon::prelude::*;
@@ -217,10 +217,6 @@ pub enum ChannelData {
         tx: UnboundedSender<WsMessage>,
         rx: UnboundedReceiver<WsMessage>,
     },
-    Message {
-        addr: SocketAddr,
-        msg: WsMessage,
-    },
     Disconnect(SocketAddr),
 }
 
@@ -262,13 +258,13 @@ pub struct SessionExecutor {
     sessions: FxHashMap<Uuid, Session>,
     session_hosts: FxHashMap<SocketAddr, Uuid>, //key: host address, value: session id
     channel_rx: mpsc::Receiver<ChannelData>,
-    channel_tx: mpsc::Sender<ChannelData>, //used to create new Sender<>s
     // peer_map: PeerMap,
     user_session_map: UserSessionMap,
     tx_queue: TransmissionQueue,
     closable_sessions: Vec<Uuid>,
     config: ConfigOptions,
     channels: FxHashMap<SocketAddr, PlayerChannel>,
+    receivers: FxHashMap<Uuid, Vec<mpsc::UnboundedReceiver<WsMessage>>>,
 }
 
 impl SessionExecutor {
@@ -304,20 +300,17 @@ impl SessionExecutor {
             sessions,
             session_hosts: FxHashMap::default(),
             channel_rx,
-            channel_tx,
             // peer_map: PeerMap::new(Mutex::new(FxHashMap::default())),
             user_session_map: UserSessionMap::default(),
             tx_queue: TransmissionQueue::new(),
             closable_sessions: vec![],
             config,
             channels: FxHashMap::default(),
+            receivers: FxHashMap::default(),
         }
     }
 
-    pub fn new_with_channel(
-        (tx, rx): (mpsc::Sender<ChannelData>, mpsc::Receiver<ChannelData>),
-        config: ConfigOptions,
-    ) -> Self {
+    pub fn new_with_channel(rx: mpsc::Receiver<ChannelData>, config: ConfigOptions) -> Self {
         let mut sessions = FxHashMap::default();
 
         if config.session_exec.dummy_sessions {
@@ -347,18 +340,14 @@ impl SessionExecutor {
             sessions,
             session_hosts: FxHashMap::default(),
             channel_rx: rx,
-            channel_tx: tx,
             // peer_map: PeerMap::new(Mutex::new(FxHashMap::default())),
             user_session_map: UserSessionMap::default(),
             tx_queue: TransmissionQueue::new(),
             closable_sessions: vec![],
             config,
             channels: FxHashMap::default(),
+            receivers: FxHashMap::default(),
         }
-    }
-
-    pub fn get_channel_sender(&self) -> mpsc::Sender<ChannelData> {
-        self.channel_tx.clone()
     }
 
     pub fn poll_main_channel(&mut self) {
@@ -376,12 +365,6 @@ impl SessionExecutor {
     fn process_channel_msg(&mut self, msg: ChannelData) {
         match msg {
             //this is not called anymore :)
-            ChannelData::Message { addr, msg } => {
-                println!("WARNING: use of deprecated message channel");
-                if let Ok(msg) = msg.to_text() {
-                    self.process_text_msg(addr, msg);
-                }
-            }
             ChannelData::Connect { addr, tx, rx } => {
                 println!("[session exec] `{}` just connected.", &addr);
                 // self.peer_map.lock().unwrap().insert(addr, (rx, tx));

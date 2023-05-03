@@ -4,6 +4,7 @@ mod math;
 mod obstacles;
 mod session;
 mod session_exec;
+mod sessions_manager;
 mod validator;
 
 use std::{
@@ -27,8 +28,7 @@ use crate::session_exec::SessionExecutor;
 type Tx = mpsc::Sender<Message>;
 type SessionExecSync = Arc<Mutex<SessionExecutor>>;
 
-
-const MESSAGE_CHANNEL_CAPACITY:usize = 2048;
+const MESSAGE_CHANNEL_CAPACITY: usize = 2048;
 
 async fn handle_connection(
     session_channel: mpsc::Sender<ChannelData>,
@@ -48,7 +48,7 @@ async fn handle_connection(
 
     // Insert the write part of this peer to the peer map.
     let (transmitter_tx, transmitter_rx) = unbounded(); //from the perspective of `Session`
-    let (receiver_tx, receiver_rx) =unbounded();
+    let (receiver_tx, receiver_rx) = unbounded();
     // peer_map.lock().unwrap().insert(addr, tx);
 
     match session_channel
@@ -133,22 +133,22 @@ async fn main() -> Result<(), IoError> {
     let session_exec_channel = mpsc::channel(2048);
     let (session_tx, session_rx) = session_exec_channel;
 
-    let session_tx_tmp = session_tx.clone();
-    let session_exec_thread = std::thread::spawn(move || {
-        let mut session_exec =
-            SessionExecutor::new_with_channel((session_tx_tmp, session_rx), config);
-        loop {
-            session_exec.poll_main_channel();
-            session_exec.poll_sub_channels();
-            session_exec.run();
-        }
-    });
+    // let session_exec_thread = std::thread::spawn(move || {
+    //     let mut session_exec =
+    //         SessionExecutor::new_with_channel((session_tx_tmp, session_rx), config);
+    //     loop {
+    //         session_exec.poll_main_channel();
+    //         session_exec.poll_sub_channels();
+    //         session_exec.run();
+    //     }
+    // });
+    tokio::task::spawn_blocking(move || sessions_manager::start(session_rx, config));
 
     while let Ok((stream, addr)) = listener.accept().await {
         tokio::spawn(handle_connection(session_tx.clone(), stream, addr));
     }
 
-    session_exec_thread.join().unwrap();
+    // session_exec_thread.join().unwrap();
 
     Ok(())
 }
