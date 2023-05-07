@@ -117,6 +117,11 @@ export const activeGameState: GameStateBuilderData = {
                 () => gres.renderer.removeRenderObject("countdown-timer", 5),
                 700
             );
+            setInterval(
+                () => {
+                gres.server.socketClient?.socket.send(`{"type":"BroadcastReq","pos":[${sres.pos.x * gres.unitLengthInv},${sres.pos.y * gres.unitLengthInv}],"tick":${gres.server.tick}}`);
+        gres.server.tick++;
+        }, 1);
         }
 
         gres.server.onCountdownStart(function (duration) {
@@ -479,7 +484,7 @@ export const activeGameState: GameStateBuilderData = {
             //             } ;
             //             if (sres.otherPlayers.get(m.username)!.tick >= m.tick) return;
             sres.otherPlayers.set(m.username, {
-                pos: { x: m.pos[0], y: m.pos[1] },
+                pos: { x: m.pos[0]*gres.unitLength - sres.pos.x, y: gres.groundHeight - m.pos[1]*gres.unitLength - gres.unitLength  },
                 tick: m.tick,
             });
         });
@@ -494,13 +499,14 @@ export const activeGameState: GameStateBuilderData = {
                     ctx.textAlign = "left";
 
                     const x =
-                        player.pos.x * gres.unitLength -
-                        sres.pos.x +
+                        player.pos.x + 
+                        // player.pos.x * gres.un/* i */tLength -
+                 /*        sres.pos.x + */
                         1.5 * gres.unitLength;
-                    const y =
-                        gres.groundHeight -
-                        gres.unitLength -
-                        player.pos.y * gres.unitLength;
+                    const y = player.pos.y;
+                        // gres.groundHeight -
+                        // gres.unitLength -
+                        // player.pos.y * gres.unitLength;
 
                     const spriteSize =
                         gres.renderer.res.textureMap.getTexureDimensions(
@@ -547,8 +553,7 @@ export const activeGameState: GameStateBuilderData = {
         //     sres.pos.y / gres.unitLength],
         //     tick: gres.server.tick,
         // });
-        gres.server.socketClient?.socket.send(`{"type":"BroadcastReq","pos":[${sres.pos.x * gres.unitLengthInv},${sres.pos.y * gres.unitLengthInv}],"tick":${gres.server.tick}}`);
-        gres.server.tick++;
+       
     },
 
     postRender: function (sres: StateResourceType, gres: GlobalGameResources) {
