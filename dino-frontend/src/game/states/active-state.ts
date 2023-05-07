@@ -479,7 +479,7 @@ export const activeGameState: GameStateBuilderData = {
             //             } ;
             //             if (sres.otherPlayers.get(m.username)!.tick >= m.tick) return;
             sres.otherPlayers.set(m.username, {
-                pos: { x: m.pos[0], y: m.pos[1] },
+                pos: { x: m.pos[0] * gres.unitLength - sres.pos.x + gres.unitLength * 1.5, y: gres.groundHeight - m.pos[1] * gres.unitLength - gres.unitLength },
                 tick: m.tick,
             });
         });
@@ -493,14 +493,16 @@ export const activeGameState: GameStateBuilderData = {
                     ctx.fillStyle = "rgb(200, 200, 255)";
                     ctx.textAlign = "left";
 
-                    const x =
-                        player.pos.x * gres.unitLength -
-                        sres.pos.x +
-                        1.5 * gres.unitLength;
-                    const y =
-                        gres.groundHeight -
-                        gres.unitLength -
-                        player.pos.y * gres.unitLength;
+                    // const x =
+                    //     player.pos.x * gres.unitLength -
+                    //     sres.pos.x +
+                    //     1.5 * gres.unitLength;
+                    // const y =
+                    //     gres.groundHeight -
+                    //     gres.unitLength -
+                    //     player.pos.y * gres.unitLength;
+                    const x = player.pos.x;
+                    const y = player.pos.y;
 
                     const spriteSize =
                         gres.renderer.res.textureMap.getTexureDimensions(
