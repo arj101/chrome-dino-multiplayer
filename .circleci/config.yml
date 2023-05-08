@@ -8,7 +8,7 @@ jobs:
       - checkout
       - run:
           name: "Install dependencies"
-          command: "curl https://sh.rustup.rs -sSf | sh -s -- -y"
+          command: "curl https://sh.rustup.rs -sSf | sh -s -- -y && source $HOME/.cargo/env"
       - run:
           name: "Release build"
           command: "cd dino-backend && cargo build --release"
