@@ -8,13 +8,13 @@ jobs:
       - checkout
       - run:
           name: "Install dependencies"
-          command: "sudo apt update && sudo apt upgrade && sudo apt install libc-bin"
+          command: "sudo apt update"
       - run: 
           name: "Install rust"
           command: "curl https://sh.rustup.rs -sSf | sh -s -- -y"
       - run:
-          name: "Print ldd version"
-          command: "ldd --version"
+          name: "Print libc version"
+          command: "/lib/x86_64-linux-gnu/libc.so.6"
       - run:
           name: "Release build"
           command: "source $HOME/.cargo/env && cd dino-backend && cargo build --release"
