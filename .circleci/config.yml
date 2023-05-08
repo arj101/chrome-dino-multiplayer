@@ -7,14 +7,12 @@ jobs:
     steps:
       - checkout
       - run:
-          name: "Install dependencies"
-          command: "sudo apt update"
+          name: "Print libc version"
+          command: "/lib/x86_64-linux-gnu/libc.so.6"
       - run: 
           name: "Install rust"
           command: "curl https://sh.rustup.rs -sSf | sh -s -- -y"
-      - run:
-          name: "Print libc version"
-          command: "/lib/x86_64-linux-gnu/libc.so.6"
+
       - run:
           name: "Release build"
           command: "source $HOME/.cargo/env && cd dino-backend && cargo build --release"
