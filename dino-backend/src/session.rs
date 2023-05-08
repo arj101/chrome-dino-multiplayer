@@ -46,14 +46,7 @@ pub enum SessionStatus {
 #[macro_export]
 macro_rules! send_msg {
     ($channel:expr, $msg:expr) => {{
-        #[cfg(debug_assertions)]
-        let parsed = serde_json::to_string_pretty($msg).unwrap();
-        #[cfg(not(debug_assertions))]
-        let parsed = serde_json::to_string($msg).unwrap();
-
-        $channel.unbounded_send(tokio_tungstenite::tungstenite::protocol::Message::Text(
-            parsed,
-        ))
+        $channel.unbounded_send($msg)
     }};
 }
 
@@ -66,19 +59,13 @@ pub enum MessageParseResult {
 #[macro_export]
 macro_rules! parse_msg {
     ($message:expr) => {
-        match $message.to_text() {
-            Ok(message) => match serde_json::from_str::<RxData>(message) {
-                Ok(data) => MessageParseResult::Parsed(data),
-                Err(e) => MessageParseResult::SerdeError(e),
-            },
-            Err(_) => MessageParseResult::ToTextError,
-        }
+        $message
     };
 }
 
 pub struct PlayerChannel {
-    pub tx: UnboundedSender<Message>,
-    pub rx: UnboundedReceiver<Message>,
+    pub tx: UnboundedSender<TxData>,
+    pub rx: UnboundedReceiver<RxData>,
     pub addr: SocketAddr,
 }
 
@@ -94,8 +81,8 @@ pub struct Session {
     config: SessionConfig,
     addr_map: FxHashMap<SocketAddr, Uuid>,
     // channels: Rc<FxHashMap<Uuid, Rc<PlayerChannel>>>,
-    receivers: Cell<FxHashMap<Uuid, UnboundedReceiver<Message>>>,
-    senders: FxHashMap<Uuid, UnboundedSender<Message>>,
+    receivers: Cell<FxHashMap<Uuid, UnboundedReceiver<RxData>>>,
+    senders: FxHashMap<Uuid, UnboundedSender<TxData>>,
 }
 
 impl Session {
@@ -140,7 +127,7 @@ impl Session {
 
         send_msg!(
             channel.tx,
-            &TxData::SessionCreationResponse {
+            TxData::SessionCreationResponse {
                 creation_succeeded: true,
                 session_id: Some(self.session_id),
             }
@@ -148,7 +135,7 @@ impl Session {
 
         send_msg!(
             channel.tx,
-            &TxData::UserCreationResponse {
+            TxData::UserCreationResponse {
                 creation_succeeded: true,
                 user_id: Some(host_id),
             }
@@ -228,13 +215,13 @@ impl Session {
         //     tx.send_to_addr(p.addr, data.clone());
         // })
         self.senders.values().for_each(|sender| {
-            send_msg!(sender, &data);
+            send_msg!(sender, data.clone());
         });
     }
 
     fn emit(&mut self, data: TxData) {
         self.senders.values().for_each(|sender| {
-            send_msg!(sender, &data);
+            send_msg!(sender, data.clone());
         });
 
         // self.player_data
@@ -304,7 +291,9 @@ impl Session {
             // RxData::GameOver { user_id, .. } => self.user_game_over(tx, user_id, addr),
             RxData::Query { query: QueryType::SessionStatus { session_id } } => {
                 if session_id == self.session_id {
-                    send_msg!(self.senders.get_mut(player_id).unwrap(), &TxData::QueryResponse { query_res: QueryResponseType::SessionStatus { status: self.get_status().0, time: self.get_status().1 } });
+                    let (status, time) = self.get_status();
+                    
+                    send_msg!(self.senders.get_mut(player_id).unwrap(), TxData::QueryResponse { query_res: QueryResponseType::SessionStatus { status , time }});
                 }
             }
             _ => println!(
@@ -337,7 +326,7 @@ impl Session {
 
         send_msg!(
             self.senders.get(user_id).unwrap(),
-            &TxData::UserGameOver {
+            TxData::UserGameOver {
                 score,
                 user_id: *user_id
             }
@@ -365,7 +354,7 @@ impl Session {
 
                 let map = self.game_data.map.get_map(from, to).to_vec();
                 // tx.send_to_addr(addr, TxData::Map { map })
-                send_msg!(self.senders.get(player_id).unwrap(), &TxData::Map { map });
+                send_msg!(self.senders.get(player_id).unwrap(), TxData::Map { map });
             }
         }
     }
@@ -430,7 +419,7 @@ impl Session {
         {
             send_msg!(
                 channel.tx,
-                &TxData::UserCreationResponse {
+                TxData::UserCreationResponse {
                     creation_succeeded: false,
                     user_id: None,
                 }
@@ -462,7 +451,7 @@ impl Session {
 
         send_msg!(
             channel.tx,
-            &TxData::UserCreationResponse {
+            TxData::UserCreationResponse {
                 creation_succeeded: true,
                 user_id: Some(id),
             }
@@ -547,9 +536,7 @@ impl Session {
         for (id, rx) in &mut receivers {
             while let Ok(Some(msg)) = rx.try_next() {
                 let msg = parse_msg!(msg);
-                if let MessageParseResult::Parsed(msg) = msg {
-                    self.on_recv(&id, msg);
-                }
+                self.on_recv(&id, msg);
             }
         }
         self.receivers.set(receivers);
@@ -593,7 +580,7 @@ impl Session {
             player.connect();
             player.addr = addr;
             self.addr_map.insert(addr, user_id);
-            let result = send_msg!(channel.tx, &TxData::LoginResponse { succeeded: true });
+            let result = send_msg!(channel.tx, TxData::LoginResponse { succeeded: true });
             // tx.send_to_addr(addr, TxData::LoginResponse { succeeded: true });
             self.receivers.get_mut().insert(user_id, channel.rx);
             self.senders.insert(user_id, channel.tx);

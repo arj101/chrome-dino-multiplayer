@@ -214,8 +214,8 @@ pub enum PlayerMove {
 pub enum ChannelData {
     Connect {
         addr: SocketAddr,
-        tx: UnboundedSender<WsMessage>,
-        rx: UnboundedReceiver<WsMessage>,
+        tx: UnboundedSender<TxData>,
+        rx: UnboundedReceiver<RxData>,
     },
     Disconnect(SocketAddr),
 }
@@ -264,7 +264,7 @@ pub struct SessionExecutor {
     closable_sessions: Vec<Uuid>,
     config: ConfigOptions,
     channels: FxHashMap<SocketAddr, PlayerChannel>,
-    receivers: FxHashMap<Uuid, Vec<mpsc::UnboundedReceiver<WsMessage>>>,
+    receivers: FxHashMap<Uuid, Vec<mpsc::UnboundedReceiver<RxData>>>,
 }
 
 impl SessionExecutor {
@@ -400,9 +400,7 @@ impl SessionExecutor {
             'read_loop: while read_count < MAX_READ_COUNT {
                 match rx.try_next() {
                     Ok(Some(message)) => {
-                        if let Ok(msg) = message.to_text() {
-                            messages.push((*addr, msg.to_owned()));
-                        }
+                        messages.push((*addr, message));
                     }
                     Ok(None) => {
                         remove_list.push(*addr);
@@ -415,7 +413,7 @@ impl SessionExecutor {
         }
 
         for (addr, msg) in messages {
-            self.process_text_msg(addr, &msg)
+            self.process_text_msg(addr, msg)
         }
 
         for addr in remove_list {
@@ -423,18 +421,7 @@ impl SessionExecutor {
         }
     }
 
-    fn process_text_msg(&mut self, addr: SocketAddr, msg: &str) {
-        let rx_data: RxData = match serde_json::from_str(msg) {
-            Ok(rx_data) => rx_data,
-            Err(err) => {
-                println!(
-                    "[session_exec] Error parsing json from `{}`: `{}`",
-                    addr, err
-                );
-                return;
-            }
-        };
-
+    fn process_text_msg(&mut self, addr: SocketAddr, rx_data: RxData) {
         match &rx_data {
             RxData::Query { query } => self.handle_query(addr, query),
             RxData::CreateSession {
@@ -524,7 +511,7 @@ impl SessionExecutor {
                 if self.sessions.contains_key(&session_id) {
                     send_msg!(
                         self.channels.get_mut(&addr).unwrap().tx,
-                        &TxData::QueryResponse {
+                        TxData::QueryResponse {
                             query_res: QueryResponseType::LeaderBoard {
                                 session_id: *session_id,
                                 scores: self.sessions.get(&session_id).unwrap().get_leaderboard(),
@@ -543,7 +530,7 @@ impl SessionExecutor {
                     let (status, duration) = s.get_status();
                     send_msg!(
                         self.channels.get_mut(&addr).unwrap().tx,
-                        &TxData::QueryResponse {
+                        TxData::QueryResponse {
                             query_res: QueryResponseType::SessionStatus {
                                 status,
                                 time: duration,
@@ -554,34 +541,33 @@ impl SessionExecutor {
             }
 
             QueryType::Sessions => {
+                let sessions = self
+                    .sessions
+                    .keys()
+                    .map(|k| {
+                        let session = self.sessions.get(k).unwrap();
+                        let status = match session.status() {
+                            SessionStatus::Waiting { .. } | SessionStatus::Uninit => {
+                                SessionStatusSimplified::Waiting
+                            }
+                            SessionStatus::Active { .. } | SessionStatus::Countdown { .. } => {
+                                SessionStatusSimplified::Busy
+                            }
+                            SessionStatus::Ended => SessionStatusSimplified::Ended,
+                        };
+                        (
+                            *k,
+                            session.name().to_owned(),
+                            status,
+                            session.get_usernames(),
+                        )
+                    })
+                    .collect();
+
                 send_msg!(
                     self.channels.get_mut(&addr).unwrap().tx,
-                    &TxData::QueryResponse {
-                        query_res: QueryResponseType::Sessions {
-                            sessions: self
-                                .sessions
-                                .keys()
-                                .map(|k| {
-                                    let session = self.sessions.get(k).unwrap();
-                                    let status = match session.status() {
-                                        SessionStatus::Waiting { .. } | SessionStatus::Uninit => {
-                                            SessionStatusSimplified::Waiting
-                                        }
-                                        SessionStatus::Active { .. }
-                                        | SessionStatus::Countdown { .. } => {
-                                            SessionStatusSimplified::Busy
-                                        }
-                                        SessionStatus::Ended => SessionStatusSimplified::Ended,
-                                    };
-                                    (
-                                        *k,
-                                        session.name().to_owned(),
-                                        status,
-                                        session.get_usernames(),
-                                    )
-                                })
-                                .collect(),
-                        },
+                    TxData::QueryResponse {
+                        query_res: QueryResponseType::Sessions { sessions }
                     }
                 );
             }
@@ -636,7 +622,7 @@ impl SessionExecutor {
         } else {
             send_msg!(
                 self.channels.get(&addr).unwrap().tx,
-                &TxData::SessionCreationResponse {
+                TxData::SessionCreationResponse {
                     creation_succeeded: false,
                     session_id: None,
                 }

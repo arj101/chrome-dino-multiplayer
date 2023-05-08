@@ -4,7 +4,6 @@ mod math;
 mod obstacles;
 mod session;
 mod session_exec;
-mod sessions_manager;
 mod validator;
 
 use std::{
@@ -79,14 +78,25 @@ async fn handle_connection(
             msg.to_text().unwrap()
         );
         // session_channel.send(ChannelData::Message(msg));
-        match receiver_tx.unbounded_send(msg) {
-            Err(err) => println!("Failed sending message to session executor: {}", err),
-            _ => (),
+        use session_exec::RxData;
+        if let Ok(msg) = msg.to_text() {
+            match serde_json::from_str::<RxData>(msg) {
+                Ok(msg) => match receiver_tx.unbounded_send(msg) {
+                    Err(err) => println!("Failed sending message to session executor: {}", err),
+                    _ => (),
+                },
+                Err(err) => {
+                    #[cfg(debug_assertions)]
+                    println!("Error parsing incoming message: {err:?}")
+                }
+            }
         }
         future::ok(())
     });
 
-    let recv_from_session_exec = transmitter_rx.map(Ok).forward(outgoing);
+    let recv_from_session_exec = transmitter_rx
+        .map(|tx_data| Ok(Message::Text(serde_json::to_string(&tx_data).unwrap())))
+        .forward(outgoing);
 
     pin_mut!(broadcast_incoming, recv_from_session_exec);
     future::select(broadcast_incoming, recv_from_session_exec).await;
@@ -132,23 +142,20 @@ async fn main() -> Result<(), IoError> {
     //FIXME: not sure what the buffer size should be;
     let session_exec_channel = mpsc::channel(2048);
     let (session_tx, session_rx) = session_exec_channel;
-
-    // let session_exec_thread = std::thread::spawn(move || {
-    //     let mut session_exec =
-    //         SessionExecutor::new_with_channel((session_tx_tmp, session_rx), config);
-    //     loop {
-    //         session_exec.poll_main_channel();
-    //         session_exec.poll_sub_channels();
-    //         session_exec.run();
-    //     }
-    // });
-    tokio::task::spawn_blocking(move || sessions_manager::start(session_rx, config));
+    let session_exec_thread = tokio::task::spawn_blocking(move || {
+        let mut session_exec = SessionExecutor::new_with_channel(session_rx, config);
+        loop {
+            session_exec.poll_main_channel();
+            session_exec.poll_sub_channels();
+            session_exec.run();
+        }
+    });
 
     while let Ok((stream, addr)) = listener.accept().await {
         tokio::spawn(handle_connection(session_tx.clone(), stream, addr));
     }
 
-    // session_exec_thread.join().unwrap();
+    futures_util::join!(session_exec_thread);
 
     Ok(())
 }
