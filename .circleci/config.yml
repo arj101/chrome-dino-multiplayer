@@ -8,7 +8,7 @@ jobs:
       - checkout
       - run:
           name: "Release build"
-          command: "cd dino-backend && cargo run --release"
+          command: "cd dino-backend && cargo build --release"
       - store_artifacts:
           name: "Save binary"
           path: ./dino-backend/target/release/dino-backend
