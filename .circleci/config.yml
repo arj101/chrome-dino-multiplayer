@@ -3,15 +3,15 @@ version: 2.1
 jobs:
   build-and-save:
     docker:
-      - image: cimg/base:current
+      - image: cimg/rust:1.69.0
     steps:
       - checkout
       - run:
-          name: "Install dependencies"
-          command: "curl https://sh.rustup.rs -sSf | sh -s -- -y"
+          name: "Print version"
+          command: "cargo --version"
       - run:
           name: "Release build"
-          command: "source $HOME/.cargo/env && cd dino-backend && cargo build --release"
+          command: "cd dino-backend && cargo build --release"
       - store_artifacts:
           name: "Save binary"
           path: ./dino-backend/target/release/dino-backend
