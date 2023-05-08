@@ -8,7 +8,7 @@ jobs:
       - checkout
       - run:
           name: "Install dependencies"
-          command: "sudo apt update && sudo apt upgrade && sudo apt install glibc"
+          command: "sudo apt update && sudo apt upgrade && sudo apt install libc-bin"
       - run: 
           name: "Install rust"
           command: "curl https://sh.rustup.rs -sSf | sh -s -- -y"
