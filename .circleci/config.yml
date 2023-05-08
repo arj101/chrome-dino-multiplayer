@@ -12,7 +12,7 @@ jobs:
       - store_artifacts:
           name: "Save binary"
           path: ./dino-backend/target/release/dino-backend
-          destination: artifact-file
+          destination: dino-backend
 
 workflows:
   build:
