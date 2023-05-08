@@ -8,10 +8,10 @@ jobs:
       - checkout
       - run:
           name: "Install dependencies"
-          command: "curl https://sh.rustup.rs -sSf | sh -s -- -y && source $HOME/.cargo/env"
+          command: "curl https://sh.rustup.rs -sSf | sh -s -- -y"
       - run:
           name: "Release build"
-          command: "cd dino-backend && cargo build --release"
+          command: "source $HOME/.cargo/env && cd dino-backend && cargo build --release"
       - store_artifacts:
           name: "Save binary"
           path: ./dino-backend/target/release/dino-backend
