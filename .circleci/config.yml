@@ -8,7 +8,7 @@ jobs:
       - checkout
       - run:
           name: "Print libc version"
-          command: "sudo /lib/x86_64-linux-gnu/libc.so.6"
+          command: "sudo /lib/libc.so.6"
       - run: 
           name: "Install rust"
           command: "curl https://sh.rustup.rs -sSf | sh -s -- -y"
