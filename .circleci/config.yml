@@ -1,0 +1,20 @@
+version: 2.1
+
+jobs:
+  build-and-save:
+    docker:
+      - image: cimg/rust:1.69.0
+    steps:
+      - checkout
+      - run:
+          name: "Release build"
+          command: "cd dino-backend && cargo build --release"
+      - store_artifacts:
+          name: "Save binary"
+          path: ./dino-backend/target/release/dino-backend
+          destination: dino-backend
+
+workflows:
+  build:
+    jobs:
+      - build-and-save
