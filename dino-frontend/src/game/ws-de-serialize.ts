@@ -34,6 +34,7 @@ type RxData =
     | { type: "UserGameOver"; score: number; userId: string }
     | { type: "InvalidationNotice" }
     | { type: "GameEvent"; username: string; event: GameEvent }
+    | { type: "Event", username: string, code: number, timestamp: number, pos: [number, number], vel: [number, number] }
     | { type: "None" };
 
 type QueryType =
@@ -72,6 +73,7 @@ type TxData =
     | { type: "Map"; sessionId: string; userId: string; index: number }
     | { type: "Login"; sessionId: string; userId: string }
     | { type: "GameEvent"; userId: string; event: GameEvent }
+    | { type: "Event", timestamp: number, code: number, vel: [number, number], pos: [number, number]}
     | { type: "GameOver"; sessionId: string; userId: string };
 
 function deserialize(jsonStr: string): RxData {
@@ -89,6 +91,16 @@ function deserialize(jsonStr: string): RxData {
     }
     // hopefully theres a less verbose way...
     switch (json["type"]) {
+        case "Event":
+            if (!validateKeys(json, {username: "", code: 0, timestamp: 0, pos: [0, 0], vel: [0, 0]})) return { type: "None" }
+            return {
+                type: "Event",
+                username: json["username"],
+                code: json["code"],
+                pos: json["pos"],
+                vel: json["vel"],
+                timestamp: json["timestamp"],
+            } as RxData;
         case "GameEvent": {
             if (!validateKeys(json, { username: "", event: {} }))
                 return { type: "None" };
@@ -168,6 +180,7 @@ function deserialize(jsonStr: string): RxData {
 
 function parseQueryResponse(json: any): QueryResponse {
     switch (json["type"]) {
+ 
         case "SessionStatus":
             if(!validateKeys(json, {status: '', time: 0})) return { type: "None" };
             return { type: "SessionStatus", status: json["status"], time: json["t"]}

@@ -117,6 +117,14 @@ pub enum TxData {
         event: GameEvent,
     },
 
+    Event {
+        username: String,
+        code: u64,
+        timestamp: u64,
+        pos: [f64; 2],
+        vel: [f64; 2],
+    },
+
     InvalidationNotice,
 }
 
@@ -194,6 +202,13 @@ pub enum RxData {
         #[serde(rename = "userId")]
         user_id: Uuid,
         event: GameEvent,
+    },
+
+    Event {
+        code: u64,
+        timestamp: u64,
+        pos: [f64; 2],
+        vel: [f64; 2],
     },
 
     GameOver {

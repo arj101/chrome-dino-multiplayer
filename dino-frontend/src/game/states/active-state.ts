@@ -30,11 +30,13 @@ type StateResourceType = {
     jumpVel: number;
     gravity: number;
 
+    startTime: number;
+
     map: {
         obstacles: Array<Obstacle>; //Array<[[x, y], [obstacles]]
     };
 
-    otherPlayers: Map<string, { pos: Vec2; tick: number }>;
+    otherPlayers: Map<string, { pos: Vec2; vel: Vec2, timestamp: number }>;
 
     clouds: Array<Cloud>;
     noise: NoiseFunction2D;
@@ -52,6 +54,7 @@ export const activeGameState: GameStateBuilderData = {
 
         jumpVel: 500,
         gravity: -300,
+        startTime: -1,
 
         pos: {
             x: 0,
@@ -108,7 +111,8 @@ export const activeGameState: GameStateBuilderData = {
         }
 
         function onGameStart() {
-            console.log("here");
+            console.log("Game started!");
+            sres.startTime = gres.timestamp + 5;
             sres.isFinalCountdown = false;
             sres.isRunning = true;
             window.dispatchEvent(new Event("game-start"));
@@ -390,6 +394,13 @@ export const activeGameState: GameStateBuilderData = {
                 case "ArrowUp":
                 case " ":
                     sres.vel.y = sres.jumpVel;
+                    gres.server.socketClient?.send({
+                        type: "Event",
+                        timestamp: Math.floor(gres.timestamp - sres.startTime),
+                        code: 1,
+                        pos: [sres.pos.x * gres.unitLengthInv, sres.pos.y * gres.unitLengthInv],
+                        vel: [sres.vel.x * gres.unitLengthInv, sres.vel.y * gres.unitLengthInv],
+                    })
 
                     break;
             }
@@ -413,6 +424,13 @@ export const activeGameState: GameStateBuilderData = {
             event.stopPropagation();
             event.preventDefault();
             sres.vel.y = sres.jumpVel;
+            gres.server.socketClient?.send({
+                type: "Event",
+                timestamp: Math.floor(gres.timestamp - sres.startTime),
+                code: 1,
+                pos: [sres.pos.x * gres.unitLengthInv, sres.pos.y * gres.unitLengthInv],
+                vel: [sres.vel.x * gres.unitLengthInv, sres.vel.y * gres.unitLengthInv],
+            })
         });
 
         window.addEventListener("game-start", function () {
@@ -470,25 +488,62 @@ export const activeGameState: GameStateBuilderData = {
         //
         gres.server.socketClient?.onMessage(() => {});
 
-        gres.server.socketClient?.onMessage(function (m) {
-            if (m.type !== "Broadcast") return;
-            //             if (!sres.otherPlayers.has(m.username)) {
-            // console.log('here2');
-            //             sres.otherPlayers.set(m.username, {pos: {x: m.posX, y: m.posY}, tick: m.tick});
-            //                 return;
-            //             } ;
-            //             if (sres.otherPlayers.get(m.username)!.tick >= m.tick) return;
-            sres.otherPlayers.set(m.username, {
-                pos: { x: m.pos[0] * gres.unitLength - sres.pos.x + gres.unitLength * 1.5, y: gres.groundHeight - m.pos[1] * gres.unitLength - gres.unitLength },
-                tick: m.tick,
-            });
+        gres.server.socketClient?.onMessage((msg) => {
+            if (sres.startTime <= -1 || msg.type !== "Event") return;
+
+            
+
+            msg.pos = [msg.pos[0] * gres.unitLength, msg.pos[1] * gres.unitLength]
+            msg.vel = [ msg.vel[0] * gres.unitLength, msg.vel[1] * gres.unitLength]
+
+            const tNow = gres.timestamp;
+            
+            const dt = (tNow - sres.startTime - msg.timestamp) * 0.001 ;
+            if (msg.code == 1) console.log(dt, msg);
+
+            const newPos = {
+                x: msg.pos[0] + msg.vel[0] * dt + 0.5 * sres.acc.x * dt * dt,
+                y: Math.max(msg.pos[1] + msg.vel[1] * dt + 0.5 * sres.gravity * dt * dt, 0),
+            };
+
+            const newVel = {
+                x: msg.vel[0] + sres.acc.x * dt,
+                y: newPos.y > 0 ? msg.vel[1] + sres.gravity * dt : 0
+            }
+
+            sres.otherPlayers.set(msg.username, {
+                pos: newPos,
+                vel: newVel,
+                timestamp: tNow,
+            })
+
         });
+
+        
+
+        setInterval(function() {
+            if (sres.startTime <= -1) return;
+            gres.server.socketClient?.send({
+                type: "Event",
+                timestamp: Math.round(gres.timestamp - sres.startTime),
+                code: 0,
+                pos: [sres.pos.x * gres.unitLengthInv, sres.pos.y * gres.unitLengthInv],
+                vel: [sres.vel.x * gres.unitLengthInv, sres.vel.y * gres.unitLengthInv],
+            })
+        }, 500);
 
         gres.renderer.addPrimitiveRenderer(
             "other-players",
             4,
             function (_, ctx) {
-                for (const [username, player] of sres.otherPlayers) {
+                for (const [username, { pos, vel, timestamp} ] of sres.otherPlayers) {
+                    const dt = (gres.timestamp - timestamp) * 0.001;
+                    const currPos = {
+                        x:pos.x + vel.x * dt + 0.5 * sres.acc.x * dt * dt,
+                        y: Math.max(pos.y + vel.y * dt + 0.5 * sres.gravity * dt * dt, 0),
+                    };
+
+                  
                     ctx.font = "20px monospace";
                     ctx.fillStyle = "rgb(200, 200, 255)";
                     ctx.textAlign = "left";
@@ -501,8 +556,8 @@ export const activeGameState: GameStateBuilderData = {
                     //     gres.groundHeight -
                     //     gres.unitLength -
                     //     player.pos.y * gres.unitLength;
-                    const x = player.pos.x;
-                    const y = player.pos.y;
+                    const x = currPos.x - sres.pos.x + 1.5 * gres.unitLength;
+                    const y = gres.groundHeight - currPos.y - gres.unitLength;
 
                     const spriteSize =
                         gres.renderer.res.textureMap.getTexureDimensions(
@@ -549,8 +604,8 @@ export const activeGameState: GameStateBuilderData = {
         //     sres.pos.y / gres.unitLength],
         //     tick: gres.server.tick,
         // });
-        gres.server.socketClient?.socket.send(`{"type":"BroadcastReq","pos":[${sres.pos.x * gres.unitLengthInv},${sres.pos.y * gres.unitLengthInv}],"tick":${gres.server.tick}}`);
-        gres.server.tick++;
+        // gres.server.socketClient?.socket.send(`{"type":"BroadcastReq","pos":[${sres.pos.x * gres.unitLengthInv},${sres.pos.y * gres.unitLengthInv}],"tick":${gres.server.tick}}`);
+        // gres.server.tick++;
     },
 
     postRender: function (sres: StateResourceType, gres: GlobalGameResources) {

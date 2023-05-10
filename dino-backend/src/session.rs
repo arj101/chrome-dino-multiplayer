@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use crate::config_options::SessionConfig;
 use crate::map_generator::GameMap;
 use crate::session_exec::{
@@ -19,10 +21,10 @@ use std::sync::{Arc, Mutex};
 
 use std::time::{self, Duration, Instant, SystemTime};
 
-pub const X_ACC: f32 = 0.3;
-pub const INITIAL_X_VEL: f32 = 8.0;
-pub const GRAVITY: f32 = -60.0;
-pub const JUMP_VEL: f32 = 15.0;
+pub const X_ACC: f64 = 0.3;
+pub const INITIAL_X_VEL: f64 = 8.0;
+pub const GRAVITY: f64 = -60.0;
+pub const JUMP_VEL: f64 = 15.0;
 
 #[derive(PartialEq)]
 pub enum SessionStatus {
@@ -93,7 +95,12 @@ impl Session {
             host_id: Uuid::nil(),
             player_data: FxHashMap::default(),
             game_data: GameData {
-                map: GameMap::new(INITIAL_X_VEL, X_ACC, GRAVITY, JUMP_VEL),
+                map: GameMap::new(
+                    INITIAL_X_VEL as f32,
+                    X_ACC as f32,
+                    GRAVITY as f32,
+                    JUMP_VEL as f32,
+                ),
                 sync_score: 0,
             },
             status: SessionStatus::Uninit,
@@ -268,24 +275,73 @@ impl Session {
         )
     }
 
+    #[inline(always)]
+    pub fn on_event(
+        &mut self,
+        player_id: &Uuid,
+        timestamp: u64,
+        code: u64,
+        pos: [f64; 2],
+        vel: [f64; 2],
+    ) {
+        let t_now = if let Some(t_now) = self.game_elapsed_time() { t_now } else { return };
+        if t_now < timestamp {
+            println!("t_now {t_now}, timestamp: {timestamp}");
+            return;
+        } //the client maybe messing with us ;)
+
+        let latency = t_now - timestamp;
+        let dt = latency as f64 * 0.001;
+
+        let mut new_vel = None;
+        let mut new_pos = None;
+        match code {
+            0 => {
+                //position update
+                new_vel = Some([vel[0] + X_ACC * dt, vel[1]]);
+                new_pos = Some([pos[0] + vel[0] * dt + 0.5 * X_ACC * dt * dt, pos[1]]);
+            }
+            1 => {
+                //jump
+                new_pos = Some([
+                    pos[0] + vel[0] * dt + 0.5 * X_ACC * dt * dt,
+                    pos[1] + f64::max(vel[1] * dt + 0.5 * dt * dt * GRAVITY, 0.0),
+                ]);
+
+                new_vel = Some([
+                    vel[0] + X_ACC * dt,
+                    if new_pos.unwrap()[1] <= 0.0 {
+                        0.0
+                    } else {
+                        vel[1] + GRAVITY * dt
+                    },
+                ]);
+            }
+            _ => (),
+        }
+
+        if let (Some(new_pos), Some(new_vel)) = (new_pos, new_vel) {
+            self.emit(TxData::Event {
+                username: self.player_data.get(player_id).unwrap().username.clone(),
+                code,
+                timestamp: t_now,
+                pos: new_pos,
+                vel: new_vel,
+            })
+        }
+    }
+
+    #[inline(always)]
     pub fn on_recv(&mut self, player_id: &Uuid, rx_data: RxData) {
         match rx_data {
             RxData::BroadcastReq { pos: [pos_x, pos_y], tick } => {
                 self.on_broadcast_req(player_id, pos_y, pos_x, tick)
             }
-            RxData::ValidationData {
-                session_id,
-                user_id,
-                pos_x,
-                score,
-                timestamp,
-                move_dir,
+            RxData::Event {
+                timestamp, code, pos, vel,  
             } => {
-                if let None = self.player_data.get(&user_id) {
-                    return;
-                };
-                //TODO: validation code
-            }
+                self.on_event(player_id, timestamp, code, pos, vel);
+            },
             RxData::LaunchGame { user_id, .. } => self.launch_game_req(&user_id),
             RxData::Map { user_id, index, .. } => self.map_req(&user_id, index),
             // RxData::GameOver { user_id, .. } => self.user_game_over(tx, user_id, addr),
@@ -491,6 +547,16 @@ impl Session {
 
         leaderboard.sort_by_key(|d| d.1);
         leaderboard
+    }
+
+
+    #[inline(always)]
+    fn game_elapsed_time(&self) -> Option<u64> {
+        if let SessionStatus::Active { start_time, max_duration } = self.status {
+            Some(Instant::elapsed(&start_time).as_millis() as u64)
+        } else {
+            None
+        }
     }
 
     pub fn get_status(&self) -> (&'static str, i64) {

@@ -24,6 +24,7 @@ import { activeGameState } from "./states/active-state";
 
 type GlobalGameResources = {
     deltaTime: number;
+    timestamp: number;
     switchState: (newState: GameState) => void;
     pushState: (newState: GameState) => void;
     popState: () => void;
@@ -94,6 +95,7 @@ class GameStateManager {
         //</populate with a default inital state>----------------------------
 
         this.res = {
+            timestamp: 0,
             deltaTime: 0,
             dinoImageHeight: 0, //these are global since they are shared by multiple states
             unitLength: 0,
@@ -171,7 +173,8 @@ class GameStateManager {
         return true;
     }
 
-    run(deltaTime: number) {
+    run(deltaTime: number, timestamp: number) {
+        this.res.timestamp = timestamp;
         this.res.deltaTime = deltaTime;
         if (!this.res.isRunning) return;
 
@@ -243,7 +246,7 @@ async function main() {
             );
             return;
         }
-        stateManager.run(deltaTime);
+        stateManager.run(deltaTime, timestamp);
     }
 
     document.addEventListener("game-manager-start", function () {
