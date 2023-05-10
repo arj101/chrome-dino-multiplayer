@@ -120,7 +120,7 @@ pub enum TxData {
     Event {
         username: String,
         code: u64,
-        timestamp: u64,
+        timestamp: f64,
         pos: [f64; 2],
         vel: [f64; 2],
     },
@@ -206,7 +206,7 @@ pub enum RxData {
 
     Event {
         code: u64,
-        timestamp: u64,
+        timestamp: f64,
         pos: [f64; 2],
         vel: [f64; 2],
     },

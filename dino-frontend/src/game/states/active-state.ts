@@ -112,7 +112,7 @@ export const activeGameState: GameStateBuilderData = {
 
         function onGameStart() {
             console.log("Game started!");
-            sres.startTime = gres.timestamp + 5;
+            sres.startTime = gres.timestamp + 1;
             sres.isFinalCountdown = false;
             sres.isRunning = true;
             window.dispatchEvent(new Event("game-start"));
@@ -396,7 +396,7 @@ export const activeGameState: GameStateBuilderData = {
                     sres.vel.y = sres.jumpVel;
                     gres.server.socketClient?.send({
                         type: "Event",
-                        timestamp: Math.floor(gres.timestamp - sres.startTime),
+                        timestamp: gres.timestamp - sres.startTime,
                         code: 1,
                         pos: [sres.pos.x * gres.unitLengthInv, sres.pos.y * gres.unitLengthInv],
                         vel: [sres.vel.x * gres.unitLengthInv, sres.vel.y * gres.unitLengthInv],
@@ -426,7 +426,7 @@ export const activeGameState: GameStateBuilderData = {
             sres.vel.y = sres.jumpVel;
             gres.server.socketClient?.send({
                 type: "Event",
-                timestamp: Math.floor(gres.timestamp - sres.startTime),
+                timestamp: gres.timestamp - sres.startTime,
                 code: 1,
                 pos: [sres.pos.x * gres.unitLengthInv, sres.pos.y * gres.unitLengthInv],
                 vel: [sres.vel.x * gres.unitLengthInv, sres.vel.y * gres.unitLengthInv],
@@ -491,8 +491,6 @@ export const activeGameState: GameStateBuilderData = {
         gres.server.socketClient?.onMessage((msg) => {
             if (sres.startTime <= -1 || msg.type !== "Event") return;
 
-            
-
             msg.pos = [msg.pos[0] * gres.unitLength, msg.pos[1] * gres.unitLength]
             msg.vel = [ msg.vel[0] * gres.unitLength, msg.vel[1] * gres.unitLength]
 
@@ -500,21 +498,14 @@ export const activeGameState: GameStateBuilderData = {
             
             const dt = (tNow - sres.startTime - msg.timestamp) * 0.001 ;
             if (msg.code == 1) console.log(dt, msg);
-
-            const newPos = {
-                x: msg.pos[0] + msg.vel[0] * dt + 0.5 * sres.acc.x * dt * dt,
-                y: Math.max(msg.pos[1] + msg.vel[1] * dt + 0.5 * sres.gravity * dt * dt, 0),
-            };
-
-            const newVel = {
-                x: msg.vel[0] + sres.acc.x * dt,
-                y: newPos.y > 0 ? msg.vel[1] + sres.gravity * dt : 0
-            }
+           
+            const newPos = {x:msg.pos[0], y: msg.pos[1]};
+            const newVel = {x:msg.vel[0], y: msg.vel[1] };
 
             sres.otherPlayers.set(msg.username, {
                 pos: newPos,
                 vel: newVel,
-                timestamp: tNow,
+                timestamp: msg.timestamp,
             })
 
         });
@@ -525,19 +516,19 @@ export const activeGameState: GameStateBuilderData = {
             if (sres.startTime <= -1) return;
             gres.server.socketClient?.send({
                 type: "Event",
-                timestamp: Math.round(gres.timestamp - sres.startTime),
+                timestamp: gres.timestamp - sres.startTime,
                 code: 0,
                 pos: [sres.pos.x * gres.unitLengthInv, sres.pos.y * gres.unitLengthInv],
                 vel: [sres.vel.x * gres.unitLengthInv, sres.vel.y * gres.unitLengthInv],
             })
-        }, 500);
+        }, 400);
 
         gres.renderer.addPrimitiveRenderer(
             "other-players",
             4,
             function (_, ctx) {
                 for (const [username, { pos, vel, timestamp} ] of sres.otherPlayers) {
-                    const dt = (gres.timestamp - timestamp) * 0.001;
+                    const dt = (gres.timestamp - sres.startTime - timestamp) * 0.001;
                     const currPos = {
                         x:pos.x + vel.x * dt + 0.5 * sres.acc.x * dt * dt,
                         y: Math.max(pos.y + vel.y * dt + 0.5 * sres.gravity * dt * dt, 0),

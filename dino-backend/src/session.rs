@@ -279,7 +279,7 @@ impl Session {
     pub fn on_event(
         &mut self,
         player_id: &Uuid,
-        timestamp: u64,
+        timestamp: f64,
         code: u64,
         pos: [f64; 2],
         vel: [f64; 2],
@@ -444,11 +444,11 @@ impl Session {
 
             self.set_timeout(
                 |s| {
-                    s.emit(TxData::GameStart);
                     s.status = SessionStatus::Active {
                         start_time: Instant::now(),
                         max_duration: Duration::from_secs(30 * 60),
                     };
+                    s.emit(TxData::GameStart);
                     println!("[session] Game just started!");
                 },
                 Duration::from_secs(3),
@@ -551,9 +551,9 @@ impl Session {
 
 
     #[inline(always)]
-    fn game_elapsed_time(&self) -> Option<u64> {
+    fn game_elapsed_time(&self) -> Option<f64> {
         if let SessionStatus::Active { start_time, max_duration } = self.status {
-            Some(Instant::elapsed(&start_time).as_millis() as u64)
+            Some(Instant::elapsed(&start_time).as_secs_f64() * 1000.0)
         } else {
             None
         }
