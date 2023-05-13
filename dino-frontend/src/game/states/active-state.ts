@@ -389,7 +389,11 @@ export const activeGameState: GameStateBuilderData = {
             };
         });
 
+        const pressedKeys = new Map();
+
         window.addEventListener("keydown", function (event) {
+            if (pressedKeys.has(event.key)) return;
+            pressedKeys.set(event.key, 1);
             switch (event.key) {
                 case "ArrowUp":
                 case " ":
@@ -398,6 +402,34 @@ export const activeGameState: GameStateBuilderData = {
                         type: "Event",
                         timestamp: gres.timestamp - sres.startTime,
                         code: 1,
+                        pos: [sres.pos.x * gres.unitLengthInv, sres.pos.y * gres.unitLengthInv],
+                        vel: [sres.vel.x * gres.unitLengthInv, sres.vel.y * gres.unitLengthInv],
+                    })
+
+                    break;
+                case "ArrowDown":
+                     sres.vel.x += gres.unitLength * 0.5;
+                    gres.server.socketClient?.send({
+                        type: "Event",
+                        timestamp: gres.timestamp - sres.startTime,
+                        code: 0,
+                        pos: [sres.pos.x * gres.unitLengthInv, sres.pos.y * gres.unitLengthInv],
+                        vel: [sres.vel.x * gres.unitLengthInv, sres.vel.y * gres.unitLengthInv],
+                    })
+
+                    break;
+            }
+        });
+
+        window.addEventListener("keyup", function(event) {
+            pressedKeys.delete(event.key);
+            switch (event.key) {
+                case "ArrowDown":
+                     sres.vel.x -= gres.unitLength * 0.5;
+                    gres.server.socketClient?.send({
+                        type: "Event",
+                        timestamp: gres.timestamp - sres.startTime,
+                        code: 0,
                         pos: [sres.pos.x * gres.unitLengthInv, sres.pos.y * gres.unitLengthInv],
                         vel: [sres.vel.x * gres.unitLengthInv, sres.vel.y * gres.unitLengthInv],
                     })
@@ -513,7 +545,7 @@ export const activeGameState: GameStateBuilderData = {
         
 
         setInterval(function() {
-            if (sres.startTime <= -1) return;
+            if (sres.startTime <= -1 || sres.pos.y > 0) return;
             gres.server.socketClient?.send({
                 type: "Event",
                 timestamp: gres.timestamp - sres.startTime,
@@ -521,7 +553,8 @@ export const activeGameState: GameStateBuilderData = {
                 pos: [sres.pos.x * gres.unitLengthInv, sres.pos.y * gres.unitLengthInv],
                 vel: [sres.vel.x * gres.unitLengthInv, sres.vel.y * gres.unitLengthInv],
             })
-        }, 400);
+        }, 500);
+
 
         gres.renderer.addPrimitiveRenderer(
             "other-players",

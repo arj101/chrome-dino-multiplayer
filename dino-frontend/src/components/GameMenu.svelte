@@ -205,16 +205,14 @@
                                 </span>
                             </button>
                         {/if}
-                        {#if !(sessionId === session[0] && leaderboard)}
                             <button
-                                on:click={() => showLeaderboard(session[0])}
+                                on:click={() => !((sessionId === session[0] && leaderboard)) ? showLeaderboard(session[0]) : closeLeaderboard()}
                                 transition:scale={{ duration: 200 }}
                             >
                                 <span class="material-symbols-outlined">
                                     leaderboard
                                 </span>
                             </button>
-                        {/if}
                     </div>
                 </div>
             {/each}
