@@ -16,6 +16,9 @@ uuid  = { version = "0.8", features = [ "serde", "v4" ] }
 rand  = "0.8"
 phf   = { version = "0.9", features = [ "macros" ] }
 rustc-hash = "1.1"
+tokio-rustls = "0.24.0"
+rustls-pemfile = "1.0.2"
+rustls = "0.21.1"
 
 [build-dependencies]
 image = "0.23"

@@ -284,7 +284,11 @@ impl Session {
         pos: [f64; 2],
         vel: [f64; 2],
     ) {
-        let t_now = if let Some(t_now) = self.game_elapsed_time() { t_now } else { return };
+        let t_now = if let Some(t_now) = self.game_elapsed_time() {
+            t_now
+        } else {
+            return;
+        };
         if t_now < timestamp {
             println!("t_now {t_now}, timestamp: {timestamp}");
             return;
@@ -549,10 +553,13 @@ impl Session {
         leaderboard
     }
 
-
     #[inline(always)]
     fn game_elapsed_time(&self) -> Option<f64> {
-        if let SessionStatus::Active { start_time, max_duration } = self.status {
+        if let SessionStatus::Active {
+            start_time,
+            max_duration,
+        } = self.status
+        {
             Some(Instant::elapsed(&start_time).as_secs_f64() * 1000.0)
         } else {
             None

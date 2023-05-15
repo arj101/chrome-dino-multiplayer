@@ -5,12 +5,13 @@ mod obstacles;
 mod session;
 mod session_exec;
 mod validator;
-
 use std::{
-    io::Error as IoError,
+    io::{Error as IoError, ErrorKind},
     net::SocketAddr,
     sync::{Arc, Mutex},
 };
+use tokio_rustls::rustls::{self, Certificate, PrivateKey};
+use tokio_rustls::TlsAcceptor;
 
 use config_options::{ConfigOptions, SessionConfig, SessionExecConfig};
 
@@ -27,16 +28,20 @@ use crate::session_exec::SessionExecutor;
 type Tx = mpsc::Sender<Message>;
 type SessionExecSync = Arc<Mutex<SessionExecutor>>;
 
+use rustls_pemfile::{certs, rsa_private_keys};
+
 const MESSAGE_CHANNEL_CAPACITY: usize = 2048;
 
 async fn handle_connection(
     session_channel: mpsc::Sender<ChannelData>,
+    acceptor: TlsAcceptor,
     raw_stream: TcpStream,
     addr: SocketAddr,
 ) {
     println!("Incoming TCP connection from: {}", addr);
 
-    let ws_stream = tokio_tungstenite::accept_async(raw_stream)
+    let stream = acceptor.accept(raw_stream).await.expect("failed to create tls stream");
+    let ws_stream = tokio_tungstenite::accept_async(stream)
         .await
         .expect("Error during the websocket handshake occurred");
     println!("WebSocket connection established: {}", addr);
@@ -115,6 +120,22 @@ async fn handle_connection(
     // peer_map.lock().unwrap().remove(&addr);
 }
 
+use std::fs::File;
+use std::io::{self, BufReader};
+use std::path::Path;
+
+fn load_certs(path: &Path) -> io::Result<Vec<Certificate>> {
+    certs(&mut BufReader::new(File::open(path)?))
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid cert"))
+        .map(|mut certs| certs.drain(..).map(Certificate).collect())
+}
+
+fn load_keys(path: &Path) -> io::Result<Vec<PrivateKey>> {
+    rustls_pemfile::pkcs8_private_keys(&mut BufReader::new(File::open(path)?))
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid key"))
+        .map(|mut keys| keys.drain(..).map(PrivateKey).collect())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), IoError> {
     let port = std::env::var("PORT")
@@ -122,7 +143,7 @@ async fn main() -> Result<(), IoError> {
         .parse::<usize>();
     let ip = std::env::var("IP_ADDR").unwrap_or("127.0.0.1".to_string());
     let addr = &format!("{}:{}", ip, port.unwrap_or(8080));
-    let config = ConfigOptions {
+    let server_config = ConfigOptions {
         session: SessionConfig {
             max_users: 20,
             max_username_len: 15,
@@ -134,6 +155,22 @@ async fn main() -> Result<(), IoError> {
         },
     };
 
+    let cert_path = std::env::var("SSL_CERT_PATH").unwrap_or("../../certs/cert.pem".to_owned());
+    let cert_path = Path::new(&cert_path);
+    let key_path = std::env::var("SSL_KEY_PATH").unwrap_or("../../certs/key.pem".to_owned());
+    let key_path = Path::new(&key_path);
+
+    let certs = load_certs(cert_path)?;
+    let mut keys = load_keys(key_path)?;
+
+
+
+    let tls_config = rustls::ServerConfig::builder()
+        .with_safe_defaults()
+        .with_no_client_auth()
+        .with_single_cert(certs, keys.remove(0))
+        .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, err))?;
+    let acceptor = TlsAcceptor::from(Arc::new(tls_config));
     // let state = PeerMap::new(Mutex::new(HashMap::new()));
     let try_socket = TcpListener::bind(addr).await;
     let listener = try_socket.expect("Failed to bind");
@@ -143,7 +180,7 @@ async fn main() -> Result<(), IoError> {
     let session_exec_channel = mpsc::channel(2048);
     let (session_tx, session_rx) = session_exec_channel;
     let session_exec_thread = tokio::task::spawn_blocking(move || {
-        let mut session_exec = SessionExecutor::new_with_channel(session_rx, config);
+        let mut session_exec = SessionExecutor::new_with_channel(session_rx, server_config);
         loop {
             session_exec.poll_main_channel();
             session_exec.poll_sub_channels();
@@ -152,7 +189,9 @@ async fn main() -> Result<(), IoError> {
     });
 
     while let Ok((stream, addr)) = listener.accept().await {
-        tokio::spawn(handle_connection(session_tx.clone(), stream, addr));
+        let acceptor = acceptor.clone();
+        tokio::spawn(handle_connection(session_tx.clone(), acceptor, stream, addr));
+           
     }
 
     futures_util::join!(session_exec_thread);
