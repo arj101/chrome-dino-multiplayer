@@ -213,14 +213,6 @@ impl Session {
     }
 
     fn broadcast(&mut self, id: &Uuid, data: TxData) {
-        //FIXME: Not works for no reason :(
-        // self.player_data.values().for_each(|p| {
-        //     // println!("Sending broadcast to {}", p.addr);
-        //     // if p.id == id {
-        //     //     return;
-        //     // }
-        //     tx.send_to_addr(p.addr, data.clone());
-        // })
         self.senders.values().for_each(|sender| {
             send_msg!(sender, data.clone());
         });
@@ -230,10 +222,6 @@ impl Session {
         self.senders.values().for_each(|sender| {
             send_msg!(sender, data.clone());
         });
-
-        // self.player_data
-        //     .values()
-        //     .for_each(|p| tx.send_to_addr(p.addr, data.clone()))
     }
 
     pub fn host_addr(&self) -> &SocketAddr {
