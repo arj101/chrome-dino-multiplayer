@@ -112,7 +112,7 @@ export const activeGameState: GameStateBuilderData = {
 
         function onGameStart() {
             console.log("Game started!");
-            sres.startTime = gres.timestamp + 1;
+            sres.startTime = gres.timestamp + 3;
             sres.isFinalCountdown = false;
             sres.isRunning = true;
             window.dispatchEvent(new Event("game-start"));
@@ -553,7 +553,7 @@ export const activeGameState: GameStateBuilderData = {
                 pos: [sres.pos.x * gres.unitLengthInv, sres.pos.y * gres.unitLengthInv],
                 vel: [sres.vel.x * gres.unitLengthInv, sres.vel.y * gres.unitLengthInv],
             })
-        }, 500);
+        }, 40);
 
 
         gres.renderer.addPrimitiveRenderer(

@@ -1,6 +1,7 @@
 #![allow(unused)]
 
 use crate::config_options::SessionConfig;
+
 use crate::map_generator::GameMap;
 use crate::session_exec::{
     GameEvent, QueryResponseType, QueryType, RxData, TransmissionQueue, TxData,
@@ -277,13 +278,15 @@ impl Session {
         } else {
             return;
         };
-        if t_now < timestamp {
+        if t_now - timestamp < -10.0 {
             println!("t_now {t_now}, timestamp: {timestamp}");
             return;
         } //the client maybe messing with us ;)
 
-        let latency = t_now - timestamp;
+        let mut latency = t_now - timestamp;
+        if latency < 0.0 { latency = 0.0 }
         let dt = latency as f64 * 0.001;
+        
 
         let mut new_vel = None;
         let mut new_pos = None;
