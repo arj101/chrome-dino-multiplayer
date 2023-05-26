@@ -18,6 +18,38 @@ type BirdObstacleResource = {
     lastSpriteSwitch: number;
 };
 
+class OtherPlayer {
+    pos: Vec2;
+    vel: Vec2;
+    timestamp: number;
+
+    lastSpriteSwitch: number;
+    currSprite: Sprite;
+
+    constructor(pos: Vec2, vel: Vec2, timestamp: number) {
+        this.pos = pos
+        this.vel = vel
+        this.timestamp = timestamp
+        this.lastSpriteSwitch = this.timestamp
+        this.currSprite = "dinoRun1"
+    }
+
+    update(pos: Vec2, vel: Vec2, timestamp: number) {
+        this.timestamp = timestamp;
+        this.pos = pos;
+        this.vel = vel;
+    }
+
+    getPos(sres: StateResourceType, timestamp: number): Vec2 {
+        const dt = (timestamp - this.timestamp) * 0.001;
+        return {
+            x: this.pos.x + this.vel.x * dt + 0.5 * sres.acc.x * dt * dt,
+            y: Math.max(this.pos.y + this.vel.y * dt + 0.5 * sres.gravity * dt * dt, 0),
+        };
+    }
+
+}
+
 type StateResourceType = {
     isFinalCountdown: boolean;
     countdownVal: number;
@@ -36,7 +68,7 @@ type StateResourceType = {
         obstacles: Array<Obstacle>; //Array<[[x, y], [obstacles]]
     };
 
-    otherPlayers: Map<string, { pos: Vec2; vel: Vec2, timestamp: number }>;
+    otherPlayers: Map<string, OtherPlayer>;
 
     clouds: Array<Cloud>;
     noise: NoiseFunction2D;
@@ -524,7 +556,7 @@ export const activeGameState: GameStateBuilderData = {
             if (sres.startTime <= -1 || msg.type !== "Event") return;
 
             msg.pos = [msg.pos[0] * gres.unitLength, msg.pos[1] * gres.unitLength]
-            msg.vel = [ msg.vel[0] * gres.unitLength, msg.vel[1] * gres.unitLength]
+            msg.vel = [msg.vel[0] * gres.unitLength, msg.vel[1] * gres.unitLength]
 
             const tNow = gres.timestamp;
             
@@ -534,12 +566,12 @@ export const activeGameState: GameStateBuilderData = {
             const newPos = {x:msg.pos[0], y: msg.pos[1]};
             const newVel = {x:msg.vel[0], y: msg.vel[1] };
 
-            sres.otherPlayers.set(msg.username, {
-                pos: newPos,
-                vel: newVel,
-                timestamp: msg.timestamp,
-            })
+            if (sres.otherPlayers.has(msg.username)) {
+                sres.otherPlayers.get(msg.username)!.update(newPos, newVel, msg.timestamp)
+                return
+            }
 
+            sres.otherPlayers.set(msg.username, new OtherPlayer(newPos, newVel, msg.timestamp));
         });
 
         
@@ -560,13 +592,8 @@ export const activeGameState: GameStateBuilderData = {
             "other-players",
             4,
             function (_, ctx) {
-                for (const [username, { pos, vel, timestamp} ] of sres.otherPlayers) {
-                    const dt = (gres.timestamp - sres.startTime - timestamp) * 0.001;
-                    const currPos = {
-                        x:pos.x + vel.x * dt + 0.5 * sres.acc.x * dt * dt,
-                        y: Math.max(pos.y + vel.y * dt + 0.5 * sres.gravity * dt * dt, 0),
-                    };
-
+                for (const [username,otherPlayer] of sres.otherPlayers) {
+                    const currPos = otherPlayer.getPos(sres, gres.timestamp - sres.startTime);
                   
                     ctx.font = "20px monospace";
                     ctx.fillStyle = "rgb(200, 200, 255)";
@@ -583,13 +610,22 @@ export const activeGameState: GameStateBuilderData = {
                     const x = currPos.x - sres.pos.x + 1.5 * gres.unitLength;
                     const y = gres.groundHeight - currPos.y - gres.unitLength;
 
+                    if (gres.timestamp - otherPlayer.lastSpriteSwitch > 150) {
+                        if (otherPlayer.currSprite == 'dinoRun1') otherPlayer.currSprite = 'dinoRun2'
+                        else otherPlayer.currSprite = 'dinoRun1'
+
+                        otherPlayer.lastSpriteSwitch = gres.timestamp;
+                    }
+
+                    if (currPos.y > 0) otherPlayer.currSprite = 'dinoJump'
+
                     const spriteSize =
                         gres.renderer.res.textureMap.getTexureDimensions(
-                            "dinoJump",
+                            otherPlayer.currSprite,
                             gres.spriteScalingFactor
                         )!;
                     const sprite =
-                        gres.renderer.res.textureMap.getTexture("dinoJump")!;
+                        gres.renderer.res.textureMap.getTexture(otherPlayer.currSprite)!;
 
                     ctx.textBaseline = "bottom";
                     ctx.fillText(username, x, y - 5);
